@@ -1,0 +1,3 @@
+// Icon component placeholder
+export {};
+

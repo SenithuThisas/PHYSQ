@@ -1,0 +1,3 @@
+// Spinner component placeholder
+export {};
+

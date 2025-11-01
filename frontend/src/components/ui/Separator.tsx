@@ -1,0 +1,3 @@
+// Separator component placeholder
+export {};
+
