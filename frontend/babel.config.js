@@ -1,30 +1,20 @@
-const nativewind = require("nativewind/babel");
-
 module.exports = function (api) {
   api.cache(true);
-  const { plugins: nativewindPlugins = [] } = nativewind();
-
   return {
     presets: [
-      [
-        "babel-preset-expo",
-        {
-          unstable_transformImportMeta: true
-        }
-      ]
+      ["babel-preset-expo", { jsxImportSource: "nativewind" }],
     ],
     plugins: [
-      ...nativewindPlugins.filter((plugin) => plugin !== "react-native-worklets/plugin"),
+      "nativewind/babel",
       [
         "module-resolver",
         {
           alias: {
             "@": "./src",
-            "expo-font": "./src/shims/expo-font"
-          }
-        }
+          },
+        },
       ],
-      "react-native-reanimated/plugin"
-    ]
+      "react-native-reanimated/plugin",
+    ],
   };
 };
