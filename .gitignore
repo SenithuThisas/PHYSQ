@@ -1,30 +1,92 @@
-# Node
+# -------------------------
+# General / OS
+# -------------------------
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# -------------------------
+# IDEs and Editors
+# -------------------------
+.idea/
+.vscode/
+*.swp
+*.swo
+*.iml
+*.sublime-workspace
+*.sublime-project
+.project
+.classpath
+.settings/
+
+# -------------------------
+# Node.js / NPM / Yarn
+# -------------------------
 node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
 .pnpm-store/
+.npm/
 
-# Expo / React Native
-.expo/
-.expo-shared/
+# Lock files (Uncomment if you want to ignore them - generally suggested to commit lock files for apps)
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml
+
+# -------------------------
+# Build Outputs
+# -------------------------
 dist/
-web-build/
-.DS_Store
+build/
+out/
+coverage/
 
-# Env
+# -------------------------
+# Environment Variables
+# -------------------------
 .env
 .env.local
+.env.*.local
 .env.development.local
 .env.test.local
 .env.production.local
+*.env
+!.env.example
 
+# -------------------------
 # Logs
+# -------------------------
 logs/
 *.log
 *.tmp
+*.temp
 
-# Editor
-.vscode/
-.idea/
+# -------------------------
+# React Native / Expo
+# -------------------------
+.expo/
+.expo-shared/
+web-build/
+.expo-go/
+.expo-dev/
+.expo-turtle/
+.expo-bundler-cache/
+.expo-bundle/
+.expo-source/
+.expo/assets-cache/
+.expo/cache/
 
+# Expo: Prebuild artifacts (uncomment if you are in a managed workflow and generate these locally but don't want to commit)
+# android/
+# ios/
+
+# -------------------------
+# Supabase
+# -------------------------
+supabase/.temp/
