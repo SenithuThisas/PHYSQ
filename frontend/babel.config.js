@@ -20,8 +20,7 @@ module.exports = function (api) {
         {
           alias: {
             "@": "./src",
-            "expo-font": "./src/shims/expo-font",
-            "zustand": "./node_modules/zustand/index.js"
+            "expo-font": "./src/shims/expo-font"
           }
         }
       ],
