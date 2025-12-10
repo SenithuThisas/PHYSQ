@@ -11,7 +11,11 @@ app.use(cors());
 app.use(express.json());
 app.use(morgan('dev'));
 
+// Basic health check at root for easier debugging
+app.get('/', (_req, res) => {
+    res.json({ message: 'PHYSQ Backend API', status: 'running' });
+});
+
 app.use('/api', router);
 
 export default app;
-
