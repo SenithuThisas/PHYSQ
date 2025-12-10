@@ -1,24 +1,24 @@
-import './global.css';
-import 'react-native-gesture-handler';
-import React, { useEffect } from 'react';
-import { StatusBar } from 'expo-status-bar';
-import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
-import { View, ActivityIndicator } from 'react-native';
-import AuthNavigator from '@/navigation/AuthNavigator';
-import AppNavigator from '@/navigation/AppNavigator';
-import { useAuthStore } from '@/features/auth/store/authStore';
+import "./global.css";
+import React, { useEffect } from "react";
+import { StatusBar } from "expo-status-bar";
+import { NavigationContainer, DarkTheme } from "@react-navigation/native";
+import { View, ActivityIndicator } from "react-native";
+import { SafeAreaProvider } from "react-native-safe-area-context";
+import AuthNavigator from "@/navigation/AuthNavigator";
+import AppNavigator from "@/navigation/AppNavigator";
+import { useAuthStore } from "@/features/auth/store/authStore";
 
 const navTheme = {
-  dark: true,
+  ...DarkTheme,
   colors: {
     ...DarkTheme.colors,
-    background: '#000000',
-    card: '#0A0A0A',
-    text: '#FFFFFF',
-    primary: '#7B2FFF',
-    border: '#161616',
-    notification: '#A259FF'
-  }
+    background: "#000000",
+    card: "#0A0A0A",
+    text: "#FFFFFF",
+    primary: "#7B2FFF",
+    border: "#161616",
+    notification: "#A259FF",
+  },
 };
 
 export default function App() {
@@ -26,22 +26,24 @@ export default function App() {
 
   useEffect(() => {
     initialize();
-  }, [initialize]);
+  }, []);
+
+  if (initializing) {
+    return (
+      <View className="flex-1 items-center justify-center bg-background">
+        <ActivityIndicator size="large" color="#A259FF" />
+      </View>
+    );
+  }
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#000' }}>
-      <StatusBar style="light" />
-      <NavigationContainer theme={navTheme as any}>
-        {initializing ? (
-          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-            <ActivityIndicator color="#A259FF" />
-          </View>
-        ) : session ? (
-          <AppNavigator />
-        ) : (
-          <AuthNavigator />
-        )}
-      </NavigationContainer>
-    </View>
+    <SafeAreaProvider>
+      <View className="flex-1 bg-background">
+        <StatusBar style="light" />
+        <NavigationContainer theme={navTheme}>
+          {session ? <AppNavigator /> : <AuthNavigator />}
+        </NavigationContainer>
+      </View>
+    </SafeAreaProvider>
   );
 }
