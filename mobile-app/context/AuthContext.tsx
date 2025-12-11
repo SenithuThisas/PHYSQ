@@ -22,6 +22,32 @@ export function useAuth() {
     return useContext(AuthContext);
 }
 
+import { Platform } from 'react-native';
+
+const Storage = {
+    getItem: async (key: string) => {
+        if (Platform.OS === 'web') {
+            return localStorage.getItem(key);
+        } else {
+            return await SecureStore.getItemAsync(key);
+        }
+    },
+    setItem: async (key: string, value: string) => {
+        if (Platform.OS === 'web') {
+            localStorage.setItem(key, value);
+        } else {
+            await SecureStore.setItemAsync(key, value);
+        }
+    },
+    deleteItem: async (key: string) => {
+        if (Platform.OS === 'web') {
+            localStorage.removeItem(key);
+        } else {
+            await SecureStore.deleteItemAsync(key);
+        }
+    }
+};
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [token, setToken] = useState<string | null>(null);
     const [user, setUser] = useState<any | null>(null);
@@ -39,8 +65,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         const loadToken = async () => {
             try {
-                const storedToken = await SecureStore.getItemAsync('userToken');
-                const storedUser = await SecureStore.getItemAsync('userData');
+                const storedToken = await Storage.getItem('userToken');
+                const storedUser = await Storage.getItem('userData');
                 if (storedToken && storedUser) {
                     setToken(storedToken);
                     setUser(JSON.parse(storedUser));
@@ -57,15 +83,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const signIn = async (newToken: string, newUser: any) => {
         setToken(newToken);
         setUser(newUser);
-        await SecureStore.setItemAsync('userToken', newToken);
-        await SecureStore.setItemAsync('userData', JSON.stringify(newUser));
+        await Storage.setItem('userToken', newToken);
+        await Storage.setItem('userData', JSON.stringify(newUser));
     };
 
     const signOut = async () => {
         setToken(null);
         setUser(null);
-        await SecureStore.deleteItemAsync('userToken');
-        await SecureStore.deleteItemAsync('userData');
+        await Storage.deleteItem('userToken');
+        await Storage.deleteItem('userData');
     };
 
     return (
