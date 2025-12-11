@@ -4,6 +4,7 @@ import { Link, useRouter } from 'expo-router';
 import { Colors } from '../../constants/Colors';
 import { useAuth } from '../../context/AuthContext';
 import axios from 'axios';
+import { FontAwesome } from '@expo/vector-icons';
 
 import { Config } from '../../constants/Config';
 
@@ -12,24 +13,48 @@ const API_URL = Config.API_URL;
 export default function Signup() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const router = useRouter();
     const { signIn } = useAuth();
 
+    const isValidEmail = (email: string) => {
+        return /\S+@\S+\.\S+/.test(email);
+    };
+
     const handleSignup = async () => {
-        if (!email || !password) {
-            Alert.alert('Error', 'Please fill in all fields');
+        setError(''); // Clear previous errors
+        if (!email || !password || !confirmPassword) {
+            setError('Please fill in all fields');
+            return;
+        }
+
+        if (!isValidEmail(email)) {
+            setError('Please enter a valid email address');
+            return;
+        }
+
+        if (password.length < 6) {
+            setError('Password must be at least 6 characters long');
+            return;
+        }
+
+        if (password !== confirmPassword) {
+            setError('Passwords do not match');
             return;
         }
 
         setLoading(true);
         try {
-            const res = await axios.post(`${API_URL}/auth/signup`, { email, password });
-            await signIn(res.data.token, res.data.user);
-            router.replace('/(tabs)');
+            await axios.post(`${API_URL}/auth/signup`, { email, password });
+            Alert.alert('Success', 'Account created successfully! Please login.');
+            router.replace('/(auth)/login');
         } catch (err: any) {
             const msg = err.response?.data?.error || 'Signup failed';
-            Alert.alert('Error', msg);
+            setError(msg);
         } finally {
             setLoading(false);
         }
@@ -40,6 +65,8 @@ export default function Signup() {
             <View style={styles.contentContainer}>
                 <Text style={styles.header}>Create Account</Text>
                 <Text style={styles.subHeader}>Start your journey to greatness.</Text>
+
+                {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
                 <View style={styles.form}>
                     <Text style={styles.label}>Email</Text>
@@ -54,14 +81,34 @@ export default function Signup() {
                     />
 
                     <Text style={styles.label}>Password</Text>
-                    <TextInput
-                        style={styles.input}
-                        placeholder="Create a strong password"
-                        placeholderTextColor="#666"
-                        value={password}
-                        onChangeText={setPassword}
-                        secureTextEntry
-                    />
+                    <View style={styles.passwordContainer}>
+                        <TextInput
+                            style={styles.passwordInput}
+                            placeholder="Create a strong password"
+                            placeholderTextColor="#666"
+                            value={password}
+                            onChangeText={setPassword}
+                            secureTextEntry={!showPassword}
+                        />
+                        <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
+                            <FontAwesome name={showPassword ? "eye" : "eye-slash"} size={20} color={Colors.textSecondary} />
+                        </TouchableOpacity>
+                    </View>
+
+                    <Text style={styles.label}>Confirm Password</Text>
+                    <View style={styles.passwordContainer}>
+                        <TextInput
+                            style={styles.passwordInput}
+                            placeholder="Confirm your password"
+                            placeholderTextColor="#666"
+                            value={confirmPassword}
+                            onChangeText={setConfirmPassword}
+                            secureTextEntry={!showConfirmPassword}
+                        />
+                        <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)} style={styles.eyeIcon}>
+                            <FontAwesome name={showConfirmPassword ? "eye" : "eye-slash"} size={20} color={Colors.textSecondary} />
+                        </TouchableOpacity>
+                    </View>
 
                     <TouchableOpacity style={styles.button} onPress={handleSignup} disabled={loading}>
                         {loading ? (
@@ -69,6 +116,16 @@ export default function Signup() {
                         ) : (
                             <Text style={styles.buttonText}>Sign Up</Text>
                         )}
+                    </TouchableOpacity>
+
+                    <View style={styles.dividerContainer}>
+                        <View style={styles.divider} />
+                        <Text style={styles.dividerText}>OR</Text>
+                        <View style={styles.divider} />
+                    </View>
+
+                    <TouchableOpacity style={styles.googleButton} onPress={() => Alert.alert('Coming Soon', 'Google Auth requires GCP setup!')}>
+                        <Text style={styles.googleButtonText}>Continue with Google</Text>
                     </TouchableOpacity>
 
                     <View style={styles.footer}>
@@ -113,6 +170,13 @@ const styles = StyleSheet.create({
     form: {
         gap: 16,
     },
+    errorText: {
+        color: 'red',
+        textAlign: 'center',
+        marginBottom: 12,
+        fontSize: 14,
+        fontWeight: '600',
+    },
     label: {
         color: Colors.text,
         fontSize: 14,
@@ -128,6 +192,24 @@ const styles = StyleSheet.create({
         fontSize: 16,
         borderWidth: 1,
         borderColor: Colors.border,
+    },
+    passwordContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: Colors.surface,
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: Colors.border,
+        paddingRight: 16, // Space for icon
+    },
+    passwordInput: {
+        flex: 1,
+        padding: 16,
+        color: Colors.text,
+        fontSize: 16,
+    },
+    eyeIcon: {
+        padding: 4,
     },
     button: {
         backgroundColor: Colors.primary,
@@ -156,6 +238,34 @@ const styles = StyleSheet.create({
     },
     link: {
         color: Colors.primary,
+        fontWeight: 'bold',
+    },
+    dividerContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginVertical: 24,
+    },
+    divider: {
+        flex: 1,
+        height: 1,
+        backgroundColor: Colors.border,
+    },
+    dividerText: {
+        color: Colors.textSecondary,
+        marginHorizontal: 16,
+        fontSize: 14,
+    },
+    googleButton: {
+        backgroundColor: Colors.surface,
+        padding: 16,
+        borderRadius: 16,
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: Colors.border,
+    },
+    googleButtonText: {
+        color: Colors.text,
+        fontSize: 16,
         fontWeight: 'bold',
     }
 });
