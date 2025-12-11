@@ -8,20 +8,30 @@ const User = require('../models/User');
 router.post('/signup', async (req, res) => {
     try {
         const { email, password } = req.body;
+        console.log('Signup attempt for:', email);
+        if (!process.env.JWT_SECRET) {
+            throw new Error('JWT_SECRET is missing in .env');
+        }
+
         if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
 
         const existingUser = await User.findOne({ email });
         if (existingUser) return res.status(400).json({ error: 'User already exists' });
 
+        console.log('Hashing password...');
         const salt = await bcrypt.genSalt(10);
         const passwordHash = await bcrypt.hash(password, salt);
 
+        console.log('Saving user to DB...');
         const newUser = new User({ email, passwordHash });
         await newUser.save();
+        console.log('User saved:', newUser._id);
 
         const token = jwt.sign({ userId: newUser._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+        console.log('Token generated');
         res.status(201).json({ token, user: { email: newUser.email, _id: newUser._id } });
     } catch (err) {
+        console.error('Signup Error:', err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -39,6 +49,7 @@ router.post('/login', async (req, res) => {
         const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
         res.json({ token, user: { email: user.email, _id: user._id } });
     } catch (err) {
+        console.error('Signup Error:', err);
         res.status(500).json({ error: err.message });
     }
 });
