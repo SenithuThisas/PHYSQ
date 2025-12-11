@@ -139,6 +139,14 @@ const styles = StyleSheet.create({
     },
     form: {
         gap: 16,
+    },
+    passwordContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: Colors.surface,
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: Colors.border,
         paddingRight: 16, // Space for icon
     },
     passwordInput: {
