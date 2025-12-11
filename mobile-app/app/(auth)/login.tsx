@@ -4,6 +4,7 @@ import { Link, useRouter } from 'expo-router';
 import { Colors } from '../../constants/Colors';
 import { useAuth } from '../../context/AuthContext';
 import axios from 'axios';
+import { FontAwesome } from '@expo/vector-icons';
 
 // IMPORTANT: Update this with your local IP if running on real device
 import { Config } from '../../constants/Config';
@@ -13,13 +14,23 @@ const API_URL = Config.API_URL;
 export default function Login() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
     const router = useRouter();
     const { signIn } = useAuth();
 
+    const isValidEmail = (email: string) => {
+        return /\S+@\S+\.\S+/.test(email);
+    };
+
     const handleLogin = async () => {
         if (!email || !password) {
             Alert.alert('Error', 'Please fill in all fields');
+            return;
+        }
+
+        if (!isValidEmail(email)) {
+            Alert.alert('Error', 'Please enter a valid email address');
             return;
         }
 
@@ -55,14 +66,19 @@ export default function Login() {
                     />
 
                     <Text style={styles.label}>Password</Text>
-                    <TextInput
-                        style={styles.input}
-                        placeholder="••••••••"
-                        placeholderTextColor="#666"
-                        value={password}
-                        onChangeText={setPassword}
-                        secureTextEntry
-                    />
+                    <View style={styles.passwordContainer}>
+                        <TextInput
+                            style={styles.passwordInput}
+                            placeholder="••••••••"
+                            placeholderTextColor="#666"
+                            value={password}
+                            onChangeText={setPassword}
+                            secureTextEntry={!showPassword}
+                        />
+                        <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
+                            <FontAwesome name={showPassword ? "eye" : "eye-slash"} size={20} color={Colors.textSecondary} />
+                        </TouchableOpacity>
+                    </View>
 
                     <TouchableOpacity style={styles.button} onPress={handleLogin} disabled={loading}>
                         {loading ? (
@@ -70,6 +86,16 @@ export default function Login() {
                         ) : (
                             <Text style={styles.buttonText}>Login</Text>
                         )}
+                    </TouchableOpacity>
+
+                    <View style={styles.dividerContainer}>
+                        <View style={styles.divider} />
+                        <Text style={styles.dividerText}>OR</Text>
+                        <View style={styles.divider} />
+                    </View>
+
+                    <TouchableOpacity style={styles.googleButton} onPress={() => Alert.alert('Coming Soon', 'Google Auth requires GCP setup!')}>
+                        <Text style={styles.googleButtonText}>Continue with Google</Text>
                     </TouchableOpacity>
 
                     <View style={styles.footer}>
@@ -113,6 +139,16 @@ const styles = StyleSheet.create({
     },
     form: {
         gap: 16,
+        paddingRight: 16, // Space for icon
+    },
+    passwordInput: {
+        flex: 1,
+        padding: 16,
+        color: Colors.text,
+        fontSize: 16,
+    },
+    eyeIcon: {
+        padding: 4,
     },
     label: {
         color: Colors.text,
@@ -158,5 +194,35 @@ const styles = StyleSheet.create({
     link: {
         color: Colors.primary,
         fontWeight: 'bold',
-    }
+    },
+    dividerContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginVertical: 24,
+    },
+    divider: {
+        flex: 1,
+        height: 1,
+        backgroundColor: Colors.border,
+    },
+    dividerText: {
+        color: Colors.textSecondary,
+        marginHorizontal: 16,
+        fontSize: 14,
+    },
+    googleButton: {
+        backgroundColor: Colors.surface,
+        padding: 16,
+        borderRadius: 16,
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: Colors.border,
+    },
+    googleButtonText: {
+        color: Colors.text,
+        fontSize: 16,
+        fontWeight: 'bold',
+    },
+
 });
+
