@@ -1,0 +1,162 @@
+import { useState } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from 'react-native';
+import { Link, useRouter } from 'expo-router';
+import { Colors } from '../../constants/Colors';
+import { useAuth } from '../../context/AuthContext';
+import axios from 'axios';
+
+// IMPORTANT: Update this with your local IP if running on real device
+import { Config } from '../../constants/Config';
+
+const API_URL = Config.API_URL;
+
+export default function Login() {
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [loading, setLoading] = useState(false);
+    const router = useRouter();
+    const { signIn } = useAuth();
+
+    const handleLogin = async () => {
+        if (!email || !password) {
+            Alert.alert('Error', 'Please fill in all fields');
+            return;
+        }
+
+        setLoading(true);
+        try {
+            const res = await axios.post(`${API_URL}/auth/login`, { email, password });
+            await signIn(res.data.token, res.data.user);
+            router.replace('/(tabs)');
+        } catch (err: any) {
+            const msg = err.response?.data?.error || 'Login failed';
+            Alert.alert('Error', msg);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <View style={styles.container}>
+            <View style={styles.contentContainer}>
+                <Text style={styles.header}>Welcome Back</Text>
+                <Text style={styles.subHeader}>Sign in to continue your progress.</Text>
+
+                <View style={styles.form}>
+                    <Text style={styles.label}>Email</Text>
+                    <TextInput
+                        style={styles.input}
+                        placeholder="gymbro@example.com"
+                        placeholderTextColor="#666"
+                        value={email}
+                        onChangeText={setEmail}
+                        autoCapitalize="none"
+                        keyboardType="email-address"
+                    />
+
+                    <Text style={styles.label}>Password</Text>
+                    <TextInput
+                        style={styles.input}
+                        placeholder="••••••••"
+                        placeholderTextColor="#666"
+                        value={password}
+                        onChangeText={setPassword}
+                        secureTextEntry
+                    />
+
+                    <TouchableOpacity style={styles.button} onPress={handleLogin} disabled={loading}>
+                        {loading ? (
+                            <ActivityIndicator color={Colors.background} />
+                        ) : (
+                            <Text style={styles.buttonText}>Login</Text>
+                        )}
+                    </TouchableOpacity>
+
+                    <View style={styles.footer}>
+                        <Text style={styles.footerText}>Don't have an account? </Text>
+                        <Link href="/(auth)/signup" asChild>
+                            <TouchableOpacity>
+                                <Text style={styles.link}>Sign Up</Text>
+                            </TouchableOpacity>
+                        </Link>
+                    </View>
+                </View>
+            </View>
+        </View>
+    );
+}
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: Colors.background,
+        justifyContent: 'center',
+        alignItems: 'center', // Center content horizontally
+        padding: 24,
+    },
+    contentContainer: { // New wrapper for form content
+        width: '100%',
+        maxWidth: 400, // Limit width for web/tablet
+    },
+    header: {
+        fontSize: 32,
+        fontWeight: 'bold',
+        color: Colors.text,
+        marginBottom: 8,
+        textAlign: 'center', // Center text
+    },
+    subHeader: {
+        fontSize: 16,
+        color: Colors.textSecondary,
+        marginBottom: 48,
+        textAlign: 'center', // Center text
+    },
+    form: {
+        gap: 16,
+    },
+    label: {
+        color: Colors.text,
+        fontSize: 14,
+        fontWeight: '600',
+        marginBottom: 4,
+        marginLeft: 4, // Align with input radius
+    },
+    input: {
+        backgroundColor: Colors.surface,
+        color: Colors.text,
+        padding: 16,
+        borderRadius: 16, // Softer corners
+        fontSize: 16,
+        borderWidth: 1,
+        borderColor: Colors.border,
+    },
+    button: {
+        backgroundColor: Colors.primary,
+        padding: 16,
+        borderRadius: 16, // Match input radius
+        alignItems: 'center',
+        marginTop: 24,
+        shadowColor: Colors.primary,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 10,
+        elevation: 5,
+    },
+    buttonText: {
+        color: Colors.background,
+        fontSize: 16,
+        fontWeight: 'bold',
+    },
+    footer: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        marginTop: 24,
+    },
+    footerText: {
+        color: Colors.textSecondary,
+    },
+    link: {
+        color: Colors.primary,
+        fontWeight: 'bold',
+    }
+});
