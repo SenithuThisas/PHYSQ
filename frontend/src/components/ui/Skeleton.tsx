@@ -1,3 +1,0 @@
-// Skeleton component placeholder
-export {};
-

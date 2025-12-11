@@ -1,3 +1,0 @@
-// Chip component placeholder
-export {};
-

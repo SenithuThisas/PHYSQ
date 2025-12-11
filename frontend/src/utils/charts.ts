@@ -1,3 +1,0 @@
-// Charts utils placeholder
-export {};
-

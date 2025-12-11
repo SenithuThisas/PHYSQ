@@ -1,3 +1,0 @@
-// Persist middleware placeholder
-export {};
-

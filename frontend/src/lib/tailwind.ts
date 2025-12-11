@@ -1,3 +1,0 @@
-// NativeWind helpers placeholder
-export {};
-

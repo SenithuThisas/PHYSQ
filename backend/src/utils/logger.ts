@@ -1,3 +1,0 @@
-// Logger util placeholder
-export {};
-

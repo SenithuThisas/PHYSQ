@@ -1,3 +1,0 @@
-// useTheme hook placeholder
-export {};
-
