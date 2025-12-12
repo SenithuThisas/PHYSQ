@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Animated, useWindowDimensions, Platform, PixelRatio, Dimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Colors } from '../constants/Colors';
@@ -6,65 +6,45 @@ import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-// Responsive Font Helper
-const scaleFont = (size: number) => {
-    const { width: SCREEN_WIDTH } = Dimensions.get('window');
-    const scale = SCREEN_WIDTH / 375; // standard iPhone 11/X width
-    const newSize = size * scale;
-    if (Platform.OS === 'ios') {
-        return Math.round(PixelRatio.roundToNearestPixel(newSize));
-    } else {
-        return Math.round(PixelRatio.roundToNearestPixel(newSize)) - 2;
-    }
-};
-
-
 export default function Index() {
     const router = useRouter();
     const { width, height } = useWindowDimensions();
     const insets = useSafeAreaInsets();
 
+    // Responsive Breakpoints
+    const isMobile = width < 768; // Tablet/Desktop breakpoint
+    const isSmallDevice = width < 375;
+
     // Animation Values
     const fadeAnim = useRef(new Animated.Value(0)).current;
     const slideAnim = useRef(new Animated.Value(50)).current;
-    const pulseAnim = useRef(new Animated.Value(1)).current;
-
-    // Responsive Sizes
-    const isSmallDevice = width < 375;
-    const isTablet = width > 768;
-    const contentPadding = isTablet ? 60 : 24;
 
     useEffect(() => {
-        // Entrance Animation
         Animated.parallel([
-            Animated.timing(fadeAnim, {
-                toValue: 1,
-                duration: 1000,
-                useNativeDriver: true,
-            }),
-            Animated.timing(slideAnim, {
-                toValue: 0,
-                duration: 800,
-                useNativeDriver: true,
-            }),
+            Animated.timing(fadeAnim, { toValue: 1, duration: 1000, useNativeDriver: true }),
+            Animated.timing(slideAnim, { toValue: 0, duration: 800, useNativeDriver: true }),
         ]).start();
-
-        // Button Pulse Animation
-        Animated.loop(
-            Animated.sequence([
-                Animated.timing(pulseAnim, {
-                    toValue: 1.05,
-                    duration: 1500,
-                    useNativeDriver: true,
-                }),
-                Animated.timing(pulseAnim, {
-                    toValue: 1,
-                    duration: 1500,
-                    useNativeDriver: true,
-                }),
-            ])
-        ).start();
     }, []);
+
+    const NavBar = () => {
+        if (isMobile) return null;
+        return (
+            <View style={[styles.navBar, { paddingTop: insets.top + 20 }]}>
+                <Text style={styles.navLogo}>PHYSQ</Text>
+                <View style={styles.navLinks}>
+                    <TouchableOpacity onPress={() => router.push('/(auth)/login')}>
+                        <Text style={styles.navLinkText}>Login</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={styles.navButton}
+                        onPress={() => router.push('/(auth)/signup')}
+                    >
+                        <Text style={styles.navButtonText}>Get Started</Text>
+                    </TouchableOpacity>
+                </View>
+            </View>
+        );
+    };
 
     const FeatureItem = ({ icon, title, desc, delay }: { icon: any, title: string, desc: string, delay: number }) => {
         const itemFade = useRef(new Animated.Value(0)).current;
@@ -80,9 +60,9 @@ export default function Index() {
             ]).start();
         }, []);
 
-        const itemWidth = isTablet
-            ? (width - (contentPadding * 2)) / 3 - 40
-            : (width - (contentPadding * 2)) / 3 - 10;
+        const itemWidth = isMobile
+            ? (width - 48) / 3 - 10
+            : (width - 120) / 3 - 40;
 
         return (
             <Animated.View style={[
@@ -90,14 +70,17 @@ export default function Index() {
                 {
                     width: itemWidth,
                     opacity: itemFade,
-                    transform: [{ translateY: itemSlide }]
+                    transform: [{ translateY: itemSlide }],
+                    alignItems: isMobile ? 'center' : 'flex-start'
                 }
             ]}>
-                <View style={[styles.iconContainer, isTablet && { width: 80, height: 80, borderRadius: 40 }]}>
-                    <Ionicons name={icon} size={isTablet ? 40 : 28} color={Colors.background} />
+                <View style={[styles.iconContainer,
+                !isMobile && { width: 64, height: 64, borderRadius: 16, marginBottom: 24 }
+                ]}>
+                    <Ionicons name={icon} size={isMobile ? 28 : 32} color={Colors.background} />
                 </View>
-                <Text style={[styles.featureTitle, isTablet && { fontSize: 20 }]}>{title}</Text>
-                <Text style={[styles.featureDesc, isTablet && { fontSize: 16, lineHeight: 22 }]}>{desc}</Text>
+                <Text style={[styles.featureTitle, !isMobile && { fontSize: 20, marginBottom: 12, textAlign: 'left' }]}>{title}</Text>
+                <Text style={[styles.featureDesc, !isMobile && { fontSize: 16, lineHeight: 24, textAlign: 'left' }]}>{desc}</Text>
             </Animated.View>
         );
     };
@@ -105,37 +88,84 @@ export default function Index() {
     return (
         <View style={styles.mainContainer}>
             <StatusBar style="light" />
+
+            <NavBar />
+
             <ScrollView
                 contentContainerStyle={[
                     styles.scrollContent,
                     {
-                        paddingTop: insets.top + 20,
-                        paddingBottom: insets.bottom + 20,
-                        paddingHorizontal: contentPadding
+                        paddingTop: isMobile ? insets.top + 40 : 100,
+                        paddingBottom: insets.bottom + 40,
+                        paddingHorizontal: isMobile ? 24 : 100 // More padding on desktop
                     }
                 ]}
                 showsVerticalScrollIndicator={false}
             >
-                <Animated.View style={[
-                    styles.heroSection,
-                    {
-                        opacity: fadeAnim,
-                        transform: [{ translateY: slideAnim }],
-                        marginTop: isTablet ? 60 : 20
-                    }
+                {/* HERO SECTION */}
+                <View style={[
+                    styles.heroContainer,
+                    !isMobile && { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 120 }
                 ]}>
-                    <Text style={[styles.title, { fontSize: isSmallDevice ? 48 : (isTablet ? 96 : 64) }]}>
-                        PHYSQ
-                    </Text>
-                    <Text style={[styles.subtitle, { fontSize: isSmallDevice ? 18 : (isTablet ? 32 : 24) }]}>
-                        Defy Gravity.
-                    </Text>
-                    <Text style={[styles.description, { maxWidth: isTablet ? 500 : 300, fontSize: isTablet ? 20 : 16 }]}>
-                        The ultimate companion for your calisthenics journey. Track progress, master skills, and build a physique that defies physics.
-                    </Text>
-                </Animated.View>
+                    <Animated.View style={[
+                        styles.heroContent,
+                        { opacity: fadeAnim, transform: [{ translateY: slideAnim }], flex: isMobile ? 1 : 0.5 }
+                    ]}>
+                        <Text style={[
+                            styles.title,
+                            !isMobile && { fontSize: 80, textAlign: 'left', lineHeight: 85 }
+                        ]}>
+                            PHYSQ
+                        </Text>
+                        <Text style={[
+                            styles.subtitle,
+                            !isMobile && { fontSize: 28, textAlign: 'left', marginBottom: 32 }
+                        ]}>
+                            Defy Gravity.
+                        </Text>
+                        <Text style={[
+                            styles.description,
+                            !isMobile && { textAlign: 'left', fontSize: 18, maxWidth: 500, marginBottom: 40 }
+                        ]}>
+                            The ultimate companion for your calisthenics journey. Track progress, master skills, and build a physique that defies physics.
+                        </Text>
 
-                <View style={[styles.featuresContainer, { marginBottom: isTablet ? 100 : 60 }]}>
+                        {/* DESKTOP CTA (Hidden on Mobile) */}
+                        {!isMobile && (
+                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                <TouchableOpacity
+                                    style={[styles.primaryButton, { paddingVertical: 20, paddingHorizontal: 48 }]}
+                                    onPress={() => router.push('/(auth)/signup')}
+                                >
+                                    <Text style={[styles.primaryButtonText, { fontSize: 20 }]}>Start Training</Text>
+                                    <Ionicons name="arrow-forward" size={24} color={Colors.background} style={{ marginLeft: 12 }} />
+                                </TouchableOpacity>
+                            </View>
+                        )}
+                    </Animated.View>
+
+                    {/* HERO IMAGE / VISUAL PLACEHOLDER (Desktop Only) */}
+                    {!isMobile && (
+                        <Animated.View style={{ flex: 0.4, opacity: fadeAnim, transform: [{ scale: slideAnim.interpolate({ inputRange: [0, 50], outputRange: [1, 0.9] }) }] }}>
+                            <View style={{
+                                width: '100%',
+                                aspectRatio: 1,
+                                backgroundColor: Colors.surface,
+                                borderRadius: 40,
+                                borderWidth: 1,
+                                borderColor: Colors.primary,
+                                opacity: 0.2, // Placeholder opacity
+                                justifyContent: 'center',
+                                alignItems: 'center'
+                            }}>
+                                <Ionicons name="barbell-outline" size={120} color={Colors.primary} />
+                            </View>
+                        </Animated.View>
+                    )}
+                </View>
+
+                {/* FEATURES SECTION */}
+                <View style={[styles.featuresContainer, !isMobile && { marginBottom: 120 }]}>
                     <FeatureItem
                         icon="stats-chart"
                         title="Track"
@@ -156,28 +186,30 @@ export default function Index() {
                     />
                 </View>
 
-                <Animated.View style={[styles.actionSection, { opacity: fadeAnim }]}>
-                    <Animated.View style={{ transform: [{ scale: pulseAnim }], width: '100%', alignItems: 'center' }}>
+                {/* MOBILE ONLY ACTIONS */}
+                {isMobile && (
+                    <Animated.View style={[styles.actionSection, { opacity: fadeAnim }]}>
                         <TouchableOpacity
-                            style={[
-                                styles.primaryButton,
-                                isTablet && { paddingVertical: 24, paddingHorizontal: 60, borderRadius: 120 }
-                            ]}
+                            style={styles.primaryButton}
                             onPress={() => router.push('/(auth)/signup')}
-                            activeOpacity={0.8}
                         >
-                            <Text style={[styles.primaryButtonText, isTablet && { fontSize: 24 }]}>Get Started</Text>
-                            <Ionicons name="arrow-forward" size={isTablet ? 28 : 20} color={Colors.background} style={{ marginLeft: 8 }} />
+                            <Text style={styles.primaryButtonText}>Get Started</Text>
+                            <Ionicons name="arrow-forward" size={20} color={Colors.background} style={{ marginLeft: 8 }} />
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                            style={styles.secondaryButton}
+                            onPress={() => router.push('/(auth)/login')}
+                        >
+                            <Text style={styles.secondaryButtonText}>I already have an account</Text>
                         </TouchableOpacity>
                     </Animated.View>
+                )}
 
-                    <TouchableOpacity
-                        style={styles.secondaryButton}
-                        onPress={() => router.push('/(auth)/login')}
-                    >
-                        <Text style={[styles.secondaryButtonText, isTablet && { fontSize: 18 }]}>I already have an account</Text>
-                    </TouchableOpacity>
-                </Animated.View>
+                {/* FOOTER */}
+                <View style={{ alignItems: 'center', opacity: 0.5, marginBottom: 20 }}>
+                    <Text style={{ color: Colors.textSecondary, fontSize: 14 }}>© 2025 PHYSQ</Text>
+                </View>
             </ScrollView>
         </View>
     );
@@ -188,24 +220,68 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: Colors.background,
     },
-    scrollContent: {
-        // Padding handled dynamically
-    },
-    heroSection: {
+    navBar: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
         alignItems: 'center',
+        paddingHorizontal: 60,
+        paddingBottom: 20,
+        zIndex: 10,
+        // backgroundColor: 'rgba(13,13,13,0.8)', // Optional glass effect
+    },
+    navLogo: {
+        fontSize: 24,
+        fontWeight: '900',
+        color: Colors.text,
+        letterSpacing: 1,
+    },
+    navLinks: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 40,
+    },
+    navLinkText: {
+        color: Colors.text,
+        fontWeight: '600',
+        fontSize: 16,
+    },
+    navButton: {
+        backgroundColor: Colors.primary,
+        paddingVertical: 10,
+        paddingHorizontal: 24,
+        borderRadius: 100,
+    },
+    navButtonText: {
+        color: Colors.background,
+        fontWeight: 'bold',
+        fontSize: 16,
+    },
+    scrollContent: {
+        flexGrow: 1,
+    },
+    heroContainer: {
         marginBottom: 60,
     },
+    heroContent: {
+        alignItems: 'center', // Center on mobile
+    },
     title: {
+        fontSize: 64,
         fontWeight: '900',
         color: Colors.primary,
         letterSpacing: -2,
         marginBottom: 8,
+        textAlign: 'center',
         textShadowColor: 'rgba(204, 255, 0, 0.3)',
         textShadowOffset: { width: 0, height: 0 },
         textShadowRadius: 20,
-        textAlign: 'center',
     },
     subtitle: {
+        fontSize: 24,
         fontWeight: '600',
         color: Colors.text,
         marginBottom: 24,
@@ -214,14 +290,17 @@ const styles = StyleSheet.create({
         textAlign: 'center',
     },
     description: {
+        fontSize: 16,
         color: Colors.textSecondary,
         textAlign: 'center',
         lineHeight: 24,
+        maxWidth: 300,
     },
     featuresContainer: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         flexWrap: 'wrap',
+        marginBottom: 60,
     },
     featureItem: {
         alignItems: 'center',
@@ -257,6 +336,7 @@ const styles = StyleSheet.create({
     actionSection: {
         alignItems: 'center',
         width: '100%',
+        marginBottom: 40,
     },
     primaryButton: {
         flexDirection: 'row',
@@ -266,14 +346,11 @@ const styles = StyleSheet.create({
         borderRadius: 100,
         alignItems: 'center',
         justifyContent: 'center',
-        width: '100%',
-        maxWidth: 320,
         shadowColor: Colors.primary,
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.3,
         shadowRadius: 12,
         elevation: 6,
-        marginBottom: 20,
     },
     primaryButtonText: {
         color: Colors.background,
@@ -285,6 +362,7 @@ const styles = StyleSheet.create({
     secondaryButton: {
         paddingVertical: 12,
         paddingHorizontal: 24,
+        marginTop: 20,
     },
     secondaryButtonText: {
         color: Colors.textSecondary,
