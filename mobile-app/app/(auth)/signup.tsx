@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, useWindowDimensions } from 'react-native';
 import { Link, useRouter } from 'expo-router';
 import { Colors } from '../../constants/Colors';
 import { useAuth } from '../../context/AuthContext';
@@ -11,6 +11,10 @@ import { Config } from '../../constants/Config';
 const API_URL = Config.API_URL;
 
 export default function Signup() {
+    const { width } = useWindowDimensions();
+    const isDesktop = width > 768;
+
+    const [fullName, setFullName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
@@ -27,7 +31,7 @@ export default function Signup() {
 
     const handleSignup = async () => {
         setError(''); // Clear previous errors
-        if (!email || !password || !confirmPassword) {
+        if (!fullName || !email || !password || !confirmPassword) {
             setError('Please fill in all fields');
             return;
         }
@@ -49,7 +53,7 @@ export default function Signup() {
 
         setLoading(true);
         try {
-            await axios.post(`${API_URL}/auth/signup`, { email, password });
+            await axios.post(`${API_URL}/auth/signup`, { fullName, email, password });
             Alert.alert('Success', 'Account created successfully! Please login.');
             router.replace('/(auth)/login');
         } catch (err: any) {
@@ -62,52 +66,73 @@ export default function Signup() {
 
     return (
         <View style={styles.container}>
-            <View style={styles.contentContainer}>
+            <View style={[styles.contentContainer, { maxWidth: isDesktop ? 600 : 400 }]}>
                 <Text style={styles.header}>Create Account</Text>
                 <Text style={styles.subHeader}>Start your journey to greatness.</Text>
 
                 {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
                 <View style={styles.form}>
-                    <Text style={styles.label}>Email</Text>
-                    <TextInput
-                        style={styles.input}
-                        placeholder="gymbro@example.com"
-                        placeholderTextColor="#666"
-                        value={email}
-                        onChangeText={setEmail}
-                        autoCapitalize="none"
-                        keyboardType="email-address"
-                    />
-
-                    <Text style={styles.label}>Password</Text>
-                    <View style={styles.passwordContainer}>
+                    <View>
+                        <Text style={styles.label}>Full Name</Text>
                         <TextInput
-                            style={styles.passwordInput}
-                            placeholder="Create a strong password"
+                            style={styles.input}
+                            placeholder="Gym Bro"
                             placeholderTextColor="#666"
-                            value={password}
-                            onChangeText={setPassword}
-                            secureTextEntry={!showPassword}
+                            value={fullName}
+                            onChangeText={setFullName}
+                            autoCapitalize="words"
                         />
-                        <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
-                            <FontAwesome name={showPassword ? "eye" : "eye-slash"} size={20} color={Colors.textSecondary} />
-                        </TouchableOpacity>
                     </View>
 
-                    <Text style={styles.label}>Confirm Password</Text>
-                    <View style={styles.passwordContainer}>
+                    <View>
+                        <Text style={styles.label}>Email</Text>
                         <TextInput
-                            style={styles.passwordInput}
-                            placeholder="Confirm your password"
+                            style={styles.input}
+                            placeholder="gymbro@example.com"
                             placeholderTextColor="#666"
-                            value={confirmPassword}
-                            onChangeText={setConfirmPassword}
-                            secureTextEntry={!showConfirmPassword}
+                            value={email}
+                            onChangeText={setEmail}
+                            autoCapitalize="none"
+                            keyboardType="email-address"
                         />
-                        <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)} style={styles.eyeIcon}>
-                            <FontAwesome name={showConfirmPassword ? "eye" : "eye-slash"} size={20} color={Colors.textSecondary} />
-                        </TouchableOpacity>
+                    </View>
+
+                    {/* Passwords Row */}
+                    <View style={{ flexDirection: isDesktop ? 'row' : 'column', gap: 12 }}>
+                        <View style={{ flex: 1 }}>
+                            <Text style={styles.label}>Password</Text>
+                            <View style={styles.passwordContainer}>
+                                <TextInput
+                                    style={styles.passwordInput}
+                                    placeholder="Password"
+                                    placeholderTextColor="#666"
+                                    value={password}
+                                    onChangeText={setPassword}
+                                    secureTextEntry={!showPassword}
+                                />
+                                <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
+                                    <FontAwesome name={showPassword ? "eye" : "eye-slash"} size={20} color={Colors.textSecondary} />
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+
+                        <View style={{ flex: 1 }}>
+                            <Text style={styles.label}>Confirm</Text>
+                            <View style={styles.passwordContainer}>
+                                <TextInput
+                                    style={styles.passwordInput}
+                                    placeholder="Confirm pwd"
+                                    placeholderTextColor="#666"
+                                    value={confirmPassword}
+                                    onChangeText={setConfirmPassword}
+                                    secureTextEntry={!showConfirmPassword}
+                                />
+                                <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)} style={styles.eyeIcon}>
+                                    <FontAwesome name={showConfirmPassword ? "eye" : "eye-slash"} size={20} color={Colors.textSecondary} />
+                                </TouchableOpacity>
+                            </View>
+                        </View>
                     </View>
 
                     <TouchableOpacity style={styles.button} onPress={handleSignup} disabled={loading}>
@@ -152,7 +177,20 @@ const styles = StyleSheet.create({
     },
     contentContainer: {
         width: '100%',
-        maxWidth: 400,
+        // Max Width handled dynamically in component
+        borderWidth: 1,
+        borderColor: Colors.primary,
+        borderRadius: 24,
+        padding: 32,
+        shadowColor: Colors.primary,
+        shadowOffset: {
+            width: 0,
+            height: 0,
+        },
+        shadowOpacity: 0.25,
+        shadowRadius: 20,
+        elevation: 10,
+        backgroundColor: Colors.background, // Ensure clean layering
     },
     header: {
         fontSize: 32,
@@ -164,11 +202,11 @@ const styles = StyleSheet.create({
     subHeader: {
         fontSize: 16,
         color: Colors.textSecondary,
-        marginBottom: 48,
+        marginBottom: 32, // Reduced from 48
         textAlign: 'center',
     },
     form: {
-        gap: 16,
+        gap: 12, // Reduced from 16
     },
     errorText: {
         color: 'red',
@@ -187,7 +225,7 @@ const styles = StyleSheet.create({
     input: {
         backgroundColor: Colors.surface,
         color: Colors.text,
-        padding: 16,
+        padding: 14, // Reduced from 16
         borderRadius: 16,
         fontSize: 16,
         borderWidth: 1,
@@ -200,11 +238,11 @@ const styles = StyleSheet.create({
         borderRadius: 16,
         borderWidth: 1,
         borderColor: Colors.border,
-        paddingRight: 16, // Space for icon
+        paddingRight: 12, // Reduced right padding
     },
     passwordInput: {
         flex: 1,
-        padding: 16,
+        padding: 14, // Reduced from 16
         color: Colors.text,
         fontSize: 16,
     },
@@ -213,10 +251,10 @@ const styles = StyleSheet.create({
     },
     button: {
         backgroundColor: Colors.primary,
-        padding: 16,
+        padding: 14, // Reduced from 16
         borderRadius: 16,
         alignItems: 'center',
-        marginTop: 24,
+        marginTop: 20, // Reduced from 24
         shadowColor: Colors.primary,
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.3,
@@ -231,7 +269,7 @@ const styles = StyleSheet.create({
     footer: {
         flexDirection: 'row',
         justifyContent: 'center',
-        marginTop: 24,
+        marginTop: 20, // Reduced from 24
     },
     footerText: {
         color: Colors.textSecondary,
@@ -243,7 +281,7 @@ const styles = StyleSheet.create({
     dividerContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginVertical: 24,
+        marginVertical: 20, // Reduced from 24
     },
     divider: {
         flex: 1,
@@ -257,7 +295,7 @@ const styles = StyleSheet.create({
     },
     googleButton: {
         backgroundColor: Colors.surface,
-        padding: 16,
+        padding: 14, // Reduced from 16
         borderRadius: 16,
         alignItems: 'center',
         borderWidth: 1,
