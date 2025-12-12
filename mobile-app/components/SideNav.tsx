@@ -1,8 +1,56 @@
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform, LayoutAnimation } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform, LayoutAnimation, Pressable, Animated } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { Colors } from '../constants/Colors';
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
+const NavItem = ({ item, isActive, isCollapsed, onPress }: { item: any, isActive: boolean, isCollapsed: boolean, onPress: () => void }) => {
+    const scale = useRef(new Animated.Value(1)).current;
+
+    // Web Hover Handling
+    const [isHovered, setIsHovered] = useState(false);
+
+    const onHoverIn = () => {
+        setIsHovered(true);
+        Animated.spring(scale, { toValue: 1.05, useNativeDriver: true }).start();
+    };
+
+    const onHoverOut = () => {
+        setIsHovered(false);
+        Animated.spring(scale, { toValue: 1, useNativeDriver: true }).start();
+    };
+
+    const activeOrHovered = isActive || isHovered;
+
+    return (
+        <AnimatedPressable
+            onPress={onPress}
+            onHoverIn={onHoverIn}
+            onHoverOut={onHoverOut}
+            style={[
+                styles.navItem,
+                // isActive && styles.navItemActive, // Removed background
+                isCollapsed && styles.navItemCollapsed,
+                { transform: [{ scale }] }
+            ]}
+        >
+            <View style={[styles.iconContainer, /* isActive && styles.iconContainerActive */]}>
+                <FontAwesome5
+                    name={item.icon}
+                    size={20}
+                    color={activeOrHovered ? Colors.primary : Colors.textSecondary}
+                />
+            </View>
+            {!isCollapsed && (
+                <Text style={[styles.navText, activeOrHovered && styles.navTextActive]}>
+                    {item.name}
+                </Text>
+            )}
+        </AnimatedPressable>
+    );
+};
 
 export default function SideNav() {
     const router = useRouter();
@@ -30,33 +78,26 @@ export default function SideNav() {
                 {!collapsed && <Text style={styles.logoText}>PHYSQ</Text>}
             </View>
 
-            <ScrollView contentContainerStyle={styles.navItems} showsVerticalScrollIndicator={false}>
+            <ScrollView
+                style={styles.scrollView}
+                contentContainerStyle={styles.navItems}
+                showsVerticalScrollIndicator={false}
+            >
                 {navItems.map((item) => {
-                    const isActive = pathname === item.path || (item.path !== '/(tabs)' && pathname.startsWith(item.path));
+                    // Fix logic to properly handle root "/" path for Home tab
+                    const isActive =
+                        pathname === item.path ||
+                        (item.path === '/(tabs)' && pathname === '/') ||
+                        (item.path !== '/(tabs)' && pathname.startsWith(item.path));
 
                     return (
-                        <TouchableOpacity
+                        <NavItem
                             key={item.name}
-                            style={[
-                                styles.navItem,
-                                isActive && styles.navItemActive,
-                                collapsed && styles.navItemCollapsed
-                            ]}
+                            item={item}
+                            isActive={isActive}
+                            isCollapsed={collapsed}
                             onPress={() => router.push(item.path as any)}
-                        >
-                            <View style={[styles.iconContainer, isActive && styles.iconContainerActive]}>
-                                <FontAwesome5
-                                    name={item.icon}
-                                    size={20}
-                                    color={isActive ? Colors.background : Colors.textSecondary}
-                                />
-                            </View>
-                            {!collapsed && (
-                                <Text style={[styles.navText, isActive && styles.navTextActive]}>
-                                    {item.name}
-                                </Text>
-                            )}
-                        </TouchableOpacity>
+                        />
                     );
                 })}
             </ScrollView>
@@ -79,14 +120,10 @@ const styles = StyleSheet.create({
         height: '100%',
         paddingVertical: 24,
         paddingHorizontal: 12,
-        justifyContent: 'space-between',
-        // Web sticky behavior
-        ...(Platform.OS === 'web' ? {
-            position: 'sticky',
-            top: 0,
-            zIndex: 100,
-            overflow: 'hidden' as any
-        } : {})
+        // Removed justifyContent to let ScrollView expand naturally
+    },
+    scrollView: {
+        flex: 1,
     },
     expandedContainer: {
         width: 240,
@@ -128,7 +165,7 @@ const styles = StyleSheet.create({
         width: 48,
     },
     navItemActive: {
-        backgroundColor: Colors.surfaceLight,
+        // backgroundColor: Colors.primary, // Removed
     },
     iconContainer: {
         width: 36,
@@ -138,7 +175,7 @@ const styles = StyleSheet.create({
         borderRadius: 10,
     },
     iconContainerActive: {
-        backgroundColor: Colors.primary,
+        // backgroundColor: Colors.background, // Removed
     },
     navText: {
         color: Colors.textSecondary,
