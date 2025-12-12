@@ -38,7 +38,7 @@ export default function Login() {
         try {
             const res = await axios.post(`${API_URL}/auth/login`, { email, password });
             await signIn(res.data.token, res.data.user);
-            router.replace('/(tabs)');
+            router.replace('/(tabs)/home');
         } catch (err: any) {
             const msg = err.response?.data?.error || 'Login failed';
             Alert.alert('Error', msg);
