@@ -29,7 +29,7 @@ const InitialLayout = () => {
 
         const inAuthGroup = segments[0] === '(auth)';
         const inTabsGroup = segments[0] === '(tabs)';
-        const inLanding = segments.length === 0; // Assuming index is root
+        const inLanding = (segments as string[]).length === 0; // Assuming index is root
 
         if (!user && inTabsGroup) {
             router.replace('/(auth)/login');
