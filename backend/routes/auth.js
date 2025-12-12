@@ -7,13 +7,13 @@ const User = require('../models/User');
 // POST /auth/signup
 router.post('/signup', async (req, res) => {
     try {
-        const { email, password } = req.body;
+        const { fullName, email, password } = req.body;
         console.log('Signup attempt for:', email);
         if (!process.env.JWT_SECRET) {
             throw new Error('JWT_SECRET is missing in .env');
         }
 
-        if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
+        if (!fullName || !email || !password) return res.status(400).json({ error: 'Full name, email, and password required' });
 
         const existingUser = await User.findOne({ email });
         if (existingUser) return res.status(400).json({ error: 'User already exists' });
@@ -23,7 +23,7 @@ router.post('/signup', async (req, res) => {
         const passwordHash = await bcrypt.hash(password, salt);
 
         console.log('Saving user to DB...');
-        const newUser = new User({ email, passwordHash });
+        const newUser = new User({ fullName, email, passwordHash });
         await newUser.save();
         console.log('User saved:', newUser._id);
 
