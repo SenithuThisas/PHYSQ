@@ -1,32 +1,47 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
+import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { View } from 'react-native';
 import { Colors } from '../constants/Colors';
-import { AuthProvider } from '../context/AuthContext';
+import { AuthProvider, useAuth } from '../context/AuthContext';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
-export default function RootLayout() {
+const InitialLayout = () => {
     const [loaded] = useFonts({
-        // If we had custom fonts, we'd load them here. 
     });
+    const segments = useSegments();
+    const router = useRouter();
+    const { user, isLoading } = useAuth();
 
     useEffect(() => {
         if (loaded) {
             SplashScreen.hideAsync();
-        } else {
-            // Mock loading
-            setTimeout(() => SplashScreen.hideAsync(), 1000);
         }
     }, [loaded]);
 
+    useEffect(() => {
+        if (isLoading) return;
+
+        const inAuthGroup = segments[0] === '(auth)';
+        const inTabsGroup = segments[0] === '(tabs)';
+        const inLanding = segments.length === 0; // Assuming index is root
+
+        if (!user && inTabsGroup) {
+            router.replace('/(auth)/login');
+        } else if (user && (inLanding || inAuthGroup)) {
+            router.replace('/(tabs)/home');
+        }
+    }, [user, segments, isLoading]);
+
+    if (!loaded) return null;
+
     return (
-        <AuthProvider>
+        <ThemeProvider value={DarkTheme}>
             <View style={{ flex: 1, backgroundColor: Colors.background }}>
                 <StatusBar style="light" />
                 <Stack screenOptions={{
@@ -38,6 +53,14 @@ export default function RootLayout() {
                     <Stack.Screen name="(tabs)" />
                 </Stack>
             </View>
+        </ThemeProvider>
+    );
+};
+
+export default function RootLayout() {
+    return (
+        <AuthProvider>
+            <InitialLayout />
         </AuthProvider>
     );
 }
