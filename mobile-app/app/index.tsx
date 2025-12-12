@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Animated, useWindowDimensions, Platform, PixelRatio, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Animated, useWindowDimensions, Platform, Easing, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Colors } from '../constants/Colors';
 import { Ionicons } from '@expo/vector-icons';
@@ -11,204 +11,246 @@ export default function Index() {
     const { width, height } = useWindowDimensions();
     const insets = useSafeAreaInsets();
 
-    // Responsive Breakpoints
-    const isMobile = width < 768; // Tablet/Desktop breakpoint
-    const isSmallDevice = width < 375;
+    // States
+    const [isAppReady, setIsAppReady] = useState(false);
 
-    // Animation Values
-    const fadeAnim = useRef(new Animated.Value(0)).current;
-    const slideAnim = useRef(new Animated.Value(50)).current;
+    // Responsive Breakpoints
+    const isMobile = width < 768;
+    const CONTENT_PADDING = isMobile ? 24 : 60;
+    const MAX_WIDTH = 1200;
+
+    // Animation Values - Splash
+    const splashOpacity = useRef(new Animated.Value(1)).current;
+    const splashScale = useRef(new Animated.Value(0.8)).current;
+
+    // Animation Values - Content
+    const contentOpacity = useRef(new Animated.Value(0)).current;
+    const heroTranslateY = useRef(new Animated.Value(50)).current;
 
     useEffect(() => {
-        Animated.parallel([
-            Animated.timing(fadeAnim, { toValue: 1, duration: 1000, useNativeDriver: true }),
-            Animated.timing(slideAnim, { toValue: 0, duration: 800, useNativeDriver: true }),
-        ]).start();
+        // 1. Splash Animation Sequence
+        Animated.sequence([
+            // Pulse In
+            Animated.timing(splashScale, {
+                toValue: 1.1,
+                duration: 800,
+                easing: Easing.out(Easing.cubic),
+                useNativeDriver: true,
+            }),
+            // Pulse Out/Hold
+            Animated.timing(splashScale, {
+                toValue: 1,
+                duration: 400,
+                useNativeDriver: true,
+            }),
+            Animated.delay(300),
+            // Fade Out Splash
+            Animated.timing(splashOpacity, {
+                toValue: 0,
+                duration: 600,
+                useNativeDriver: true,
+            })
+        ]).start(() => {
+            setIsAppReady(true);
+            // 2. Reveal Content Animation
+            Animated.parallel([
+                Animated.timing(contentOpacity, {
+                    toValue: 1,
+                    duration: 800,
+                    useNativeDriver: true,
+                }),
+                Animated.timing(heroTranslateY, {
+                    toValue: 0,
+                    duration: 800,
+                    easing: Easing.out(Easing.cubic),
+                    useNativeDriver: true,
+                })
+            ]).start();
+        });
     }, []);
 
-    const NavBar = () => {
-        if (isMobile) return null;
+    // Reusable Hover Hook
+    const useHoverAnimation = (scaleTo = 1.05) => {
+        const scale = useRef(new Animated.Value(1)).current;
+
+        const onHoverIn = () => {
+            Animated.spring(scale, { toValue: scaleTo, friction: 3, useNativeDriver: true }).start();
+        };
+
+        const onHoverOut = () => {
+            Animated.spring(scale, { toValue: 1, friction: 3, useNativeDriver: true }).start();
+        };
+
+        return { scale, onHoverIn, onHoverOut };
+    };
+
+    const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
+    const HoverButton = ({
+        onPress,
+        style,
+        children,
+        secondary = false
+    }: { onPress: () => void, style: any, children: React.ReactNode, secondary?: boolean }) => {
+        const { scale, onHoverIn, onHoverOut } = useHoverAnimation(1.05);
+
         return (
-            <View style={[styles.navBar, { paddingTop: insets.top + 20 }]}>
-                <Text style={styles.navLogo}>PHYSQ</Text>
-                <View style={styles.navLinks}>
-                    <TouchableOpacity onPress={() => router.push('/(auth)/login')}>
-                        <Text style={styles.navLinkText}>Login</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        style={styles.navButton}
-                        onPress={() => router.push('/(auth)/signup')}
-                    >
-                        <Text style={styles.navButtonText}>Get Started</Text>
-                    </TouchableOpacity>
-                </View>
-            </View>
+            <AnimatedPressable
+                onPress={onPress}
+                onHoverIn={onHoverIn}
+                onHoverOut={onHoverOut}
+                style={[style, { transform: [{ scale }] }]}
+            >
+                {children}
+            </AnimatedPressable>
         );
     };
 
+    const NavBar = () => (
+        <View style={[styles.navBar, { paddingHorizontal: CONTENT_PADDING, paddingTop: insets.top + (isMobile ? 12 : 24) }]}>
+            <View style={[styles.navContent, { maxWidth: MAX_WIDTH }]}>
+                <Text style={styles.navLogo}>PHYSQ</Text>
+                {!isMobile && (
+                    <View style={styles.navLinks}>
+                        <HoverButton
+                            style={styles.navSecondaryButton}
+                            onPress={() => router.push('/(auth)/login')}
+                        >
+                            <Text style={styles.navSecondaryButtonText}>Login</Text>
+                        </HoverButton>
+                        <HoverButton
+                            style={styles.navButton}
+                            onPress={() => router.push('/(auth)/signup')}
+                        >
+                            <Text style={styles.navButtonText}>Get Started</Text>
+                        </HoverButton>
+                    </View>
+                )}
+            </View>
+        </View>
+    );
+
     const FeatureItem = ({ icon, title, desc, delay }: { icon: any, title: string, desc: string, delay: number }) => {
-        const itemFade = useRef(new Animated.Value(0)).current;
-        const itemSlide = useRef(new Animated.Value(20)).current;
+        // Independent animation for features (Entrance)
+        const itemOpacity = useRef(new Animated.Value(0)).current;
+        const itemY = useRef(new Animated.Value(30)).current;
+
+        // Hover Animation
+        const { scale, onHoverIn, onHoverOut } = useHoverAnimation(1.1);
 
         useEffect(() => {
-            Animated.sequence([
-                Animated.delay(delay),
-                Animated.parallel([
-                    Animated.timing(itemFade, { toValue: 1, duration: 600, useNativeDriver: true }),
-                    Animated.timing(itemSlide, { toValue: 0, duration: 600, useNativeDriver: true }),
-                ]),
-            ]).start();
-        }, []);
+            if (isAppReady) {
+                Animated.sequence([
+                    Animated.delay(delay),
+                    Animated.parallel([
+                        Animated.timing(itemOpacity, { toValue: 1, duration: 600, useNativeDriver: true }),
+                        Animated.timing(itemY, { toValue: 0, duration: 600, useNativeDriver: true })
+                    ])
+                ]).start();
+            }
+        }, [isAppReady]);
 
-        const itemWidth = isMobile
-            ? (width - 48) / 3 - 10
-            : (width - 120) / 3 - 40;
+        const itemWidth = isMobile ? '100%' : '30%';
 
         return (
-            <Animated.View style={[
-                styles.featureItem,
-                {
-                    width: itemWidth,
-                    opacity: itemFade,
-                    transform: [{ translateY: itemSlide }],
-                    alignItems: isMobile ? 'center' : 'flex-start'
-                }
-            ]}>
-                <View style={[styles.iconContainer,
-                !isMobile && { width: 64, height: 64, borderRadius: 16, marginBottom: 24 }
-                ]}>
-                    <Ionicons name={icon} size={isMobile ? 28 : 32} color={Colors.background} />
+            <AnimatedPressable
+                onHoverIn={onHoverIn}
+                onHoverOut={onHoverOut}
+                style={[
+                    styles.featureItem,
+                    {
+                        width: itemWidth,
+                        opacity: itemOpacity,
+                        transform: [{ translateY: itemY }, { scale }]
+                    }
+                ]}
+            >
+                <View style={styles.iconContainer}>
+                    <Ionicons name={icon} size={32} color={Colors.background} />
                 </View>
-                <Text style={[styles.featureTitle, !isMobile && { fontSize: 20, marginBottom: 12, textAlign: 'left' }]}>{title}</Text>
-                <Text style={[styles.featureDesc, !isMobile && { fontSize: 16, lineHeight: 24, textAlign: 'left' }]}>{desc}</Text>
-            </Animated.View>
+                <Text style={styles.featureTitle}>{title}</Text>
+                <Text style={styles.featureDesc}>{desc}</Text>
+            </AnimatedPressable>
         );
     };
 
     return (
-        <View style={styles.mainContainer}>
+        <View style={{ flex: 1, backgroundColor: Colors.background }}>
             <StatusBar style="light" />
 
+            {/* SPLASH SCREEN */}
+            {!isAppReady && (
+                <Animated.View style={[styles.splashContainer, { opacity: splashOpacity }]}>
+                    <Animated.Text style={[styles.splashLogo, { transform: [{ scale: splashScale }] }]}>
+                        PHYSQ
+                    </Animated.Text>
+                </Animated.View>
+            )}
+
+            {/* MAIN CONTENT */}
             <NavBar />
 
             <ScrollView
-                contentContainerStyle={[
-                    styles.scrollContent,
-                    {
-                        paddingTop: isMobile ? insets.top + 40 : 100,
-                        paddingBottom: insets.bottom + 40,
-                        paddingHorizontal: isMobile ? 24 : 100 // More padding on desktop
-                    }
-                ]}
+                contentContainerStyle={{ flexGrow: 1, alignItems: 'center' }}
                 showsVerticalScrollIndicator={false}
             >
-                {/* HERO SECTION */}
-                <View style={[
-                    styles.heroContainer,
-                    !isMobile && { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 120 }
-                ]}>
-                    <Animated.View style={[
-                        styles.heroContent,
-                        { opacity: fadeAnim, transform: [{ translateY: slideAnim }], flex: isMobile ? 1 : 0.5 }
-                    ]}>
-                        <Text style={[
-                            styles.title,
-                            !isMobile && { fontSize: 80, textAlign: 'left', lineHeight: 85 }
-                        ]}>
-                            PHYSQ
-                        </Text>
-                        <Text style={[
-                            styles.subtitle,
-                            !isMobile && { fontSize: 28, textAlign: 'left', marginBottom: 32 }
-                        ]}>
-                            Defy Gravity.
-                        </Text>
-                        <Text style={[
-                            styles.description,
-                            !isMobile && { textAlign: 'left', fontSize: 18, maxWidth: 500, marginBottom: 40 }
-                        ]}>
-                            The ultimate companion for your calisthenics journey. Track progress, master skills, and build a physique that defies physics.
-                        </Text>
+                <View style={{ width: '100%', maxWidth: MAX_WIDTH, paddingHorizontal: CONTENT_PADDING, paddingTop: isMobile ? 100 : 160, paddingBottom: 60 }}>
 
-                        {/* DESKTOP CTA (Hidden on Mobile) */}
-                        {!isMobile && (
-                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                <TouchableOpacity
-                                    style={[styles.primaryButton, { paddingVertical: 20, paddingHorizontal: 48 }]}
+                    {/* HERO SECTION */}
+                    <Animated.View style={[
+                        styles.heroContainer,
+                        isMobile ? { flexDirection: 'column' } : { flexDirection: 'row', alignItems: 'center' },
+                        { opacity: contentOpacity, transform: [{ translateY: heroTranslateY }] }
+                    ]}>
+                        {/* LEFT: Text */}
+                        <View style={{ flex: isMobile ? 1 : 0.6, marginBottom: isMobile ? 60 : 0, paddingRight: isMobile ? 0 : 40 }}>
+                            <Text style={[styles.heroTitle, { textAlign: isMobile ? 'center' : 'left' }]}>PHYSQ</Text>
+                            <Text style={[styles.heroSubtitle, { textAlign: isMobile ? 'center' : 'left' }]}>DEFY GRAVITY.</Text>
+                            <Text style={[styles.heroDesc, { textAlign: isMobile ? 'center' : 'left' }]}>
+                                The ultimate companion for your calisthenics journey. Track progress, master skills, and build a physique that defies physics.
+                            </Text>
+
+                            <View style={{ alignItems: isMobile ? 'center' : 'flex-start' }}>
+                                <HoverButton
+                                    style={styles.heroButton}
                                     onPress={() => router.push('/(auth)/signup')}
                                 >
-                                    <Text style={[styles.primaryButtonText, { fontSize: 20 }]}>Start Training</Text>
-                                    <Ionicons name="arrow-forward" size={24} color={Colors.background} style={{ marginLeft: 12 }} />
-                                </TouchableOpacity>
+                                    <Text style={styles.heroButtonText}>START TRAINING</Text>
+                                    <Ionicons name="arrow-forward" size={24} color={Colors.background} style={{ marginLeft: 8 }} />
+                                </HoverButton>
                             </View>
-                        )}
+                        </View>
+
+                        {/* RIGHT: Visual */}
+                        <View style={{ flex: isMobile ? 1 : 0.4, alignItems: 'center', justifyContent: 'center' }}>
+                            <View style={[styles.visualPlaceholder, { width: isMobile ? 300 : '100%' }]}>
+                                <Ionicons name="barbell" size={isMobile ? 80 : 120} color={Colors.primary} style={{ opacity: 0.8 }} />
+                            </View>
+                        </View>
                     </Animated.View>
 
-                    {/* HERO IMAGE / VISUAL PLACEHOLDER (Desktop Only) */}
-                    {!isMobile && (
-                        <Animated.View style={{ flex: 0.4, opacity: fadeAnim, transform: [{ scale: slideAnim.interpolate({ inputRange: [0, 50], outputRange: [1, 0.9] }) }] }}>
-                            <View style={{
-                                width: '100%',
-                                aspectRatio: 1,
-                                backgroundColor: Colors.surface,
-                                borderRadius: 40,
-                                borderWidth: 1,
-                                borderColor: Colors.primary,
-                                opacity: 0.2, // Placeholder opacity
-                                justifyContent: 'center',
-                                alignItems: 'center'
-                            }}>
-                                <Ionicons name="barbell-outline" size={120} color={Colors.primary} />
-                            </View>
-                        </Animated.View>
+                    {/* FEATURES SECTION (Centered) */}
+                    <View style={[
+                        styles.featuresGrid,
+                        isMobile ? { flexDirection: 'column', gap: 40 } : { flexDirection: 'row', justifyContent: 'space-between' }
+                    ]}>
+                        <FeatureItem icon="stats-chart" title="Track" desc="Log every rep and set with precision." delay={200} />
+                        <FeatureItem icon="analytics" title="Analyze" desc="Visualize your strength gains over time." delay={400} />
+                        <FeatureItem icon="trophy" title="Master" desc="Unlock skills and reach new levels." delay={600} />
+                    </View>
+
+                    {/* MOBILE LOGIN LINK (Since navbar is streamlined on mobile) */}
+                    {isMobile && (
+                        <TouchableOpacity onPress={() => router.push('/(auth)/login')} style={{ marginTop: 60, alignSelf: 'center' }}>
+                            <Text style={{ color: Colors.textSecondary, fontSize: 16 }}>Already have an account? Login</Text>
+                        </TouchableOpacity>
                     )}
+
                 </View>
 
-                {/* FEATURES SECTION */}
-                <View style={[styles.featuresContainer, !isMobile && { marginBottom: 120 }]}>
-                    <FeatureItem
-                        icon="stats-chart"
-                        title="Track"
-                        desc="Log every rep and set with precision."
-                        delay={400}
-                    />
-                    <FeatureItem
-                        icon="analytics"
-                        title="Analyze"
-                        desc="Visualize your strength gains over time."
-                        delay={600}
-                    />
-                    <FeatureItem
-                        icon="trophy"
-                        title="Master"
-                        desc="Unlock skills and reach new levels."
-                        delay={800}
-                    />
-                </View>
-
-                {/* MOBILE ONLY ACTIONS */}
-                {isMobile && (
-                    <Animated.View style={[styles.actionSection, { opacity: fadeAnim }]}>
-                        <TouchableOpacity
-                            style={styles.primaryButton}
-                            onPress={() => router.push('/(auth)/signup')}
-                        >
-                            <Text style={styles.primaryButtonText}>Get Started</Text>
-                            <Ionicons name="arrow-forward" size={20} color={Colors.background} style={{ marginLeft: 8 }} />
-                        </TouchableOpacity>
-
-                        <TouchableOpacity
-                            style={styles.secondaryButton}
-                            onPress={() => router.push('/(auth)/login')}
-                        >
-                            <Text style={styles.secondaryButtonText}>I already have an account</Text>
-                        </TouchableOpacity>
-                    </Animated.View>
-                )}
-
-                {/* FOOTER */}
-                <View style={{ alignItems: 'center', opacity: 0.5, marginBottom: 20 }}>
-                    <Text style={{ color: Colors.textSecondary, fontSize: 14 }}>© 2025 PHYSQ</Text>
+                {/* Footer */}
+                <View style={{ height: 100, justifyContent: 'center', alignItems: 'center' }}>
+                    <Text style={{ color: Colors.surfaceLight }}>© 2025 PHYSQ</Text>
                 </View>
             </ScrollView>
         </View>
@@ -216,22 +258,31 @@ export default function Index() {
 }
 
 const styles = StyleSheet.create({
-    mainContainer: {
-        flex: 1,
+    splashContainer: {
+        ...StyleSheet.absoluteFillObject,
         backgroundColor: Colors.background,
+        zIndex: 999,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    splashLogo: {
+        fontSize: 64,
+        fontWeight: '900',
+        color: Colors.primary,
+        letterSpacing: 2,
     },
     navBar: {
         position: 'absolute',
         top: 0,
-        left: 0,
-        right: 0,
+        width: '100%',
+        zIndex: 50,
+        alignItems: 'center',
+    },
+    navContent: {
+        width: '100%',
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        paddingHorizontal: 60,
-        paddingBottom: 20,
-        zIndex: 10,
-        // backgroundColor: 'rgba(13,13,13,0.8)', // Optional glass effect
     },
     navLogo: {
         fontSize: 24,
@@ -242,12 +293,18 @@ const styles = StyleSheet.create({
     navLinks: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 40,
+        gap: 16,
     },
-    navLinkText: {
+    navSecondaryButton: {
+        paddingVertical: 10,
+        paddingHorizontal: 24,
+        borderRadius: 100,
+        backgroundColor: Colors.surface, // Visible background
+    },
+    navSecondaryButtonText: {
         color: Colors.text,
-        fontWeight: '600',
-        fontSize: 16,
+        fontWeight: 'bold',
+        fontSize: 14,
     },
     navButton: {
         backgroundColor: Colors.primary,
@@ -258,115 +315,95 @@ const styles = StyleSheet.create({
     navButtonText: {
         color: Colors.background,
         fontWeight: 'bold',
-        fontSize: 16,
-    },
-    scrollContent: {
-        flexGrow: 1,
+        fontSize: 14,
     },
     heroContainer: {
-        marginBottom: 60,
+        marginBottom: 100,
     },
-    heroContent: {
-        alignItems: 'center', // Center on mobile
-    },
-    title: {
+    heroTitle: {
         fontSize: 64,
         fontWeight: '900',
         color: Colors.primary,
-        letterSpacing: -2,
         marginBottom: 8,
-        textAlign: 'center',
-        textShadowColor: 'rgba(204, 255, 0, 0.3)',
+        letterSpacing: -1,
+        textShadowColor: 'rgba(204, 255, 0, 0.4)',
         textShadowOffset: { width: 0, height: 0 },
-        textShadowRadius: 20,
+        textShadowRadius: 30,
     },
-    subtitle: {
+    heroSubtitle: {
         fontSize: 24,
-        fontWeight: '600',
+        fontWeight: '700',
         color: Colors.text,
         marginBottom: 24,
         letterSpacing: 4,
-        textTransform: 'uppercase',
-        textAlign: 'center',
     },
-    description: {
-        fontSize: 16,
+    heroDesc: {
+        fontSize: 18,
         color: Colors.textSecondary,
-        textAlign: 'center',
-        lineHeight: 24,
-        maxWidth: 300,
+        lineHeight: 28,
+        maxWidth: 500,
+        marginBottom: 40,
     },
-    featuresContainer: {
+    heroButton: {
+        backgroundColor: Colors.primary,
         flexDirection: 'row',
-        justifyContent: 'space-between',
-        flexWrap: 'wrap',
-        marginBottom: 60,
+        alignItems: 'center',
+        paddingVertical: 18,
+        paddingHorizontal: 40,
+        borderRadius: 50,
+        shadowColor: Colors.primary,
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.4,
+        shadowRadius: 16,
+        elevation: 10,
+    },
+    heroButtonText: {
+        color: Colors.background,
+        fontSize: 16,
+        fontWeight: '900',
+        letterSpacing: 1,
+    },
+    visualPlaceholder: {
+        aspectRatio: 1,
+        borderRadius: 40,
+        borderWidth: 1,
+        borderColor: '#2C2C2E',
+        backgroundColor: '#0F0F0F',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    featuresGrid: {
+        width: '100%',
     },
     featureItem: {
         alignItems: 'center',
-        marginBottom: 20,
+        padding: 20,
     },
     iconContainer: {
-        width: 56,
-        height: 56,
-        borderRadius: 28,
+        width: 64,
+        height: 64,
         backgroundColor: Colors.primary,
+        borderRadius: 20,
         justifyContent: 'center',
         alignItems: 'center',
-        marginBottom: 16,
+        marginBottom: 20,
         shadowColor: Colors.primary,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.4,
-        shadowRadius: 8,
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.3,
+        shadowRadius: 12,
         elevation: 8,
     },
     featureTitle: {
-        fontSize: 16,
+        fontSize: 20,
         fontWeight: 'bold',
         color: Colors.text,
-        marginBottom: 8,
+        marginBottom: 10,
         textAlign: 'center',
     },
     featureDesc: {
-        fontSize: 12,
+        fontSize: 14,
         color: Colors.textSecondary,
         textAlign: 'center',
-        lineHeight: 16,
-    },
-    actionSection: {
-        alignItems: 'center',
-        width: '100%',
-        marginBottom: 40,
-    },
-    primaryButton: {
-        flexDirection: 'row',
-        backgroundColor: Colors.primary,
-        paddingVertical: 18,
-        paddingHorizontal: 40,
-        borderRadius: 100,
-        alignItems: 'center',
-        justifyContent: 'center',
-        shadowColor: Colors.primary,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 12,
-        elevation: 6,
-    },
-    primaryButtonText: {
-        color: Colors.background,
-        fontSize: 18,
-        fontWeight: 'bold',
-        textTransform: 'uppercase',
-        letterSpacing: 1,
-    },
-    secondaryButton: {
-        paddingVertical: 12,
-        paddingHorizontal: 24,
-        marginTop: 20,
-    },
-    secondaryButtonText: {
-        color: Colors.textSecondary,
-        fontSize: 15,
-        fontWeight: '500',
+        lineHeight: 22,
     },
 });
