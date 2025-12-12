@@ -123,6 +123,19 @@ const styles = StyleSheet.create({
     contentContainer: { // New wrapper for form content
         width: '100%',
         maxWidth: 400, // Limit width for web/tablet
+        borderWidth: 1,
+        borderColor: Colors.primary,
+        borderRadius: 24,
+        padding: 32,
+        shadowColor: Colors.primary,
+        shadowOffset: {
+            width: 0,
+            height: 0,
+        },
+        shadowOpacity: 0.25,
+        shadowRadius: 20,
+        elevation: 10,
+        backgroundColor: Colors.background,
     },
     header: {
         fontSize: 32,
