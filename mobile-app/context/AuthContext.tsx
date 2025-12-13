@@ -7,6 +7,7 @@ type AuthType = {
     user: any | null;
     signIn: (token: string, user: any) => Promise<void>;
     signOut: () => Promise<void>;
+    updateUser: (user: any) => Promise<void>;
     isLoading: boolean;
 };
 
@@ -15,6 +16,7 @@ const AuthContext = createContext<AuthType>({
     user: null,
     signIn: async () => { },
     signOut: async () => { },
+    updateUser: async () => { },
     isLoading: true,
 });
 
@@ -94,8 +96,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         await Storage.deleteItem('userData');
     };
 
+    const updateUser = async (newUser: any) => {
+        setUser(newUser);
+        await Storage.setItem('userData', JSON.stringify(newUser));
+    };
+
     return (
-        <AuthContext.Provider value={{ token, user, signIn, signOut, isLoading }}>
+        <AuthContext.Provider value={{ token, user, signIn, signOut, updateUser, isLoading }}>
             {children}
         </AuthContext.Provider>
     );
