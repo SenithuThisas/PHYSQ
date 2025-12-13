@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, useWindowDimensions, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, useWindowDimensions, Platform, Image } from 'react-native';
 import { Colors } from '../../constants/Colors';
 import { useAuth } from '../../context/AuthContext';
 import { useRouter } from 'expo-router';
@@ -6,8 +6,41 @@ import { useRouter } from 'expo-router';
 export default function Dashboard() {
     const { user } = useAuth();
     const router = useRouter();
-    const { width } = useWindowDimensions();
+    const width = useWindowDimensions().width;
     const isWeb = width > 768; // Simple breakpoint for tablet/web
+
+    const calculateBMI = (weight: any, height: any) => {
+        if (!weight?.value || !height?.value) return '--';
+
+        let w = weight.value;
+        let h = height.value;
+
+        if (weight.unit === 'lbs') w = w * 0.453592;
+        if (height.unit === 'ft') h = h * 0.3048;
+        else h = h / 100; // cm to m
+
+        const bmi = w / (h * h);
+        return bmi.toFixed(1);
+    };
+
+    const getBMICategory = (bmiVal: string) => {
+        const bmi = parseFloat(bmiVal);
+        if (isNaN(bmi)) return '';
+        if (bmi < 18.5) return 'Underweight';
+        if (bmi < 25) return 'Normal';
+        if (bmi < 30) return 'Overweight';
+        return 'Obese';
+    };
+
+    const formatHeight = (height: any) => {
+        if (!height?.value) return '--';
+        if (height.unit === 'ft') {
+            const ft = Math.floor(height.value);
+            const inch = Math.round((height.value - ft) * 12);
+            return `${ft}'${inch}"`;
+        }
+        return `${height.value} cm`;
+    };
 
     return (
         <ScrollView style={styles.container} contentContainerStyle={[styles.content, isWeb && styles.webContent]}>
@@ -21,7 +54,11 @@ export default function Dashboard() {
                         style={styles.avatar}
                         onPress={() => router.push('/(tabs)/profile')}
                     >
-                        <Text style={styles.avatarText}>{(user?.fullName?.[0] || user?.email?.[0] || 'A').toUpperCase()}</Text>
+                        {user?.profilePicture ? (
+                            <Image source={{ uri: user.profilePicture }} style={styles.avatarImage} />
+                        ) : (
+                            <Text style={styles.avatarText}>{(user?.fullName?.[0] || user?.email?.[0] || 'A').toUpperCase()}</Text>
+                        )}
                     </TouchableOpacity>
                 </View>
 
@@ -36,6 +73,54 @@ export default function Dashboard() {
                             <Text style={styles.actionSubtitle}>Log your sets and reps</Text>
                         </TouchableOpacity>
                     </View>
+
+                    {/* Body Stats Section */}
+                    {user && (
+                        <View style={[styles.section, { width: '100%' }]}>
+                            <Text style={styles.sectionTitle}>Body Stats</Text>
+                            <View style={styles.statsRow}>
+                                {/* BMI Card */}
+                                <TouchableOpacity
+                                    style={[styles.statCard, styles.bmiCard]}
+                                    onPress={() => router.push('/stats')}
+                                >
+                                    <View>
+                                        <Text style={styles.statLabelLight}>BMI</Text>
+                                        <Text style={styles.statValueLight}>
+                                            {calculateBMI(user.weight, user.height)}
+                                        </Text>
+                                    </View>
+                                    <View style={styles.bmiBadge}>
+                                        <Text style={styles.bmiBadgeText}>
+                                            {getBMICategory(calculateBMI(user.weight, user.height))}
+                                        </Text>
+                                    </View>
+                                </TouchableOpacity>
+
+                                {/* Weight Card */}
+                                <TouchableOpacity
+                                    style={styles.statCard}
+                                    onPress={() => router.push('/stats')}
+                                >
+                                    <Text style={styles.statLabel}>Weight</Text>
+                                    <Text style={styles.statValue}>
+                                        {user.weight?.value || '--'} <Text style={styles.unitText}>{user.weight?.unit || 'kg'}</Text>
+                                    </Text>
+                                </TouchableOpacity>
+
+                                {/* Height Card */}
+                                <TouchableOpacity
+                                    style={styles.statCard}
+                                    onPress={() => router.push('/stats')}
+                                >
+                                    <Text style={styles.statLabel}>Height</Text>
+                                    <Text style={styles.statValue}>
+                                        {formatHeight(user.height)}
+                                    </Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                    )}
 
                     <View style={[styles.section, isWeb && styles.webSection]}>
                         <Text style={styles.sectionTitle}>Recent Progress</Text>
@@ -91,6 +176,11 @@ const styles = StyleSheet.create({
         backgroundColor: Colors.surfaceLight,
         justifyContent: 'center',
         alignItems: 'center',
+        overflow: 'hidden', // Ensure image clips to circle
+    },
+    avatarImage: {
+        width: '100%',
+        height: '100%',
     },
     avatarText: {
         color: Colors.primary,
@@ -144,21 +234,64 @@ const styles = StyleSheet.create({
     },
     statCard: {
         backgroundColor: Colors.surface,
-        padding: 20,
+        padding: 16,
         borderRadius: 16,
         borderWidth: 1,
         borderColor: Colors.border,
-        minHeight: 140, // Match action card height
+        minHeight: 100, // Reduced height for smaller cards
         justifyContent: 'center',
+        flex: 1,
+    },
+    statsRow: {
+        flexDirection: 'row',
+        gap: 12,
+        marginBottom: 8,
+    },
+    bmiCard: {
+        backgroundColor: Colors.primary,
+        borderColor: Colors.primary,
+        flex: 1.2, // Slightly wider
+        justifyContent: 'space-between',
     },
     statLabel: {
         color: Colors.textSecondary,
-        fontSize: 14,
-        marginBottom: 8,
+        fontSize: 12,
+        marginBottom: 4,
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
+    },
+    statLabelLight: {
+        color: 'rgba(0,0,0,0.6)',
+        fontSize: 12,
+        marginBottom: 4,
+        fontWeight: 'bold',
+        textTransform: 'uppercase',
     },
     statValue: {
         color: Colors.text,
-        fontSize: 32,
+        fontSize: 22,
         fontWeight: 'bold',
+    },
+    statValueLight: {
+        color: Colors.background,
+        fontSize: 28,
+        fontWeight: '900',
+    },
+    unitText: {
+        fontSize: 14,
+        color: Colors.textSecondary,
+        fontWeight: 'normal',
+    },
+    bmiBadge: {
+        backgroundColor: 'rgba(0,0,0,0.1)',
+        paddingVertical: 4,
+        paddingHorizontal: 8,
+        borderRadius: 8,
+        alignSelf: 'flex-start',
+    },
+    bmiBadgeText: {
+        color: Colors.background,
+        fontSize: 12,
+        fontWeight: '700',
     }
 });
