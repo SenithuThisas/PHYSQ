@@ -106,7 +106,7 @@ const WheelPicker = ({ data, onSelect, initialValue }: { data: string[], onSelec
 };
 
 export default function StatsPage() {
-    const { user, updateUser } = useAuth();
+    const { user, updateUser, token } = useAuth();
     const router = useRouter();
     const [loading, setLoading] = useState(true);
     const [historyData, setHistoryData] = useState<any>(null);
@@ -121,12 +121,16 @@ export default function StatsPage() {
     const [pickerVal2, setPickerVal2] = useState('0'); // Dec part or Inches
 
     useEffect(() => {
-        fetchHistory();
-    }, []);
+        if (token) {
+            fetchHistory();
+        }
+    }, [token]);
 
     const fetchHistory = async () => {
         try {
-            const response = await axios.get(`${Config.API_URL}/user/profile`);
+            const response = await axios.get(`${Config.API_URL}/user/profile`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
             setHistoryData(response.data);
         } catch (error) {
             console.error('Failed to fetch stats', error);
@@ -190,7 +194,9 @@ export default function StatsPage() {
                 };
             }
 
-            const response = await axios.put(`${Config.API_URL}/user/profile`, payload);
+            const response = await axios.put(`${Config.API_URL}/user/profile`, payload, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
             setHistoryData(response.data);
             if (updateUser) await updateUser(response.data);
 
@@ -257,7 +263,13 @@ export default function StatsPage() {
     return (
         <View style={styles.container}>
             <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+                <TouchableOpacity onPress={() => {
+                    if (router.canGoBack()) {
+                        router.back();
+                    } else {
+                        router.replace('/(tabs)/home');
+                    }
+                }} style={styles.backButton}>
                     <Ionicons name="arrow-back" size={24} color={Colors.text} />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Body Statistics</Text>
