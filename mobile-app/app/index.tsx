@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-export default function Index() {
+export default function LandingPage() {
     const router = useRouter();
     const { width, height } = useWindowDimensions();
     const insets = useSafeAreaInsets();
