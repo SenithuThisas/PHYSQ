@@ -17,7 +17,10 @@ export default function Dashboard() {
                         <Text style={styles.greeting}>Hello,</Text>
                         <Text style={styles.username}>{user?.fullName?.split(' ')[0] || user?.email?.split('@')[0] || 'Athlete'}</Text>
                     </View>
-                    <TouchableOpacity style={styles.avatar}>
+                    <TouchableOpacity
+                        style={styles.avatar}
+                        onPress={() => router.push('/(tabs)/profile')}
+                    >
                         <Text style={styles.avatarText}>{(user?.fullName?.[0] || user?.email?.[0] || 'A').toUpperCase()}</Text>
                     </TouchableOpacity>
                 </View>
