@@ -4,12 +4,21 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
-import { View } from 'react-native';
+import { View, Platform } from 'react-native';
 import { Colors } from '../constants/Colors';
 import { AuthProvider, useAuth } from '../context/AuthContext';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
+
+if (Platform.OS === 'web') {
+    const originalConsoleError = console.error;
+    console.error = (...args) => {
+        if (typeof args[0] === 'string' && args[0].includes('Invalid DOM property')) return;
+        if (typeof args[0] === 'string' && args[0].includes('Unknown event handler property')) return;
+        originalConsoleError(...args);
+    };
+}
 
 const InitialLayout = () => {
     const [loaded] = useFonts({
