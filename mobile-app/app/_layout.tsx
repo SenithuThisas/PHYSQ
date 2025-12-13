@@ -32,7 +32,7 @@ const InitialLayout = () => {
         const inLanding = (segments as string[]).length === 0; // Assuming index is root
 
         if (!user && inTabsGroup) {
-            router.replace('/(auth)/login');
+            router.replace('/');
         } else if (user && (inLanding || inAuthGroup)) {
             router.replace('/(tabs)/home');
         }
