@@ -15,10 +15,10 @@ export default function Dashboard() {
                 <View style={styles.header}>
                     <View>
                         <Text style={styles.greeting}>Hello,</Text>
-                        <Text style={styles.username}>{user?.email?.split('@')[0] || 'Athlete'}</Text>
+                        <Text style={styles.username}>{user?.fullName?.split(' ')[0] || user?.email?.split('@')[0] || 'Athlete'}</Text>
                     </View>
                     <TouchableOpacity style={styles.avatar}>
-                        <Text style={styles.avatarText}>{user?.email?.[0].toUpperCase() || 'A'}</Text>
+                        <Text style={styles.avatarText}>{(user?.fullName?.[0] || user?.email?.[0] || 'A').toUpperCase()}</Text>
                     </TouchableOpacity>
                 </View>
 
