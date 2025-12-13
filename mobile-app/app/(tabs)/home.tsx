@@ -42,6 +42,17 @@ export default function Dashboard() {
         return `${height.value} cm`;
     };
 
+    const getBMIColor = (category: string) => {
+        if (category === 'Underweight') return '#FFC107'; // Amber/Dark Yellow
+        if (category === 'Normal') return Colors.primary;
+        if (category === 'Overweight' || category === 'Obese') return Colors.error;
+        return Colors.primary;
+    };
+
+    const currentBMI = user ? calculateBMI(user.weight, user.height) : '--';
+    const currentCategory = getBMICategory(currentBMI);
+    const bmiColor = getBMIColor(currentCategory);
+
     return (
         <ScrollView style={styles.container} contentContainerStyle={[styles.content, isWeb && styles.webContent]}>
             <View style={[styles.mainWrapper, isWeb && styles.webMainWrapper]}>
@@ -76,23 +87,24 @@ export default function Dashboard() {
 
                     {/* Body Stats Section */}
                     {user && (
+
                         <View style={[styles.section, { width: '100%' }]}>
                             <Text style={styles.sectionTitle}>Body Stats</Text>
                             <View style={styles.statsRow}>
                                 {/* BMI Card */}
                                 <TouchableOpacity
-                                    style={[styles.statCard, styles.bmiCard]}
+                                    style={[styles.statCard, styles.bmiCard, { backgroundColor: bmiColor, borderColor: bmiColor }]}
                                     onPress={() => router.push('/stats')}
                                 >
                                     <View>
                                         <Text style={styles.statLabelLight}>BMI</Text>
                                         <Text style={styles.statValueLight}>
-                                            {calculateBMI(user.weight, user.height)}
+                                            {currentBMI}
                                         </Text>
                                     </View>
                                     <View style={styles.bmiBadge}>
                                         <Text style={styles.bmiBadgeText}>
-                                            {getBMICategory(calculateBMI(user.weight, user.height))}
+                                            {currentCategory}
                                         </Text>
                                     </View>
                                 </TouchableOpacity>
