@@ -18,6 +18,15 @@ if (Platform.OS === 'web') {
         if (typeof args[0] === 'string' && args[0].includes('Unknown event handler property')) return;
         originalConsoleError(...args);
     };
+
+    const originalConsoleWarn = console.warn;
+    console.warn = (...args) => {
+        if (typeof args[0] === 'string' && args[0].includes('shadow* style props are deprecated')) return;
+        if (typeof args[0] === 'string' && args[0].includes('textShadow* style props are deprecated')) return;
+        if (typeof args[0] === 'string' && args[0].includes('TouchableMixin is deprecated')) return;
+        if (typeof args[0] === 'string' && args[0].includes('props.pointerEvents is deprecated')) return;
+        originalConsoleWarn(...args);
+    };
 }
 
 const InitialLayout = () => {
