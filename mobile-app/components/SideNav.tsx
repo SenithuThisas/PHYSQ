@@ -1,8 +1,10 @@
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform, LayoutAnimation, Pressable, Animated } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform, LayoutAnimation, Pressable, Animated, Modal } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { Colors } from '../constants/Colors';
 import { useState, useRef, useEffect } from 'react';
+import { useAuth } from '../context/AuthContext';
+
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -56,6 +58,8 @@ export default function SideNav() {
     const router = useRouter();
     const pathname = usePathname();
     const [collapsed, setCollapsed] = useState(false);
+    const { signOut } = useAuth();
+    const [showLogoutModal, setShowLogoutModal] = useState(false);
 
     const navItems = [
         { name: 'Home', icon: 'home', path: '/(tabs)' },
@@ -67,6 +71,16 @@ export default function SideNav() {
     const toggleCollapse = () => {
         // LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); // Optional animation
         setCollapsed(!collapsed);
+    };
+
+    const handleLogout = () => {
+        if (showLogoutModal) return; // Prevent double execution if triggered somehow
+        setShowLogoutModal(true);
+    };
+
+    const confirmLogout = () => {
+        setShowLogoutModal(false);
+        signOut();
     };
 
     return (
@@ -103,11 +117,40 @@ export default function SideNav() {
             </ScrollView>
 
             <View style={styles.footer}>
-                <TouchableOpacity onPress={() => router.replace('/(auth)/login')} style={styles.logoutBtn}>
+                <TouchableOpacity onPress={handleLogout} style={styles.logoutBtn}>
                     <FontAwesome5 name="sign-out-alt" size={20} color={Colors.textSecondary} />
                     {!collapsed && <Text style={styles.logoutText}>Logout</Text>}
                 </TouchableOpacity>
             </View>
+
+            {/* Custom Logout Modal */}
+            <Modal
+                transparent={true}
+                visible={showLogoutModal}
+                animationType="fade"
+                onRequestClose={() => setShowLogoutModal(false)}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContent}>
+                        <Text style={styles.modalTitle}>Log Out</Text>
+                        <Text style={styles.modalMessage}>Are you sure you want to log out?</Text>
+                        <View style={styles.modalButtons}>
+                            <TouchableOpacity
+                                style={[styles.modalButton, styles.cancelButton]}
+                                onPress={() => setShowLogoutModal(false)}
+                            >
+                                <Text style={styles.cancelButtonText}>Cancel</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[styles.modalButton, styles.logoutConfirmButton]}
+                                onPress={confirmLogout}
+                            >
+                                <Text style={styles.logoutConfirmButtonText}>Log Out</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
         </View>
     );
 }
@@ -203,5 +246,70 @@ const styles = StyleSheet.create({
         color: Colors.textSecondary,
         marginLeft: 12,
         fontSize: 14,
+    },
+    // Modal Styles
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    modalContent: {
+        backgroundColor: Colors.surface,
+        borderRadius: 20,
+        padding: 24,
+        width: '90%',
+        maxWidth: 400,
+        alignItems: 'center',
+        shadowColor: "#000",
+        shadowOffset: {
+            width: 0,
+            height: 2,
+        },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+        elevation: 5,
+        borderWidth: 1,
+        borderColor: Colors.border,
+    },
+    modalTitle: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: Colors.text,
+        marginBottom: 12,
+    },
+    modalMessage: {
+        fontSize: 16,
+        color: Colors.textSecondary,
+        marginBottom: 24,
+        textAlign: 'center',
+    },
+    modalButtons: {
+        flexDirection: 'row',
+        width: '100%',
+        justifyContent: 'space-between',
+        gap: 16,
+    },
+    modalButton: {
+        flex: 1,
+        paddingVertical: 12,
+        borderRadius: 10,
+        alignItems: 'center',
+    },
+    cancelButton: {
+        backgroundColor: Colors.surface,
+        borderWidth: 1,
+        borderColor: Colors.border,
+    },
+    cancelButtonText: {
+        color: Colors.text,
+        fontWeight: '600',
+    },
+    logoutConfirmButton: {
+        backgroundColor: '#FF3B30', // Destructive red
+    },
+    logoutConfirmButtonText: {
+        color: 'white',
+        fontWeight: 'bold',
     },
 });
