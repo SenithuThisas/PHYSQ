@@ -37,25 +37,8 @@ export default function TabLayout() {
                     name="workout"
                     options={{
                         title: 'Workout',
-                        tabBarIcon: ({ color }) => (
-                            <View style={{
-                                backgroundColor: Colors.primary,
-                                width: 48,
-                                height: 48,
-                                borderRadius: 24,
-                                justifyContent: 'center',
-                                alignItems: 'center',
-                                marginBottom: 25,
-                                shadowColor: Colors.primary,
-                                shadowOffset: { width: 0, height: 4 },
-                                shadowOpacity: 0.3,
-                                shadowRadius: 5,
-                                elevation: 5
-                            }}>
-                                <FontAwesome5 name="dumbbell" size={20} color={Colors.background} />
-                            </View>
-                        ),
-                        tabBarLabel: () => null, // Hide label for the center button
+                        tabBarIcon: ({ color }) => <FontAwesome5 name="dumbbell" size={20} color={color} />,
+                        // tabBarLabel removed to allow default label to show
                     }}
                 />
                 <Tabs.Screen
