@@ -38,13 +38,32 @@ router.put('/profile', authenticateToken, async (req, res) => {
         if (username) updateData.username = username;
         if (age) updateData.age = age;
         if (gender) updateData.gender = gender;
-        if (height) updateData.height = height;
-        if (weight) updateData.weight = weight;
+        if (height) {
+            updateData.height = height;
+            // We use $push in the update query
+        }
+        if (weight) {
+            updateData.weight = weight;
+        }
         if (profilePicture) updateData.profilePicture = profilePicture;
+
+        const updateQuery = { $set: updateData };
+        const pushQuery = {};
+
+        if (weight) {
+            pushQuery.weightHistory = { value: weight.value, unit: weight.unit };
+        }
+        if (height) {
+            pushQuery.heightHistory = { value: height.value, unit: height.unit };
+        }
+
+        if (Object.keys(pushQuery).length > 0) {
+            updateQuery.$push = pushQuery;
+        }
 
         const user = await User.findByIdAndUpdate(
             req.user.userId,
-            { $set: updateData },
+            updateQuery,
             { new: true }
         ).select('-passwordHash');
 
