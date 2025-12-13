@@ -47,6 +47,22 @@ const UserSchema = new mongoose.Schema({
             default: 'kg'
         }
     },
+    weightHistory: [{
+        value: Number,
+        unit: String,
+        date: {
+            type: Date,
+            default: Date.now
+        }
+    }],
+    heightHistory: [{
+        value: Number,
+        unit: String,
+        date: {
+            type: Date,
+            default: Date.now
+        }
+    }],
     profilePicture: {
         type: String // URL or Base64
     },
