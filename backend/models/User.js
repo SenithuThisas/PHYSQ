@@ -17,6 +17,39 @@ const UserSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    username: {
+        type: String,
+        unique: true,
+        sparse: true,
+        trim: true
+    },
+    age: {
+        type: Number
+    },
+    gender: {
+        type: String,
+        enum: ['Male', 'Female', 'Prefer not to say', 'Other'],
+        default: 'Prefer not to say'
+    },
+    height: {
+        value: Number,
+        unit: {
+            type: String,
+            enum: ['cm', 'ft'],
+            default: 'cm'
+        }
+    },
+    weight: {
+        value: Number,
+        unit: {
+            type: String,
+            enum: ['kg', 'lbs'],
+            default: 'kg'
+        }
+    },
+    profilePicture: {
+        type: String // URL or Base64
+    },
     workoutSessions: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'WorkoutSession'
