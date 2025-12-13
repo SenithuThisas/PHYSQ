@@ -220,9 +220,10 @@ export default function Profile() {
                         <View style={styles.inputGroup}>
                             <Text style={styles.label}>Age</Text>
                             <TextInput
-                                style={[styles.input, styles.disabledInput]}
+                                style={styles.input}
                                 value={age}
-                                editable={false}
+                                onChangeText={setAge}
+                                keyboardType="numeric"
                                 placeholder="25"
                                 placeholderTextColor={Colors.textSecondary}
                             />
