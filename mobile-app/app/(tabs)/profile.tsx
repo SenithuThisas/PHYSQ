@@ -131,7 +131,9 @@ export default function Profile() {
             };
 
             const response = await axios.put(`${Config.API_URL}/user/profile`, payload);
-            await updateUser(response.data);
+            if (updateUser) {
+                await updateUser(response.data);
+            }
             Alert.alert('Success', 'Profile updated successfully');
         } catch (error) {
             console.error('Error updating profile', error);
