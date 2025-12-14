@@ -7,7 +7,7 @@ import { Colors } from '../../constants/Colors';
 import { FontAwesome5, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import { logWorkoutSession, getLastSession } from '../../services/workouts';
-import { useRouter } from 'expo-router';
+import { useRouter, useNavigation } from 'expo-router';
 
 // Removed static dimensions
 
@@ -24,6 +24,15 @@ export default function LogWorkout() {
 
     const { token } = useAuth();
     const router = useRouter();
+    const navigation = useNavigation();
+
+    const handleBack = () => {
+        if (navigation.canGoBack()) {
+            router.back();
+        } else {
+            router.replace('/(tabs)/workout');
+        }
+    };
 
     const [selectedExercise, setSelectedExercise] = useState(EXERCISES[0]);
     const [description, setDescription] = useState('');
@@ -91,7 +100,7 @@ export default function LogWorkout() {
 
             await logWorkoutSession(token, sessionData);
             Alert.alert('Success', 'Workout logged successfully!', [
-                { text: 'Done', onPress: () => router.back() }
+                { text: 'Done', onPress: handleBack }
             ]);
         } catch (error) {
             Alert.alert('Error', 'Failed to log workout');
@@ -104,7 +113,7 @@ export default function LogWorkout() {
         <SafeAreaView style={styles.safeArea}>
             {/* Navbar */}
             <View style={styles.navbar}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.navIcon}>
+                <TouchableOpacity onPress={handleBack} style={styles.navIcon}>
                     <Ionicons name="arrow-back" size={24} color={Colors.text} />
                 </TouchableOpacity>
                 <Text style={styles.navTitle}>New Entry</Text>
