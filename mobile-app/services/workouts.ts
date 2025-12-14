@@ -27,3 +27,16 @@ export const getWorkoutHistory = async (token: string) => {
         throw error;
     }
 };
+
+export const getLastSession = async (token: string, exerciseName: string) => {
+    try {
+        const response = await axios.get(`${API_URL}/workouts/history`, {
+            params: { exerciseName },
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching last session:', error);
+        return null;
+    }
+};
