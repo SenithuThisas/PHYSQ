@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
     View, Text, StyleSheet, ScrollView, TouchableOpacity,
-    TextInput, ActivityIndicator, Alert, Modal, SafeAreaView, Platform, Dimensions
+    TextInput, ActivityIndicator, Alert, Modal, SafeAreaView, Platform, useWindowDimensions
 } from 'react-native';
 import { Colors } from '../../constants/Colors';
 import { FontAwesome5, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -9,8 +9,8 @@ import { useAuth } from '../../context/AuthContext';
 import { logWorkoutSession, getLastSession } from '../../services/workouts';
 import { useRouter } from 'expo-router';
 
-const { width } = Dimensions.get('window');
-const IS_DESKTOP = width > 768;
+// Removed static dimensions
+
 
 const EXERCISES = [
     'Squat', 'Bench Press', 'Deadlift', 'Overhead Press',
@@ -19,6 +19,9 @@ const EXERCISES = [
 ];
 
 export default function LogWorkout() {
+    const { width } = useWindowDimensions();
+    const isDesktop = width > 768;
+
     const { token } = useAuth();
     const router = useRouter();
 
@@ -111,7 +114,7 @@ export default function LogWorkout() {
             </View>
 
             <ScrollView contentContainerStyle={styles.scrollContent}>
-                <View style={[styles.gridContainer, IS_DESKTOP && styles.gridDesktop]}>
+                <View style={[styles.gridContainer, isDesktop && styles.gridDesktop]}>
 
                     {/* LEFT PANEL: CONTEXT & HISTORY */}
                     <View style={[styles.panelLeft, isDesktop && styles.panelLeftDesktop, { gap: 16 }]}>
