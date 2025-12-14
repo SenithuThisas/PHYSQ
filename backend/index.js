@@ -20,6 +20,7 @@ app.use('/auth', require('./routes/auth'));
 app.use('/workouts', require('./routes/workouts'));
 app.use('/progress', require('./routes/progress'));
 app.use('/templates', require('./routes/templates'));
+app.use('/schedule', require('./routes/schedule'));
 app.use('/user', require('./routes/user'));
 
 app.get('/', (req, res) => {
