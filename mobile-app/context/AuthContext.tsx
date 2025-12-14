@@ -1,6 +1,8 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import * as SecureStore from 'expo-secure-store';
 import axios from 'axios';
+import { Platform } from 'react-native';
+import { Config } from '../constants/Config';
 
 type AuthType = {
     token: string | null;
@@ -8,6 +10,7 @@ type AuthType = {
     signIn: (token: string, user: any) => Promise<void>;
     signOut: () => Promise<void>;
     updateUser: (user: any) => Promise<void>;
+    refreshUser: () => Promise<void>;
     isLoading: boolean;
 };
 
@@ -17,14 +20,13 @@ const AuthContext = createContext<AuthType>({
     signIn: async () => { },
     signOut: async () => { },
     updateUser: async () => { },
+    refreshUser: async () => { },
     isLoading: true,
 });
 
 export function useAuth() {
     return useContext(AuthContext);
 }
-
-import { Platform } from 'react-native';
 
 const Storage = {
     getItem: async (key: string) => {
@@ -102,8 +104,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         await Storage.setItem('userData', JSON.stringify(updatedUser));
     };
 
+    const refreshUser = async () => {
+        if (!token) return;
+        try {
+            const response = await axios.get(`${Config.API_URL}/user/profile`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            await updateUser(response.data);
+        } catch (error) {
+            console.error('Failed to refresh user profile', error);
+        }
+    };
+
     return (
-        <AuthContext.Provider value={{ token, user, signIn, signOut, updateUser, isLoading }}>
+        <AuthContext.Provider value={{ token, user, signIn, signOut, updateUser, refreshUser, isLoading }}>
             {children}
         </AuthContext.Provider>
     );
