@@ -78,4 +78,22 @@ router.get('/history', authenticate, async (req, res) => {
     }
 });
 
+// GET /workouts/weekly - Count workouts this week
+router.get('/weekly', authenticate, async (req, res) => {
+    try {
+        const today = new Date();
+        const startOfWeek = new Date(today);
+        startOfWeek.setDate(today.getDate() - today.getDay()); // Sunday as start
+        startOfWeek.setHours(0, 0, 0, 0);
+
+        const count = await WorkoutSession.countDocuments({
+            userId: req.user.userId,
+            date: { $gte: startOfWeek }
+        });
+        res.json({ count });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 module.exports = router;
