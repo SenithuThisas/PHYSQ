@@ -96,9 +96,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         await Storage.deleteItem('userData');
     };
 
-    const updateUser = async (newUser: any) => {
-        setUser(newUser);
-        await Storage.setItem('userData', JSON.stringify(newUser));
+    const updateUser = async (data: any) => {
+        const updatedUser = { ...user, ...data };
+        setUser(updatedUser);
+        await Storage.setItem('userData', JSON.stringify(updatedUser));
     };
 
     return (
