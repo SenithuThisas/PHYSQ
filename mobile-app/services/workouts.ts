@@ -32,11 +32,30 @@ export const getLastSession = async (token: string, exerciseName: string) => {
     try {
         const response = await axios.get(`${API_URL}/workouts/history`, {
             params: { exerciseName },
+        } catch (error) {
+            console.error('Error fetching last session:', error);
+            return null;
+        }
+    };
+
+    export const getWeeklyStats = async (token: string) => {
+        try {
+            const response = await axios.get(`${API_URL}/workouts/weekly`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            return response.data;
+        } catch (error) {
+            console.error('Error fetching weekly stats:', error);
+            return { count: 0 };
+        }
+    };
+    try {
+        const response = await axios.get(`${API_URL}/workouts/weekly`, {
             headers: { Authorization: `Bearer ${token}` }
         });
         return response.data;
     } catch (error) {
-        console.error('Error fetching last session:', error);
-        return null;
+        console.error('Error fetching weekly stats:', error);
+        return { count: 0 };
     }
 };
