@@ -114,7 +114,7 @@ export default function LogWorkout() {
                 <View style={[styles.gridContainer, IS_DESKTOP && styles.gridDesktop]}>
 
                     {/* LEFT PANEL: CONTEXT & HISTORY */}
-                    <View style={styles.panelLeft}>
+                    <View style={[styles.panelLeft, isDesktop && styles.panelLeftDesktop, { gap: 16 }]}>
                         <TouchableOpacity style={styles.exerciseHeader} onPress={() => setShowExerciseModal(true)}>
                             <View>
                                 <Text style={styles.exerciseLabel}>EXERCISE</Text>
@@ -163,7 +163,7 @@ export default function LogWorkout() {
                     </View>
 
                     {/* RIGHT PANEL: LOGGING INPUTS */}
-                    <View style={styles.panelRight}>
+                    <View style={[styles.panelRight, isDesktop && styles.panelRightDesktop, { gap: 16 }]}>
                         <View style={styles.notesContainer}>
                             <TextInput
                                 style={styles.notesInput}
@@ -280,21 +280,31 @@ const styles = StyleSheet.create({
     },
     gridContainer: {
         flexDirection: 'column',
-        gap: 20,
+        gap: 24, // Increased gap for better separation
     },
     gridDesktop: {
         flexDirection: 'row',
         alignItems: 'flex-start',
     },
     panelLeft: {
-        flex: 1, // On mobile this will just follow default width
         width: '100%',
-        gap: 16,
+        // No flex on mobile to allow auto-height
     },
     panelRight: {
-        flex: 1.5, // On desktop it takes more space
         width: '100%',
-        gap: 16,
+        // No flex on mobile
+    },
+    /* Desktop-specific panel overrides injected via JS/StyleSheet flattening if needed, 
+       but here we can rely on the fact that we switched gridContainer to row. 
+       However, to get the 1:1.5 ratio on desktop, we need to conditionally apply flex styles 
+       in the component, OR we can use media queries if we had a library. 
+       Since we use inline logic: style={[styles.panelLeft, isDesktop && styles.panelLeftDesktop]} 
+    */
+    panelLeftDesktop: {
+        flex: 1,
+    },
+    panelRightDesktop: {
+        flex: 1.5,
     },
     /* EXERCISE HEADER */
     exerciseHeader: {
@@ -439,25 +449,27 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         marginBottom: 12,
-        gap: 12,
+        gap: 8, // Reduced gap
     },
     setIndex: {
         color: Colors.textSecondary,
-        width: 20,
+        width: 16, // Reduced width
         textAlign: 'center',
         fontWeight: 'bold',
+        fontSize: 12, // Ensure font size fits
     },
     inputBox: {
         flex: 1,
         backgroundColor: Colors.background,
         color: Colors.text,
-        padding: 14,
+        padding: 12, // Slight reduce padding
         borderRadius: 12,
         textAlign: 'center',
         fontSize: 18,
         fontWeight: '600',
         borderWidth: 1,
         borderColor: 'rgba(255,255,255,0.1)',
+        minWidth: 60, // Ensure it doesn't shrink too much
     },
     delBtn: {
         width: 40,
