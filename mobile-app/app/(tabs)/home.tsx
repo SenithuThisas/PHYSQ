@@ -53,6 +53,17 @@ export default function Dashboard() {
     const currentCategory = getBMICategory(currentBMI);
     const bmiColor = getBMIColor(currentCategory);
 
+    const [weeklyCount, setWeeklyCount] = React.useState(0);
+    const { token } = useAuth();
+
+    React.useEffect(() => {
+        if (token) {
+            import('../../services/workouts').then(({ getWeeklyStats }) => {
+                getWeeklyStats(token).then(data => setWeeklyCount(data.count));
+            });
+        }
+    }, [token]);
+
     return (
         <ScrollView style={styles.container} contentContainerStyle={[styles.content, isWeb && styles.webContent]}>
             <View style={[styles.mainWrapper, isWeb && styles.webMainWrapper]}>
@@ -138,7 +149,7 @@ export default function Dashboard() {
                         <Text style={styles.sectionTitle}>Recent Progress</Text>
                         <View style={styles.statCard}>
                             <Text style={styles.statLabel}>Workouts this week</Text>
-                            <Text style={styles.statValue}>0</Text>
+                            <Text style={styles.statValue}>{weeklyCount}</Text>
                         </View>
                     </View>
                 </View>
