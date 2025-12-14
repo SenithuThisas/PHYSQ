@@ -1,13 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     View, Text, StyleSheet, ScrollView, TouchableOpacity,
-    TextInput, ActivityIndicator, Alert, Modal, SafeAreaView
+    TextInput, ActivityIndicator, Alert, Modal, SafeAreaView, Platform, Dimensions
 } from 'react-native';
 import { Colors } from '../../constants/Colors';
-import { FontAwesome5, Ionicons } from '@expo/vector-icons';
+import { FontAwesome5, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
-import { logWorkoutSession } from '../../services/workouts';
+import { logWorkoutSession, getLastSession } from '../../services/workouts';
 import { useRouter } from 'expo-router';
+
+const { width } = Dimensions.get('window');
+const IS_DESKTOP = width > 768;
 
 const EXERCISES = [
     'Squat', 'Bench Press', 'Deadlift', 'Overhead Press',
@@ -25,15 +28,32 @@ export default function LogWorkout() {
     const [loggingState, setLoggingState] = useState(false);
     const [showExerciseModal, setShowExerciseModal] = useState(false);
 
-    // Logging Operations
+    // History Data
+    const [lastSession, setLastSession] = useState<any>(null);
+    const [loadingLast, setLoadingLast] = useState(false);
+
+    useEffect(() => {
+        if (!token) return;
+        const fetchLast = async () => {
+            setLoadingLast(true);
+            const data = await getLastSession(token, selectedExercise);
+            setLastSession(data);
+            setLoadingLast(false);
+        };
+        fetchLast();
+    }, [selectedExercise, token]);
+
     const addSet = () => {
-        setSets([...sets, { weight: '', reps: '' }]);
+        const lastSet = sets[sets.length - 1];
+        setSets([...sets, { weight: lastSet?.weight || '', reps: lastSet?.reps || '' }]);
     };
 
     const removeSet = (index: number) => {
-        const newSets = [...sets];
-        newSets.splice(index, 1);
-        setSets(newSets);
+        if (sets.length > 1) {
+            const newSets = [...sets];
+            newSets.splice(index, 1);
+            setSets(newSets);
+        }
     };
 
     const updateSet = (index: number, field: 'weight' | 'reps', value: string) => {
@@ -44,7 +64,6 @@ export default function LogWorkout() {
 
     const handleLogWorkout = async () => {
         if (!token) return;
-
         const validSets = sets.filter(s => s.weight && s.reps).map(s => ({
             weight: parseFloat(s.weight),
             reps: parseFloat(s.reps)
@@ -63,13 +82,13 @@ export default function LogWorkout() {
                     sets: validSets
                 }],
                 templateName: description || 'Quick Log',
-                duration: 30, // Default duration
+                duration: 30,
                 date: new Date()
             };
 
             await logWorkoutSession(token, sessionData);
             Alert.alert('Success', 'Workout logged successfully!', [
-                { text: 'OK', onPress: () => router.back() }
+                { text: 'Done', onPress: () => router.back() }
             ]);
         } catch (error) {
             Alert.alert('Error', 'Failed to log workout');
@@ -80,105 +99,147 @@ export default function LogWorkout() {
 
     return (
         <SafeAreaView style={styles.safeArea}>
-            <View style={styles.headerContainer}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+            {/* Navbar */}
+            <View style={styles.navbar}>
+                <TouchableOpacity onPress={() => router.back()} style={styles.navIcon}>
                     <Ionicons name="arrow-back" size={24} color={Colors.text} />
                 </TouchableOpacity>
-                <Text style={styles.header}>Log Workout</Text>
+                <Text style={styles.navTitle}>New Entry</Text>
+                <TouchableOpacity onPress={handleLogWorkout} disabled={loggingState}>
+                    {loggingState ? <ActivityIndicator color={Colors.primary} /> : <Text style={styles.navAction}>SAVE</Text>}
+                </TouchableOpacity>
             </View>
 
-            <ScrollView contentContainerStyle={styles.container}>
-                <View style={styles.card}>
-                    {/* Exercise Selector */}
-                    <Text style={styles.label}>Exercise</Text>
-                    <TouchableOpacity style={styles.pickerTrigger} onPress={() => setShowExerciseModal(true)}>
-                        <Text style={styles.pickerText}>{selectedExercise}</Text>
-                        <FontAwesome5 name="chevron-down" size={14} color={Colors.textSecondary} />
-                    </TouchableOpacity>
+            <ScrollView contentContainerStyle={styles.scrollContent}>
+                <View style={[styles.gridContainer, IS_DESKTOP && styles.gridDesktop]}>
 
-                    {/* Description */}
-                    <Text style={styles.label}>Description / Notes</Text>
-                    <TextInput
-                        style={styles.input}
-                        placeholder="e.g. Heavy sets, feeling strong"
-                        placeholderTextColor="#666"
-                        value={description}
-                        onChangeText={setDescription}
-                    />
+                    {/* LEFT PANEL: CONTEXT & HISTORY */}
+                    <View style={styles.panelLeft}>
+                        <TouchableOpacity style={styles.exerciseHeader} onPress={() => setShowExerciseModal(true)}>
+                            <View>
+                                <Text style={styles.exerciseLabel}>EXERCISE</Text>
+                                <View style={styles.exerciseSelector}>
+                                    <Text style={styles.exerciseTitle}>{selectedExercise}</Text>
+                                    <FontAwesome5 name="chevron-down" size={16} color={Colors.primary} />
+                                </View>
+                            </View>
+                            <View style={styles.exerciseIconBg}>
+                                <MaterialCommunityIcons name="dumbbell" size={24} color="#000" />
+                            </View>
+                        </TouchableOpacity>
 
-                    {/* Sets Logger */}
-                    <Text style={styles.label}>Sets</Text>
-                    <View style={styles.setsHeader}>
-                        <Text style={styles.headerLabel}>Weight (kg)</Text>
-                        <Text style={styles.headerLabel}>Reps</Text>
-                        <View style={{ width: 30 }} />
+                        <View style={styles.historyCard}>
+                            <View style={styles.historyHeader}>
+                                <MaterialCommunityIcons name="history" size={18} color={Colors.textSecondary} />
+                                <Text style={styles.historyTitle}>LAST PERFORMANCE</Text>
+                            </View>
+                            {loadingLast ? (
+                                <ActivityIndicator color={Colors.textSecondary} style={{ marginTop: 20 }} />
+                            ) : lastSession ? (
+                                <View>
+                                    <Text style={styles.lastDate}>{new Date(lastSession.date).toDateString()}</Text>
+                                    <View style={styles.lastStatsGrid}>
+                                        {lastSession.exerciseData.sets.map((s: any, i: number) => (
+                                            <View key={i} style={styles.lastStatBadge}>
+                                                <Text style={styles.lastStatText}>
+                                                    <Text style={{ fontWeight: 'bold', color: Colors.text }}>{s.weight}</Text>kg x {s.reps}
+                                                </Text>
+                                            </View>
+                                        ))}
+                                    </View>
+                                    <View style={styles.volumeBadge}>
+                                        <Text style={styles.volumeLabel}>MAX E1RM</Text>
+                                        <Text style={styles.volumeValue}>
+                                            {Math.max(...lastSession.exerciseData.sets.map((s: any) => s.weight * (1 + s.reps / 30))).toFixed(0)} kg
+                                        </Text>
+                                    </View>
+                                </View>
+                            ) : (
+                                <View style={styles.emptyHistory}>
+                                    <Text style={styles.emptyHistoryText}>No previous data found.</Text>
+                                </View>
+                            )}
+                        </View>
                     </View>
 
-                    {sets.map((set, index) => (
-                        <View key={index} style={styles.setRow}>
+                    {/* RIGHT PANEL: LOGGING INPUTS */}
+                    <View style={styles.panelRight}>
+                        <View style={styles.notesContainer}>
                             <TextInput
-                                style={styles.setInput}
-                                keyboardType="numeric"
-                                placeholder="0"
-                                placeholderTextColor="#666"
-                                value={set.weight}
-                                onChangeText={(v) => updateSet(index, 'weight', v)}
+                                style={styles.notesInput}
+                                placeholder="Add workout notes..."
+                                placeholderTextColor={Colors.textSecondary}
+                                value={description}
+                                onChangeText={setDescription}
+                                multiline
                             />
-                            <TextInput
-                                style={styles.setInput}
-                                keyboardType="numeric"
-                                placeholder="0"
-                                placeholderTextColor="#666"
-                                value={set.reps}
-                                onChangeText={(v) => updateSet(index, 'reps', v)}
-                            />
-                            <TouchableOpacity onPress={() => removeSet(index)} style={styles.removeSetBtn}>
-                                <Ionicons name="trash-outline" size={20} color="#FF4444" />
+                        </View>
+
+                        <View style={styles.setsContainer}>
+                            <View style={styles.setsHeaderRow}>
+                                <Text style={styles.colHeader}>SET</Text>
+                                <Text style={styles.colHeader}>KG</Text>
+                                <Text style={styles.colHeader}>REPS</Text>
+                                <View style={{ width: 40 }} />
+                            </View>
+
+                            {sets.map((set, index) => (
+                                <View key={index} style={styles.setRow}>
+                                    <Text style={styles.setIndex}>{index + 1}</Text>
+                                    <TextInput
+                                        style={styles.inputBox}
+                                        keyboardType="numeric"
+                                        placeholder="-"
+                                        placeholderTextColor={Colors.textSecondary}
+                                        value={set.weight}
+                                        onChangeText={(v) => updateSet(index, 'weight', v)}
+                                    />
+                                    <TextInput
+                                        style={styles.inputBox}
+                                        keyboardType="numeric"
+                                        placeholder="-"
+                                        placeholderTextColor={Colors.textSecondary}
+                                        value={set.reps}
+                                        onChangeText={(v) => updateSet(index, 'reps', v)}
+                                    />
+                                    <TouchableOpacity style={styles.delBtn} onPress={() => removeSet(index)}>
+                                        <Ionicons name="close-circle" size={24} color={Colors.textSecondary} />
+                                    </TouchableOpacity>
+                                </View>
+                            ))}
+
+                            <TouchableOpacity style={styles.addBtn} onPress={addSet}>
+                                <FontAwesome5 name="plus" size={14} color="#000" />
+                                <Text style={styles.addBtnText}>ADD SET</Text>
                             </TouchableOpacity>
                         </View>
-                    ))}
+                    </View>
 
-                    <TouchableOpacity style={styles.addSetBtn} onPress={addSet}>
-                        <FontAwesome5 name="plus" size={12} color={Colors.primary} />
-                        <Text style={styles.addSetText}>Add Set</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                        style={[styles.mainButton, loggingState && styles.disabledBtn]}
-                        onPress={handleLogWorkout}
-                        disabled={loggingState}
-                    >
-                        {loggingState ? (
-                            <ActivityIndicator color="#000" />
-                        ) : (
-                            <Text style={styles.mainButtonText}>Save Session</Text>
-                        )}
-                    </TouchableOpacity>
                 </View>
             </ScrollView>
 
-            {/* Exercise Modal */}
-            <Modal visible={showExerciseModal} animationType="slide" transparent>
-                <View style={styles.modalOverlay}>
-                    <View style={styles.modalContent}>
-                        <Text style={styles.modalTitle}>Select Exercise</Text>
-                        <ScrollView style={{ maxHeight: 300 }}>
+            {/* MODAL */}
+            <Modal visible={showExerciseModal} animationType="fade" transparent>
+                <View style={styles.modalBackdrop}>
+                    <View style={styles.modalContainer}>
+                        <Text style={styles.modalHeaderTitle}>Select Exercise</Text>
+                        <ScrollView style={{ maxHeight: 400 }}>
                             {EXERCISES.map(ex => (
                                 <TouchableOpacity
                                     key={ex}
-                                    style={styles.modalItem}
+                                    style={[styles.modalOption, selectedExercise === ex && styles.modalOptionActive]}
                                     onPress={() => {
                                         setSelectedExercise(ex);
                                         setShowExerciseModal(false);
                                     }}
                                 >
-                                    <Text style={styles.modalItemText}>{ex}</Text>
+                                    <Text style={[styles.modalOptionText, selectedExercise === ex && styles.modalOptionTextActive]}>{ex}</Text>
                                     {selectedExercise === ex && <FontAwesome5 name="check" size={14} color={Colors.primary} />}
                                 </TouchableOpacity>
                             ))}
                         </ScrollView>
-                        <TouchableOpacity style={styles.closeBtn} onPress={() => setShowExerciseModal(false)}>
-                            <Text style={styles.closeBtnText}>Cancel</Text>
+                        <TouchableOpacity style={styles.modalClose} onPress={() => setShowExerciseModal(false)}>
+                            <Text style={styles.modalCloseText}>Close</Text>
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -192,79 +253,184 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: Colors.background,
     },
-    headerContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        padding: 24,
-        paddingBottom: 10,
-        width: '100%',
-        maxWidth: 600,
-        alignSelf: 'center',
-    },
-    backBtn: {
-        marginRight: 16,
-    },
-    header: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        color: Colors.text,
-    },
-    container: {
-        padding: 24,
-        alignItems: 'center', // Center content for responsiveness
-    },
-    card: {
-        backgroundColor: Colors.surface,
-        borderRadius: 20,
-        padding: 24,
-        borderWidth: 1,
-        borderColor: Colors.border,
-        width: '100%',
-        maxWidth: 600, // Limit width on large screens
-    },
-    label: {
-        color: Colors.textSecondary,
-        fontSize: 14,
-        marginBottom: 8,
-        marginTop: 16,
-        marginLeft: 4,
-    },
-    pickerTrigger: {
-        backgroundColor: Colors.background,
-        padding: 16,
-        borderRadius: 16,
+    navbar: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        borderWidth: 1,
-        borderColor: Colors.border,
+        paddingHorizontal: 20,
+        paddingVertical: 16,
+        borderBottomWidth: 1,
+        borderBottomColor: 'rgba(255,255,255,0.05)',
     },
-    pickerText: {
+    navIcon: {
+        padding: 4,
+    },
+    navTitle: {
+        color: Colors.text,
+        fontSize: 18,
+        fontWeight: 'bold',
+    },
+    navAction: {
+        color: Colors.primary,
+        fontSize: 16,
+        fontWeight: 'bold',
+    },
+    scrollContent: {
+        padding: 20,
+    },
+    gridContainer: {
+        flexDirection: 'column',
+        gap: 20,
+    },
+    gridDesktop: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+    },
+    panelLeft: {
+        flex: 1,
+        gap: 20,
+    },
+    panelRight: {
+        flex: 1.5,
+        gap: 20,
+    },
+    /* EXERCISE HEADER */
+    exerciseHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        backgroundColor: Colors.surface,
+        padding: 24,
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.05)',
+    },
+    exerciseLabel: {
+        color: Colors.textSecondary,
+        fontSize: 12,
+        fontWeight: 'bold',
+        marginBottom: 4,
+    },
+    exerciseSelector: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+    },
+    exerciseTitle: {
+        color: Colors.text,
+        fontSize: 24,
+        fontWeight: 'bold',
+        lineHeight: 32, // Fix vertical alignment
+    },
+    exerciseIconBg: {
+        backgroundColor: Colors.primary,
+        width: 48,
+        height: 48,
+        borderRadius: 14,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    /* HISTORY CARD */
+    historyCard: {
+        backgroundColor: 'rgba(255,255,255,0.03)',
+        padding: 20,
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.05)',
+    },
+    historyHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        marginBottom: 16,
+    },
+    historyTitle: {
+        color: Colors.textSecondary,
+        fontSize: 12,
+        fontWeight: 'bold',
+        letterSpacing: 1,
+    },
+    emptyHistory: {
+        padding: 20,
+        alignItems: 'center',
+    },
+    emptyHistoryText: {
+        color: Colors.textSecondary,
+        fontStyle: 'italic',
+    },
+    lastDate: {
+        color: Colors.text,
+        fontWeight: '600',
+        fontSize: 16,
+        marginBottom: 12,
+    },
+    lastStatsGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 8,
+        marginBottom: 16,
+    },
+    lastStatBadge: {
+        backgroundColor: Colors.background,
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.1)',
+    },
+    lastStatText: {
+        color: Colors.textSecondary,
+        fontSize: 13,
+    },
+    volumeBadge: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        backgroundColor: 'rgba(204, 255, 0, 0.05)',
+        padding: 12,
+        borderRadius: 12,
+    },
+    volumeLabel: {
+        color: Colors.primary,
+        fontSize: 12,
+        fontWeight: 'bold',
+    },
+    volumeValue: {
         color: Colors.text,
         fontSize: 16,
-        fontWeight: '500',
+        fontWeight: 'bold',
     },
-    input: {
-        backgroundColor: Colors.background,
+    /* LOGGING AREA */
+    notesContainer: {
+        marginBottom: 8,
+    },
+    notesInput: {
+        backgroundColor: Colors.surface,
         color: Colors.text,
         padding: 16,
         borderRadius: 16,
-        borderWidth: 1,
-        borderColor: Colors.border,
         fontSize: 16,
-        minHeight: 50,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.05)',
     },
-    setsHeader: {
+    setsContainer: {
+        backgroundColor: Colors.surface,
+        borderRadius: 24,
+        padding: 20,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.05)',
+    },
+    setsHeaderRow: {
         flexDirection: 'row',
-        marginBottom: 8,
+        alignItems: 'center',
+        marginBottom: 16,
         paddingHorizontal: 4,
-        gap: 12,
     },
-    headerLabel: {
+    colHeader: {
         flex: 1,
         color: Colors.textSecondary,
-        fontSize: 12,
-        fontWeight: '600',
+        fontSize: 11,
+        fontWeight: 'bold',
         textAlign: 'center',
     },
     setRow: {
@@ -273,103 +439,93 @@ const styles = StyleSheet.create({
         marginBottom: 12,
         gap: 12,
     },
-    setInput: {
+    setIndex: {
+        color: Colors.textSecondary,
+        width: 20,
+        textAlign: 'center',
+        fontWeight: 'bold',
+    },
+    inputBox: {
         flex: 1,
         backgroundColor: Colors.background,
         color: Colors.text,
         padding: 14,
-        borderRadius: 16,
-        borderWidth: 1,
-        borderColor: Colors.border,
+        borderRadius: 12,
         textAlign: 'center',
         fontSize: 18,
-        fontWeight: 'bold',
+        fontWeight: '600',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.1)',
     },
-    removeSetBtn: {
-        width: 36,
-        height: 36,
+    delBtn: {
+        width: 40,
         alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: 'rgba(255, 68, 68, 0.1)',
-        borderRadius: 10,
     },
-    addSetBtn: {
+    addBtn: {
+        backgroundColor: Colors.primary,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
         padding: 16,
-        gap: 8,
+        borderRadius: 16,
         marginTop: 8,
-        borderWidth: 1,
-        borderColor: Colors.border,
-        borderRadius: 16,
-        borderStyle: 'dashed',
+        gap: 8,
     },
-    addSetText: {
-        color: Colors.primary,
-        fontWeight: '600',
-        fontSize: 16,
-    },
-    mainButton: {
-        backgroundColor: Colors.primary,
-        padding: 18,
-        borderRadius: 16,
-        alignItems: 'center',
-        marginTop: 32,
-        shadowColor: Colors.primary,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 10,
-        elevation: 5,
-    },
-    disabledBtn: {
-        opacity: 0.7,
-    },
-    mainButtonText: {
+    addBtnText: {
         color: '#000',
-        fontSize: 18,
         fontWeight: 'bold',
+        fontSize: 14,
+        letterSpacing: 1,
     },
-    modalOverlay: {
+    /* MODAL */
+    modalBackdrop: {
         flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.8)',
+        backgroundColor: 'rgba(0,0,0,0.85)',
         justifyContent: 'center',
-        alignItems: 'center', // Center modal on web
-        padding: 24,
+        alignItems: 'center',
+        padding: 20,
     },
-    modalContent: {
+    modalContainer: {
         backgroundColor: Colors.surface,
+        width: '100%',
+        maxWidth: 400,
         borderRadius: 24,
         padding: 24,
-        maxHeight: '80%',
-        width: '100%',
-        maxWidth: 500, // Limit modal width
+        maxHeight: '70%',
     },
-    modalTitle: {
+    modalHeaderTitle: {
+        color: Colors.text,
         fontSize: 20,
         fontWeight: 'bold',
-        color: Colors.text,
-        marginBottom: 16,
+        marginBottom: 20,
         textAlign: 'center',
     },
-    modalItem: {
+    modalOption: {
         paddingVertical: 16,
-        borderBottomWidth: 1,
-        borderBottomColor: Colors.border,
+        paddingHorizontal: 12,
+        borderRadius: 12,
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
+        marginBottom: 4,
     },
-    modalItemText: {
-        color: Colors.text,
+    modalOptionActive: {
+        backgroundColor: 'rgba(204, 255, 0, 0.05)',
+    },
+    modalOptionText: {
+        color: Colors.textSecondary,
         fontSize: 16,
     },
-    closeBtn: {
-        marginTop: 16,
-        padding: 16,
-        alignItems: 'center',
+    modalOptionTextActive: {
+        color: Colors.text,
+        fontWeight: 'bold',
     },
-    closeBtnText: {
+    modalClose: {
+        marginTop: 20,
+        alignItems: 'center',
+        padding: 12,
+    },
+    modalCloseText: {
         color: Colors.textSecondary,
         fontSize: 16,
     },
