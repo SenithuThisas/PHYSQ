@@ -1,25 +1,19 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
     View, Text, StyleSheet, ScrollView, TouchableOpacity,
-    TextInput, Image, ActivityIndicator, Alert, Modal, SafeAreaView, Platform
+    TextInput, Image, ActivityIndicator, Alert, SafeAreaView, FlatList
 } from 'react-native';
 import { Colors } from '../../constants/Colors';
 import { FontAwesome5, Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import * as ImagePicker from 'expo-image-picker';
 import { getSchedule, updateSchedule } from '../../services/schedule';
-import { logWorkoutSession } from '../../services/workouts';
-import { useFocusEffect } from 'expo-router';
-
-// Predefined exercises list
-const EXERCISES = [
-    'Squat', 'Bench Press', 'Deadlift', 'Overhead Press',
-    'Pull Up', 'Dumbbell Row', 'Leg Press', 'Lunge',
-    'Bicep Curl', 'Tricep Extension', 'Lateral Raise'
-];
+import { getWorkoutHistory } from '../../services/workouts';
+import { useRouter, useFocusEffect } from 'expo-router';
 
 export default function WorkoutHub() {
     const { token, user } = useAuth();
+    const router = useRouter();
     const [loadingSchedule, setLoadingSchedule] = useState(false);
 
     // Schedule State
@@ -28,39 +22,45 @@ export default function WorkoutHub() {
     const [scheduleImage, setScheduleImage] = useState<string | null>(null);
     const [isEditingSchedule, setIsEditingSchedule] = useState(false);
 
-    // Workout Logger State
-    const [selectedExercise, setSelectedExercise] = useState(EXERCISES[0]);
-    const [description, setDescription] = useState('');
-    const [sets, setSets] = useState<{ weight: string, reps: string }[]>([{ weight: '', reps: '' }]);
-    const [loggingState, setLoggingState] = useState(false);
-    const [showExerciseModal, setShowExerciseModal] = useState(false);
+    // History State
+    const [history, setHistory] = useState<any[]>([]);
+    const [loadingHistory, setLoadingHistory] = useState(false);
 
-    // Fetch Schedule
-    const fetchUserSchedule = useCallback(async () => {
+    const fetchData = useCallback(async () => {
         if (!token) return;
+
+        // Fetch Schedule
         setLoadingSchedule(true);
         try {
-            const data = await getSchedule(token);
-            setScheduleType(data.type);
-            if (data.type === 'text') {
-                setScheduleText(data.content);
-            } else {
-                setScheduleImage(data.content);
-            }
+            const sched = await getSchedule(token);
+            setScheduleType(sched.type);
+            if (sched.type === 'text') setScheduleText(sched.content);
+            else setScheduleImage(sched.content);
         } catch (error) {
             console.log('Failed to fetch schedule');
         } finally {
             setLoadingSchedule(false);
         }
+
+        // Fetch History
+        setLoadingHistory(true);
+        try {
+            const hist = await getWorkoutHistory(token);
+            // Limit to recent 5
+            setHistory(hist.slice(0, 5));
+        } catch (error) {
+            console.log('Failed to fetch history');
+        } finally {
+            setLoadingHistory(false);
+        }
     }, [token]);
 
     useFocusEffect(
         useCallback(() => {
-            fetchUserSchedule();
-        }, [fetchUserSchedule])
+            fetchData();
+        }, [fetchData])
     );
 
-    // Schedule Operations
     const handleSaveSchedule = async () => {
         if (!token) return;
         try {
@@ -84,66 +84,15 @@ export default function WorkoutHub() {
         });
 
         if (!result.canceled && result.assets[0].base64) {
-            // Store as base64 data URI
             const uri = `data:image/jpeg;base64,${result.assets[0].base64}`;
             setScheduleImage(uri);
-            setScheduleType('image'); // Switch to image mode automatically
+            setScheduleType('image');
         }
     };
 
-    // Logging Operations
-    const addSet = () => {
-        setSets([...sets, { weight: '', reps: '' }]);
-    };
-
-    const removeSet = (index: number) => {
-        const newSets = [...sets];
-        newSets.splice(index, 1);
-        setSets(newSets);
-    };
-
-    const updateSet = (index: number, field: 'weight' | 'reps', value: string) => {
-        const newSets = [...sets];
-        newSets[index][field] = value;
-        setSets(newSets);
-    };
-
-    const handleLogWorkout = async () => {
-        if (!token) return;
-
-        // Validate inputs
-        const validSets = sets.filter(s => s.weight && s.reps).map(s => ({
-            weight: parseFloat(s.weight),
-            reps: parseFloat(s.reps)
-        }));
-
-        if (validSets.length === 0) {
-            Alert.alert('Error', 'Please add at least one valid set (Weight & Reps)');
-            return;
-        }
-
-        setLoggingState(true);
-        try {
-            const sessionData = {
-                exercisesPerformed: [{
-                    exerciseName: selectedExercise,
-                    sets: validSets
-                }],
-                templateName: description || 'Quick Log', // Use description as a pseudo-name/note
-                duration: 30, // Default or need a timer? Requirement implies just logging what was done.
-                date: new Date()
-            };
-
-            await logWorkoutSession(token, sessionData);
-            Alert.alert('Success', 'Workout logged successfully!');
-            // Reset form
-            setSets([{ weight: '', reps: '' }]);
-            setDescription('');
-        } catch (error) {
-            Alert.alert('Error', 'Failed to log workout');
-        } finally {
-            setLoggingState(false);
-        }
+    const formatDate = (dateString: string) => {
+        const options: Intl.DateTimeFormatOptions = { weekday: 'short', month: 'short', day: 'numeric' };
+        return new Date(dateString).toLocaleDateString(undefined, options);
     };
 
     return (
@@ -221,103 +170,44 @@ export default function WorkoutHub() {
                     )}
                 </View>
 
-                {/* --- QUICK LOG SECTION --- */}
-                <View style={styles.card}>
-                    <Text style={styles.cardTitle}>Quick Log</Text>
-
-                    {/* Exercise Selector */}
-                    <Text style={styles.label}>Exercise</Text>
-                    <TouchableOpacity style={styles.pickerTrigger} onPress={() => setShowExerciseModal(true)}>
-                        <Text style={styles.pickerText}>{selectedExercise}</Text>
-                        <FontAwesome5 name="chevron-down" size={14} color={Colors.textSecondary} />
-                    </TouchableOpacity>
-
-                    {/* Description */}
-                    <Text style={styles.label}>Description / Notes</Text>
-                    <TextInput
-                        style={styles.input}
-                        placeholder="e.g. Heavy sets, feeling strong"
-                        placeholderTextColor="#666"
-                        value={description}
-                        onChangeText={setDescription}
-                    />
-
-                    {/* Exercise Modal */}
-                    <Modal visible={showExerciseModal} animationType="slide" transparent>
-                        <View style={styles.modalOverlay}>
-                            <View style={styles.modalContent}>
-                                <Text style={styles.modalTitle}>Select Exercise</Text>
-                                <ScrollView style={{ maxHeight: 300 }}>
-                                    {EXERCISES.map(ex => (
-                                        <TouchableOpacity
-                                            key={ex}
-                                            style={styles.modalItem}
-                                            onPress={() => {
-                                                setSelectedExercise(ex);
-                                                setShowExerciseModal(false);
-                                            }}
-                                        >
-                                            <Text style={styles.modalItemText}>{ex}</Text>
-                                            {selectedExercise === ex && <FontAwesome5 name="check" size={14} color={Colors.primary} />}
-                                        </TouchableOpacity>
-                                    ))}
-                                </ScrollView>
-                                <TouchableOpacity style={styles.closeBtn} onPress={() => setShowExerciseModal(false)}>
-                                    <Text style={styles.closeBtnText}>Cancel</Text>
-                                </TouchableOpacity>
-                            </View>
-                        </View>
-                    </Modal>
-
-                    {/* Sets Logger */}
-                    <Text style={styles.label}>Sets</Text>
-                    <View style={styles.setsHeader}>
-                        <Text style={styles.headerLabel}>Weight (kg)</Text>
-                        <Text style={styles.headerLabel}>Reps</Text>
-                        <View style={{ width: 30 }} />
+                {/* --- LOG WORKOUT CARD --- */}
+                <TouchableOpacity style={styles.logCard} onPress={() => router.push('/workout/log')}>
+                    <View style={styles.logIconCircle}>
+                        <FontAwesome5 name="dumbbell" size={24} color={Colors.background} />
                     </View>
+                    <View style={{ flex: 1 }}>
+                        <Text style={styles.logCardTitle}>Log a Workout</Text>
+                        <Text style={styles.logCardSubtitle}>Track your sets, reps & progress</Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={24} color={Colors.textSecondary} />
+                </TouchableOpacity>
 
-                    {sets.map((set, index) => (
-                        <View key={index} style={styles.setRow}>
-                            <TextInput
-                                style={styles.setInput}
-                                keyboardType="numeric"
-                                placeholder="0"
-                                placeholderTextColor="#666"
-                                value={set.weight}
-                                onChangeText={(v) => updateSet(index, 'weight', v)}
-                            />
-                            <TextInput
-                                style={styles.setInput}
-                                keyboardType="numeric"
-                                placeholder="0"
-                                placeholderTextColor="#666"
-                                value={set.reps}
-                                onChangeText={(v) => updateSet(index, 'reps', v)}
-                            />
-                            <TouchableOpacity onPress={() => removeSet(index)} style={styles.removeSetBtn}>
-                                <Ionicons name="trash-outline" size={20} color="#FF4444" />
-                            </TouchableOpacity>
-                        </View>
-                    ))}
-
-                    <TouchableOpacity style={styles.addSetBtn} onPress={addSet}>
-                        <FontAwesome5 name="plus" size={12} color={Colors.primary} />
-                        <Text style={styles.addSetText}>Add Set</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                        style={[styles.mainButton, loggingState && styles.disabledBtn]}
-                        onPress={handleLogWorkout}
-                        disabled={loggingState}
-                    >
-                        {loggingState ? (
-                            <ActivityIndicator color="#000" />
+                {/* --- RECENT ACTIVITY SECTION --- */}
+                <Text style={styles.sectionTitle}>Recent Activity</Text>
+                {loadingHistory ? (
+                    <ActivityIndicator color={Colors.primary} />
+                ) : (
+                    <View>
+                        {history.length === 0 ? (
+                            <Text style={styles.placeholderText}>No workouts logged yet.</Text>
                         ) : (
-                            <Text style={styles.mainButtonText}>Log Workout</Text>
+                            history.map((session, index) => (
+                                <View key={index} style={styles.historyItem}>
+                                    <View style={styles.historyDateBox}>
+                                        <Text style={styles.historyDateDay}>{new Date(session.date).getDate()}</Text>
+                                        <Text style={styles.historyDateMonth}>{new Date(session.date).toLocaleString('default', { month: 'short' })}</Text>
+                                    </View>
+                                    <View style={styles.historyDetails}>
+                                        <Text style={styles.historyTitle}>{session.templateName || 'Workout'}</Text>
+                                        <Text style={styles.historySubtitle}>
+                                            {session.exercisesPerformed.length} Exercises • {session.exercisesPerformed.map((e: any) => e.exerciseName).join(', ')}
+                                        </Text>
+                                    </View>
+                                </View>
+                            ))
                         )}
-                    </TouchableOpacity>
-                </View>
+                    </View>
+                )}
 
                 <View style={{ height: 40 }} />
             </ScrollView>
@@ -363,6 +253,13 @@ const styles = StyleSheet.create({
         color: Colors.primary,
         fontWeight: '600',
     },
+    sectionTitle: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: Colors.text,
+        marginBottom: 16,
+        marginTop: 8,
+    },
     toggleContainer: {
         flexDirection: 'row',
         backgroundColor: Colors.background,
@@ -377,7 +274,7 @@ const styles = StyleSheet.create({
         borderRadius: 8,
     },
     toggleBtnActive: {
-        backgroundColor: Colors.surface, // Or a highlight color
+        backgroundColor: Colors.surface,
         borderWidth: 1,
         borderColor: Colors.border,
     },
@@ -417,6 +314,7 @@ const styles = StyleSheet.create({
         color: Colors.textSecondary,
         textAlign: 'center',
         fontStyle: 'italic',
+        marginTop: 20,
     },
     uploadBtn: {
         flexDirection: 'row',
@@ -429,7 +327,7 @@ const styles = StyleSheet.create({
         gap: 8,
     },
     uploadBtnText: {
-        color: '#000', // Assuming primary is bright like lime/yellow
+        color: '#000',
         fontWeight: 'bold',
     },
     saveBtn: {
@@ -443,134 +341,75 @@ const styles = StyleSheet.create({
         color: '#000',
         fontWeight: 'bold',
     },
-    label: {
-        color: Colors.textSecondary,
-        fontSize: 14,
-        marginBottom: 8,
-        marginTop: 16,
-    },
-    pickerTrigger: {
-        backgroundColor: Colors.background,
-        padding: 16,
-        borderRadius: 12,
+    logCard: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
+        backgroundColor: Colors.surface,
+        borderRadius: 20,
+        padding: 24, // Larger padding for emphasis
         alignItems: 'center',
+        marginBottom: 24,
         borderWidth: 1,
-        borderColor: Colors.border,
+        borderColor: Colors.primary, // Highlight border
     },
-    pickerText: {
-        color: Colors.text,
-        fontSize: 16,
-    },
-    input: {
-        backgroundColor: Colors.background,
-        color: Colors.text,
-        padding: 16,
-        borderRadius: 12,
-        borderWidth: 1,
-        borderColor: Colors.border,
-        fontSize: 16,
-    },
-    setsHeader: {
-        flexDirection: 'row',
-        marginBottom: 8,
-        paddingHorizontal: 4,
-    },
-    headerLabel: {
-        flex: 1,
-        color: Colors.textSecondary,
-        fontSize: 12,
-    },
-    setRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 12,
-        gap: 12,
-    },
-    setInput: {
-        flex: 1,
-        backgroundColor: Colors.background,
-        color: Colors.text,
-        padding: 12,
-        borderRadius: 12,
-        borderWidth: 1,
-        borderColor: Colors.border,
-        textAlign: 'center',
-    },
-    removeSetBtn: {
-        width: 30,
-        alignItems: 'center',
-    },
-    addSetBtn: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: 12,
-        gap: 8,
-    },
-    addSetText: {
-        color: Colors.primary,
-        fontWeight: '600',
-    },
-    mainButton: {
+    logIconCircle: {
+        width: 50,
+        height: 50,
+        borderRadius: 25,
         backgroundColor: Colors.primary,
-        padding: 18,
-        borderRadius: 16,
+        justifyContent: 'center',
         alignItems: 'center',
-        marginTop: 24,
-        shadowColor: Colors.primary,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 10,
-        elevation: 5,
+        marginRight: 16,
     },
-    disabledBtn: {
-        opacity: 0.7,
-    },
-    mainButtonText: {
-        color: '#000',
+    logCardTitle: {
         fontSize: 18,
         fontWeight: 'bold',
+        color: Colors.text,
     },
-    modalOverlay: {
-        flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.8)',
-        justifyContent: 'center',
-        padding: 24,
+    logCardSubtitle: {
+        fontSize: 13,
+        color: Colors.textSecondary,
     },
-    modalContent: {
+    historyItem: {
+        flexDirection: 'row',
         backgroundColor: Colors.surface,
-        borderRadius: 24,
-        padding: 24,
-        maxHeight: '80%',
+        borderRadius: 16,
+        padding: 16,
+        marginBottom: 12,
+        borderWidth: 1,
+        borderColor: Colors.border,
+        alignItems: 'center',
     },
-    modalTitle: {
-        fontSize: 20,
+    historyDateBox: {
+        backgroundColor: Colors.background,
+        borderRadius: 12,
+        padding: 8,
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: 50,
+        marginRight: 16,
+    },
+    historyDateDay: {
+        fontSize: 18,
         fontWeight: 'bold',
         color: Colors.text,
-        marginBottom: 16,
-        textAlign: 'center',
     },
-    modalItem: {
-        paddingVertical: 16,
-        borderBottomWidth: 1,
-        borderBottomColor: Colors.border,
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
+    historyDateMonth: {
+        fontSize: 10,
+        textTransform: 'uppercase',
+        color: Colors.primary,
+        fontWeight: 'bold',
     },
-    modalItemText: {
+    historyDetails: {
+        flex: 1,
+    },
+    historyTitle: {
+        fontSize: 16,
+        fontWeight: 'bold',
         color: Colors.text,
-        fontSize: 16,
+        marginBottom: 4,
     },
-    closeBtn: {
-        marginTop: 16,
-        padding: 16,
-        alignItems: 'center',
-    },
-    closeBtnText: {
+    historySubtitle: {
+        fontSize: 12,
         color: Colors.textSecondary,
-        fontSize: 16,
     },
 });
