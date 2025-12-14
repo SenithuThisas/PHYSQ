@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, useWindowDimensions, Platform, Image } from 'react-native';
 import { Colors } from '../../constants/Colors';
 import { useAuth } from '../../context/AuthContext';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 
 export default function Dashboard() {
     const { user } = useAuth();
@@ -55,15 +55,18 @@ export default function Dashboard() {
     const bmiColor = getBMIColor(currentCategory);
 
     const [weeklyCount, setWeeklyCount] = React.useState(0);
-    const { token } = useAuth();
+    const { token, refreshUser } = useAuth();
 
-    React.useEffect(() => {
-        if (token) {
-            import('../../services/workouts').then(({ getWeeklyStats }) => {
-                getWeeklyStats(token).then(data => setWeeklyCount(data.count));
-            });
-        }
-    }, [token]);
+    useFocusEffect(
+        React.useCallback(() => {
+            if (token) {
+                refreshUser();
+                import('../../services/workouts').then(({ getWeeklyStats }) => {
+                    getWeeklyStats(token).then(data => setWeeklyCount(data.count));
+                });
+            }
+        }, [token])
+    );
 
     return (
         <ScrollView style={styles.container} contentContainerStyle={[styles.content, isWeb && styles.webContent]}>
