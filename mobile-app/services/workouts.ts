@@ -15,3 +15,15 @@ export const logWorkoutSession = async (token: string, sessionData: any) => {
         throw error;
     }
 };
+
+export const getWorkoutHistory = async (token: string) => {
+    try {
+        const response = await axios.get(`${API_URL}/workouts`, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching workout history:', error);
+        throw error;
+    }
+};
