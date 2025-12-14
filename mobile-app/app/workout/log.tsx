@@ -287,12 +287,14 @@ const styles = StyleSheet.create({
         alignItems: 'flex-start',
     },
     panelLeft: {
-        flex: 1,
-        gap: 20,
+        flex: 1, // On mobile this will just follow default width
+        width: '100%',
+        gap: 16,
     },
     panelRight: {
-        flex: 1.5,
-        gap: 20,
+        flex: 1.5, // On desktop it takes more space
+        width: '100%',
+        gap: 16,
     },
     /* EXERCISE HEADER */
     exerciseHeader: {
