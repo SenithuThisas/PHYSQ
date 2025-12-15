@@ -112,19 +112,27 @@ export default function ProfileEditForm({ onBack }: ProfileEditFormProps) {
         setSaving(true);
         try {
             let finalHeight = 0;
+            const hVal = parseFloat(heightValue || '0');
+            const hFt = parseFloat(heightFt || '0');
+            const hIn = parseFloat(heightIn || '0');
+
             if (heightUnit === 'cm') {
-                finalHeight = parseFloat(heightValue);
+                finalHeight = isNaN(hVal) ? 0 : hVal;
             } else {
-                finalHeight = parseFloat(heightFt || '0') + (parseFloat(heightIn || '0') / 12);
+                finalHeight = (isNaN(hFt) ? 0 : hFt) + ((isNaN(hIn) ? 0 : hIn) / 12);
             }
+
+            const wVal = parseFloat(weightValue || '0');
+            const finalWeight = isNaN(wVal) ? 0 : wVal;
+            const finalAge = age ? parseInt(age) : undefined;
 
             const payload = {
                 fullName,
                 username,
-                age: age ? parseInt(age) : undefined,
+                age: isNaN(finalAge || NaN) ? undefined : finalAge,
                 gender,
                 height: { value: finalHeight, unit: heightUnit },
-                weight: { value: parseFloat(weightValue), unit: weightUnit },
+                weight: { value: finalWeight, unit: weightUnit },
                 profilePicture
             };
 
