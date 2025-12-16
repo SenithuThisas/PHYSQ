@@ -129,34 +129,36 @@ export default function LogWorkout() {
 
             <ScrollView contentContainerStyle={styles.scrollContent}>
                 <View style={styles.container}>
-                    {/* Date Selector */}
-                    <View style={styles.dateSelectorContainer}>
-                        <TouchableOpacity onPress={() => changeDate(-1)} style={styles.dateNavBtn}>
-                            <Ionicons name="chevron-back" size={20} color={Colors.primary} />
-                        </TouchableOpacity>
-                        <View style={styles.dateDisplay}>
-                            <MaterialCommunityIcons name="calendar" size={16} color={Colors.textSecondary} />
-                            <Text style={styles.dateText}>
-                                {date.toDateString() === new Date().toDateString() ? 'Today' : date.toDateString()}
-                            </Text>
-                        </View>
-                        <TouchableOpacity onPress={() => changeDate(1)} style={styles.dateNavBtn}>
-                            <Ionicons name="chevron-forward" size={20} color={Colors.primary} />
-                        </TouchableOpacity>
-                    </View>
-
-                    {/* Exercise Selector */}
-                    <TouchableOpacity style={styles.exerciseHeader} onPress={() => setShowExerciseModal(true)}>
-                        <View style={{ flex: 1 }}>
-                            <View style={styles.exerciseSelector}>
-                                <Text style={styles.exerciseTitle}>{selectedExercise}</Text>
-                                <FontAwesome5 name="chevron-down" size={16} color={Colors.primary} />
+                    {/* Record Workout Card with Date */}
+                    <View style={styles.recordCard}>
+                        <View style={styles.recordCardHeader}>
+                            <Text style={styles.recordCardTitle}>Record workout</Text>
+                            <View style={styles.dateSelector}>
+                                <TouchableOpacity onPress={() => changeDate(-1)} style={styles.dateNavBtnSmall}>
+                                    <Ionicons name="chevron-back" size={18} color={Colors.primary} />
+                                </TouchableOpacity>
+                                <Text style={styles.dateTextSmall}>
+                                    {date.toDateString() === new Date().toDateString() ? 'Today' : date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                </Text>
+                                <TouchableOpacity onPress={() => changeDate(1)} style={styles.dateNavBtnSmall}>
+                                    <Ionicons name="chevron-forward" size={18} color={Colors.primary} />
+                                </TouchableOpacity>
                             </View>
                         </View>
-                        <View style={styles.exerciseIconBg}>
-                            <MaterialCommunityIcons name="dumbbell" size={24} color="#000" />
-                        </View>
-                    </TouchableOpacity>
+
+                        {/* Exercise Selector */}
+                        <TouchableOpacity style={styles.exerciseHeader} onPress={() => setShowExerciseModal(true)}>
+                            <View style={{ flex: 1 }}>
+                                <View style={styles.exerciseSelector}>
+                                    <Text style={styles.exerciseTitle}>{selectedExercise}</Text>
+                                    <FontAwesome5 name="chevron-down" size={16} color={Colors.primary} />
+                                </View>
+                            </View>
+                            <View style={styles.exerciseIconBg}>
+                                <MaterialCommunityIcons name="dumbbell" size={24} color="#000" />
+                            </View>
+                        </TouchableOpacity>
+                    </View>
 
                     {/* Sets Entry */}
 
@@ -310,31 +312,40 @@ const styles = StyleSheet.create({
     container: {
         gap: 16,
     },
-    /* Date Selector */
-    dateSelectorContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
+    /* Record Workout Card */
+    recordCard: {
         backgroundColor: Colors.surface,
-        padding: 12,
-        borderRadius: 16,
+        borderRadius: 20,
+        padding: 20,
         borderWidth: 1,
         borderColor: 'rgba(255,255,255,0.05)',
+        gap: 16,
     },
-    dateNavBtn: {
-        padding: 8,
-        backgroundColor: 'rgba(255,255,255,0.05)',
-        borderRadius: 8,
+    recordCardHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 4,
     },
-    dateDisplay: {
+    recordCardTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: Colors.text,
+    },
+    dateSelector: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: 8,
     },
-    dateText: {
-        color: Colors.text,
-        fontSize: 16,
-        fontWeight: 'bold',
+    dateNavBtnSmall: {
+        padding: 4,
+    },
+    dateTextSmall: {
+        color: Colors.primary,
+        fontSize: 14,
+        fontWeight: '600',
+        minWidth: 60,
+        textAlign: 'center',
     },
 
     /* EXERCISE HEADER */
@@ -342,11 +353,9 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        backgroundColor: Colors.surface,
-        padding: 24,
-        borderRadius: 20,
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.05)',
+        padding: 20,
+        backgroundColor: 'rgba(255,255,255,0.03)',
+        borderRadius: 16,
     },
     exerciseLabel: {
         color: Colors.textSecondary,
