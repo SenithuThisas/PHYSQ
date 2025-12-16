@@ -15,7 +15,7 @@ export const logWorkoutSession = async (token: string, sessionData: any) => {
         throw error;
     }
 }
-};
+
 
 export const deleteWorkout = async (token: string, workoutId: string) => {
     try {
