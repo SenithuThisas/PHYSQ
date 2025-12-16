@@ -129,7 +129,8 @@ export default function LogWorkout() {
 
             <ScrollView contentContainerStyle={styles.scrollContent}>
                 <View style={styles.container}>
-                    {/* Date Selector */}
+                    {/* Step 1: Select Date */}
+                    <Text style={styles.stepTitle}>1. Select Workout Date</Text>
                     <View style={styles.dateSelectorContainer}>
                         <TouchableOpacity onPress={() => changeDate(-1)} style={styles.dateNavBtn}>
                             <Ionicons name="chevron-back" size={20} color={Colors.primary} />
@@ -145,10 +146,11 @@ export default function LogWorkout() {
                         </TouchableOpacity>
                     </View>
 
-                    {/* Exercise Selector */}
+                    {/* Step 2: Choose Exercise */}
+                    <Text style={styles.stepTitle}>2. Choose Exercise</Text>
                     <TouchableOpacity style={styles.exerciseHeader} onPress={() => setShowExerciseModal(true)}>
                         <View>
-                            <Text style={styles.exerciseLabel}>EXERCISE</Text>
+                            <Text style={styles.exerciseLabel}>TAP TO SELECT</Text>
                             <View style={styles.exerciseSelector}>
                                 <Text style={styles.exerciseTitle}>{selectedExercise}</Text>
                                 <FontAwesome5 name="chevron-down" size={16} color={Colors.primary} />
@@ -159,23 +161,14 @@ export default function LogWorkout() {
                         </View>
                     </TouchableOpacity>
 
-                    {/* Workout Notes */}
-                    <View style={styles.notesContainer}>
-                        <TextInput
-                            style={styles.notesInput}
-                            placeholder="Add workout notes..."
-                            placeholderTextColor={Colors.textSecondary}
-                            value={description}
-                            onChangeText={setDescription}
-                            multiline
-                        />
-                    </View>
+                    {/* Step 3: Log Your Sets */}
+                    <Text style={styles.stepTitle}>3. Enter Your Sets</Text>
+                    <Text style={styles.stepSubtitle}>Record weight (kg) and reps for each set</Text>
 
-                    {/* Sets Entry */}
                     <View style={styles.setsContainer}>
                         <View style={styles.setsHeaderRow}>
                             <Text style={styles.colHeader}>SET</Text>
-                            <Text style={styles.colHeader}>KG</Text>
+                            <Text style={styles.colHeader}>WEIGHT (KG)</Text>
                             <Text style={styles.colHeader}>REPS</Text>
                             <View style={{ width: 40 }} />
                         </View>
@@ -186,7 +179,7 @@ export default function LogWorkout() {
                                 <TextInput
                                     style={styles.inputBox}
                                     keyboardType="numeric"
-                                    placeholder="-"
+                                    placeholder="0"
                                     placeholderTextColor={Colors.textSecondary}
                                     value={set.weight}
                                     onChangeText={(v) => updateSet(index, 'weight', v)}
@@ -194,7 +187,7 @@ export default function LogWorkout() {
                                 <TextInput
                                     style={styles.inputBox}
                                     keyboardType="numeric"
-                                    placeholder="-"
+                                    placeholder="0"
                                     placeholderTextColor={Colors.textSecondary}
                                     value={set.reps}
                                     onChangeText={(v) => updateSet(index, 'reps', v)}
@@ -207,15 +200,28 @@ export default function LogWorkout() {
 
                         <TouchableOpacity style={styles.addBtn} onPress={addSet}>
                             <FontAwesome5 name="plus" size={14} color="#000" />
-                            <Text style={styles.addBtnText}>ADD SET</Text>
+                            <Text style={styles.addBtnText}>ADD ANOTHER SET</Text>
                         </TouchableOpacity>
                     </View>
 
-                    {/* Last Performance History */}
+                    {/* Workout Notes (Optional) */}
+                    <Text style={styles.stepTitle}>4. Add Notes (Optional)</Text>
+                    <View style={styles.notesContainer}>
+                        <TextInput
+                            style={styles.notesInput}
+                            placeholder="e.g., Felt strong today, increased weight..."
+                            placeholderTextColor={Colors.textSecondary}
+                            value={description}
+                            onChangeText={setDescription}
+                            multiline
+                        />
+                    </View>
+
+                    {/* Last Performance Reference */}
                     <View style={styles.historyCard}>
                         <View style={styles.historyHeader}>
                             <MaterialCommunityIcons name="history" size={18} color={Colors.textSecondary} />
-                            <Text style={styles.historyTitle}>LAST PERFORMANCE</Text>
+                            <Text style={styles.historyTitle}>YOUR LAST {selectedExercise.toUpperCase()} WORKOUT</Text>
                         </View>
                         {loadingLast ? (
                             <ActivityIndicator color={Colors.textSecondary} style={{ marginTop: 20 }} />
@@ -240,7 +246,7 @@ export default function LogWorkout() {
                             </View>
                         ) : (
                             <View style={styles.emptyHistory}>
-                                <Text style={styles.emptyHistoryText}>No previous data found.</Text>
+                                <Text style={styles.emptyHistoryText}>This is your first time doing this exercise!</Text>
                             </View>
                         )}
                     </View>
@@ -309,6 +315,19 @@ const styles = StyleSheet.create({
     },
     container: {
         gap: 16,
+    },
+    stepTitle: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: Colors.primary,
+        marginTop: 8,
+        marginBottom: 8,
+    },
+    stepSubtitle: {
+        fontSize: 13,
+        color: Colors.textSecondary,
+        marginBottom: 12,
+        fontStyle: 'italic',
     },
     /* Date Selector */
     dateSelectorContainer: {
