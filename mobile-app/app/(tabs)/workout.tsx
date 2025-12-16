@@ -8,7 +8,6 @@ import { FontAwesome5, Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import * as ImagePicker from 'expo-image-picker';
 import { getSchedule, updateSchedule } from '../../services/schedule';
-import { getWorkoutHistory } from '../../services/workouts';
 import { useRouter, useFocusEffect } from 'expo-router';
 
 export default function WorkoutHub() {
@@ -21,10 +20,6 @@ export default function WorkoutHub() {
     const [scheduleText, setScheduleText] = useState('');
     const [scheduleImage, setScheduleImage] = useState<string | null>(null);
     const [isEditingSchedule, setIsEditingSchedule] = useState(false);
-
-    // History State
-    const [history, setHistory] = useState<any[]>([]);
-    const [loadingHistory, setLoadingHistory] = useState(false);
 
     const fetchData = useCallback(async () => {
         if (!token) return;
@@ -40,18 +35,6 @@ export default function WorkoutHub() {
             console.log('Failed to fetch schedule');
         } finally {
             setLoadingSchedule(false);
-        }
-
-        // Fetch History
-        setLoadingHistory(true);
-        try {
-            const hist = await getWorkoutHistory(token);
-            // Limit to recent 5
-            setHistory(hist.slice(0, 5));
-        } catch (error) {
-            console.log('Failed to fetch history');
-        } finally {
-            setLoadingHistory(false);
         }
     }, [token]);
 
@@ -183,7 +166,7 @@ export default function WorkoutHub() {
                 </TouchableOpacity>
 
                 {/* --- VIEW ALL RECORDS CARD --- */}
-                <TouchableOpacity style={styles.recordsCard} onPress={() => router.push('/stats')}>
+                <TouchableOpacity style={styles.recordsCard} onPress={() => router.push('/workout/records')}>
                     <View style={styles.recordsIconCircle}>
                         <MaterialIcons name="history" size={26} color={Colors.background} />
                     </View>
@@ -193,33 +176,6 @@ export default function WorkoutHub() {
                     </View>
                     <Ionicons name="chevron-forward" size={24} color={Colors.textSecondary} />
                 </TouchableOpacity>
-
-                {/* --- RECENT ACTIVITY SECTION --- */}
-                <Text style={styles.sectionTitle}>Recent Activity</Text>
-                {loadingHistory ? (
-                    <ActivityIndicator color={Colors.primary} />
-                ) : (
-                    <View>
-                        {history.length === 0 ? (
-                            <Text style={styles.placeholderText}>No workouts logged yet.</Text>
-                        ) : (
-                            history.map((session, index) => (
-                                <View key={index} style={styles.historyItem}>
-                                    <View style={styles.historyDateBox}>
-                                        <Text style={styles.historyDateDay}>{new Date(session.date).getDate()}</Text>
-                                        <Text style={styles.historyDateMonth}>{new Date(session.date).toLocaleString('default', { month: 'short' })}</Text>
-                                    </View>
-                                    <View style={styles.historyDetails}>
-                                        <Text style={styles.historyTitle}>{session.templateName || 'Workout'}</Text>
-                                        <Text style={styles.historySubtitle}>
-                                            {session.exercisesPerformed.length} Exercises • {session.exercisesPerformed.map((e: any) => e.exerciseName).join(', ')}
-                                        </Text>
-                                    </View>
-                                </View>
-                            ))
-                        )}
-                    </View>
-                )}
 
                 <View style={{ height: 40 }} />
             </ScrollView>
