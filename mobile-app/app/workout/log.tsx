@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
     View, Text, StyleSheet, ScrollView, TouchableOpacity,
-    TextInput, ActivityIndicator, Alert, Modal, SafeAreaView, Platform, useWindowDimensions
+    TextInput, ActivityIndicator, Alert, Modal, SafeAreaView, Platform
 } from 'react-native';
 import { Colors } from '../../constants/Colors';
 import { FontAwesome5, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -19,9 +19,6 @@ const EXERCISES = [
 ];
 
 export default function LogWorkout() {
-    const { width } = useWindowDimensions();
-    const isDesktop = width > 768;
-
     const { token } = useAuth();
     const router = useRouter();
     const navigation = useNavigation();
@@ -131,125 +128,122 @@ export default function LogWorkout() {
             </View>
 
             <ScrollView contentContainerStyle={styles.scrollContent}>
-                <View style={[styles.gridContainer, isDesktop && styles.gridDesktop]}>
-
-                    {/* LEFT PANEL: CONTEXT & HISTORY */}
-                    <View style={[styles.panelLeft, isDesktop && styles.panelLeftDesktop, { gap: 16 }]}>
-                        <View style={styles.dateSelectorContainer}>
-                            <TouchableOpacity onPress={() => changeDate(-1)} style={styles.dateNavBtn}>
-                                <Ionicons name="chevron-back" size={20} color={Colors.primary} />
-                            </TouchableOpacity>
-                            <View style={styles.dateDisplay}>
-                                <MaterialCommunityIcons name="calendar" size={16} color={Colors.textSecondary} />
-                                <Text style={styles.dateText}>
-                                    {date.toDateString() === new Date().toDateString() ? 'Today' : date.toDateString()}
-                                </Text>
-                            </View>
-                            <TouchableOpacity onPress={() => changeDate(1)} style={styles.dateNavBtn}>
-                                <Ionicons name="chevron-forward" size={20} color={Colors.primary} />
-                            </TouchableOpacity>
-                        </View>
-
-                        <TouchableOpacity style={styles.exerciseHeader} onPress={() => setShowExerciseModal(true)}>
-                            <View>
-                                <Text style={styles.exerciseLabel}>EXERCISE</Text>
-                                <View style={styles.exerciseSelector}>
-                                    <Text style={styles.exerciseTitle}>{selectedExercise}</Text>
-                                    <FontAwesome5 name="chevron-down" size={16} color={Colors.primary} />
-                                </View>
-                            </View>
-                            <View style={styles.exerciseIconBg}>
-                                <MaterialCommunityIcons name="dumbbell" size={24} color="#000" />
-                            </View>
+                <View style={styles.container}>
+                    {/* Date Selector */}
+                    <View style={styles.dateSelectorContainer}>
+                        <TouchableOpacity onPress={() => changeDate(-1)} style={styles.dateNavBtn}>
+                            <Ionicons name="chevron-back" size={20} color={Colors.primary} />
                         </TouchableOpacity>
-
-                        <View style={styles.historyCard}>
-                            <View style={styles.historyHeader}>
-                                <MaterialCommunityIcons name="history" size={18} color={Colors.textSecondary} />
-                                <Text style={styles.historyTitle}>LAST PERFORMANCE</Text>
-                            </View>
-                            {loadingLast ? (
-                                <ActivityIndicator color={Colors.textSecondary} style={{ marginTop: 20 }} />
-                            ) : lastSession ? (
-                                <View>
-                                    <Text style={styles.lastDate}>{new Date(lastSession.date).toDateString()}</Text>
-                                    <View style={styles.lastStatsGrid}>
-                                        {lastSession.exerciseData.sets.map((s: any, i: number) => (
-                                            <View key={i} style={styles.lastStatBadge}>
-                                                <Text style={styles.lastStatText}>
-                                                    <Text style={{ fontWeight: 'bold', color: Colors.text }}>{s.weight}</Text>kg x {s.reps}
-                                                </Text>
-                                            </View>
-                                        ))}
-                                    </View>
-                                    <View style={styles.volumeBadge}>
-                                        <Text style={styles.volumeLabel}>MAX E1RM</Text>
-                                        <Text style={styles.volumeValue}>
-                                            {Math.max(...lastSession.exerciseData.sets.map((s: any) => s.weight * (1 + s.reps / 30))).toFixed(0)} kg
-                                        </Text>
-                                    </View>
-                                </View>
-                            ) : (
-                                <View style={styles.emptyHistory}>
-                                    <Text style={styles.emptyHistoryText}>No previous data found.</Text>
-                                </View>
-                            )}
+                        <View style={styles.dateDisplay}>
+                            <MaterialCommunityIcons name="calendar" size={16} color={Colors.textSecondary} />
+                            <Text style={styles.dateText}>
+                                {date.toDateString() === new Date().toDateString() ? 'Today' : date.toDateString()}
+                            </Text>
                         </View>
+                        <TouchableOpacity onPress={() => changeDate(1)} style={styles.dateNavBtn}>
+                            <Ionicons name="chevron-forward" size={20} color={Colors.primary} />
+                        </TouchableOpacity>
                     </View>
 
-                    {/* RIGHT PANEL: LOGGING INPUTS */}
-                    <View style={[styles.panelRight, isDesktop && styles.panelRightDesktop, { gap: 16 }]}>
-                        <View style={styles.notesContainer}>
-                            <TextInput
-                                style={styles.notesInput}
-                                placeholder="Add workout notes..."
-                                placeholderTextColor={Colors.textSecondary}
-                                value={description}
-                                onChangeText={setDescription}
-                                multiline
-                            />
-                        </View>
-
-                        <View style={styles.setsContainer}>
-                            <View style={styles.setsHeaderRow}>
-                                <Text style={styles.colHeader}>SET</Text>
-                                <Text style={styles.colHeader}>KG</Text>
-                                <Text style={styles.colHeader}>REPS</Text>
-                                <View style={{ width: 40 }} />
+                    {/* Exercise Selector */}
+                    <TouchableOpacity style={styles.exerciseHeader} onPress={() => setShowExerciseModal(true)}>
+                        <View>
+                            <Text style={styles.exerciseLabel}>EXERCISE</Text>
+                            <View style={styles.exerciseSelector}>
+                                <Text style={styles.exerciseTitle}>{selectedExercise}</Text>
+                                <FontAwesome5 name="chevron-down" size={16} color={Colors.primary} />
                             </View>
-
-                            {sets.map((set, index) => (
-                                <View key={index} style={styles.setRow}>
-                                    <Text style={styles.setIndex}>{index + 1}</Text>
-                                    <TextInput
-                                        style={styles.inputBox}
-                                        keyboardType="numeric"
-                                        placeholder="-"
-                                        placeholderTextColor={Colors.textSecondary}
-                                        value={set.weight}
-                                        onChangeText={(v) => updateSet(index, 'weight', v)}
-                                    />
-                                    <TextInput
-                                        style={styles.inputBox}
-                                        keyboardType="numeric"
-                                        placeholder="-"
-                                        placeholderTextColor={Colors.textSecondary}
-                                        value={set.reps}
-                                        onChangeText={(v) => updateSet(index, 'reps', v)}
-                                    />
-                                    <TouchableOpacity style={styles.delBtn} onPress={() => removeSet(index)}>
-                                        <Ionicons name="close-circle" size={24} color={Colors.textSecondary} />
-                                    </TouchableOpacity>
-                                </View>
-                            ))}
-
-                            <TouchableOpacity style={styles.addBtn} onPress={addSet}>
-                                <FontAwesome5 name="plus" size={14} color="#000" />
-                                <Text style={styles.addBtnText}>ADD SET</Text>
-                            </TouchableOpacity>
                         </View>
+                        <View style={styles.exerciseIconBg}>
+                            <MaterialCommunityIcons name="dumbbell" size={24} color="#000" />
+                        </View>
+                    </TouchableOpacity>
+
+                    {/* Workout Notes */}
+                    <View style={styles.notesContainer}>
+                        <TextInput
+                            style={styles.notesInput}
+                            placeholder="Add workout notes..."
+                            placeholderTextColor={Colors.textSecondary}
+                            value={description}
+                            onChangeText={setDescription}
+                            multiline
+                        />
                     </View>
 
+                    {/* Sets Entry */}
+                    <View style={styles.setsContainer}>
+                        <View style={styles.setsHeaderRow}>
+                            <Text style={styles.colHeader}>SET</Text>
+                            <Text style={styles.colHeader}>KG</Text>
+                            <Text style={styles.colHeader}>REPS</Text>
+                            <View style={{ width: 40 }} />
+                        </View>
+
+                        {sets.map((set, index) => (
+                            <View key={index} style={styles.setRow}>
+                                <Text style={styles.setIndex}>{index + 1}</Text>
+                                <TextInput
+                                    style={styles.inputBox}
+                                    keyboardType="numeric"
+                                    placeholder="-"
+                                    placeholderTextColor={Colors.textSecondary}
+                                    value={set.weight}
+                                    onChangeText={(v) => updateSet(index, 'weight', v)}
+                                />
+                                <TextInput
+                                    style={styles.inputBox}
+                                    keyboardType="numeric"
+                                    placeholder="-"
+                                    placeholderTextColor={Colors.textSecondary}
+                                    value={set.reps}
+                                    onChangeText={(v) => updateSet(index, 'reps', v)}
+                                />
+                                <TouchableOpacity style={styles.delBtn} onPress={() => removeSet(index)}>
+                                    <Ionicons name="close-circle" size={24} color={Colors.textSecondary} />
+                                </TouchableOpacity>
+                            </View>
+                        ))}
+
+                        <TouchableOpacity style={styles.addBtn} onPress={addSet}>
+                            <FontAwesome5 name="plus" size={14} color="#000" />
+                            <Text style={styles.addBtnText}>ADD SET</Text>
+                        </TouchableOpacity>
+                    </View>
+
+                    {/* Last Performance History */}
+                    <View style={styles.historyCard}>
+                        <View style={styles.historyHeader}>
+                            <MaterialCommunityIcons name="history" size={18} color={Colors.textSecondary} />
+                            <Text style={styles.historyTitle}>LAST PERFORMANCE</Text>
+                        </View>
+                        {loadingLast ? (
+                            <ActivityIndicator color={Colors.textSecondary} style={{ marginTop: 20 }} />
+                        ) : lastSession ? (
+                            <View>
+                                <Text style={styles.lastDate}>{new Date(lastSession.date).toDateString()}</Text>
+                                <View style={styles.lastStatsGrid}>
+                                    {lastSession.exerciseData.sets.map((s: any, i: number) => (
+                                        <View key={i} style={styles.lastStatBadge}>
+                                            <Text style={styles.lastStatText}>
+                                                <Text style={{ fontWeight: 'bold', color: Colors.text }}>{s.weight}</Text>kg x {s.reps}
+                                            </Text>
+                                        </View>
+                                    ))}
+                                </View>
+                                <View style={styles.volumeBadge}>
+                                    <Text style={styles.volumeLabel}>MAX E1RM</Text>
+                                    <Text style={styles.volumeValue}>
+                                        {Math.max(...lastSession.exerciseData.sets.map((s: any) => s.weight * (1 + s.reps / 30))).toFixed(0)} kg
+                                    </Text>
+                                </View>
+                            </View>
+                        ) : (
+                            <View style={styles.emptyHistory}>
+                                <Text style={styles.emptyHistoryText}>No previous data found.</Text>
+                            </View>
+                        )}
+                    </View>
                 </View>
             </ScrollView>
 
@@ -313,33 +307,8 @@ const styles = StyleSheet.create({
     scrollContent: {
         padding: 20,
     },
-    gridContainer: {
-        flexDirection: 'column',
-        gap: 24, // Increased gap for better separation
-    },
-    gridDesktop: {
-        flexDirection: 'row',
-        alignItems: 'flex-start',
-    },
-    panelLeft: {
-        width: '100%',
-        // No flex on mobile to allow auto-height
-    },
-    panelRight: {
-        width: '100%',
-        // No flex on mobile
-    },
-    /* Desktop-specific panel overrides injected via JS/StyleSheet flattening if needed, 
-       but here we can rely on the fact that we switched gridContainer to row. 
-       However, to get the 1:1.5 ratio on desktop, we need to conditionally apply flex styles 
-       in the component, OR we can use media queries if we had a library. 
-       Since we use inline logic: style={[styles.panelLeft, isDesktop && styles.panelLeftDesktop]} 
-    */
-    panelLeftDesktop: {
-        flex: 1,
-    },
-    panelRightDesktop: {
-        flex: 1.5,
+    container: {
+        gap: 16,
     },
     /* Date Selector */
     dateSelectorContainer: {
