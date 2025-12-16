@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
     View, Text, StyleSheet, ScrollView, ActivityIndicator,
-    SafeAreaView, TouchableOpacity
+    SafeAreaView, TouchableOpacity, Alert
 } from 'react-native';
 import { Colors } from '../../constants/Colors';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
-import { getWorkoutHistory } from '../../services/workouts';
+import { getWorkoutHistory, deleteWorkout } from '../../services/workouts';
 import { useRouter, useFocusEffect } from 'expo-router';
 
 export default function WorkoutRecords() {
@@ -35,6 +35,34 @@ export default function WorkoutRecords() {
             fetchHistory();
         }, [fetchHistory])
     );
+
+    const handleDelete = (workoutId: string) => {
+        Alert.alert(
+            "Delete Workout",
+            "Are you sure you want to delete this workout record?",
+            [
+                { text: "Cancel", style: "cancel" },
+                {
+                    text: "Delete",
+                    style: "destructive",
+                    onPress: async () => {
+                        try {
+                            await deleteWorkout(token!, workoutId);
+                            // Optimistically remove from state
+                            setHistory(prev => prev.filter(item => item._id !== workoutId));
+                        } catch (error) {
+                            Alert.alert("Error", "Failed to delete workout");
+                        }
+                    }
+                }
+            ]
+        );
+    };
+
+    const handleEdit = (workoutId: string) => {
+        // Placeholder for edit functionality
+        Alert.alert("Coming Soon", "Edit functionality will be available in a future update.");
+    };
 
     return (
         <SafeAreaView style={styles.safeArea}>
@@ -74,21 +102,39 @@ export default function WorkoutRecords() {
                                 </Text>
                                 {history.map((session, index) => (
                                     <View key={index} style={styles.historyItem}>
-                                        <View style={styles.historyDateBox}>
-                                            <Text style={styles.historyDateDay}>
-                                                {new Date(session.date).getDate()}
-                                            </Text>
-                                            <Text style={styles.historyDateMonth}>
-                                                {new Date(session.date).toLocaleString('default', { month: 'short' })}
-                                            </Text>
+                                        <View style={styles.historyContent}>
+                                            <View style={styles.historyDateBox}>
+                                                <Text style={styles.historyDateDay}>
+                                                    {new Date(session.date).getDate()}
+                                                </Text>
+                                                <Text style={styles.historyDateMonth}>
+                                                    {new Date(session.date).toLocaleString('default', { month: 'short' })}
+                                                </Text>
+                                            </View>
+                                            <View style={styles.historyDetails}>
+                                                <Text style={styles.historyTitle}>
+                                                    {session.templateName || 'Workout'}
+                                                </Text>
+                                                <Text style={styles.historySubtitle}>
+                                                    {session.exercisesPerformed.length} Exercise{session.exercisesPerformed.length !== 1 ? 's' : ''} • {session.exercisesPerformed.map((e: any) => e.exerciseName).join(', ')}
+                                                </Text>
+                                            </View>
                                         </View>
-                                        <View style={styles.historyDetails}>
-                                            <Text style={styles.historyTitle}>
-                                                {session.templateName || 'Workout'}
-                                            </Text>
-                                            <Text style={styles.historySubtitle}>
-                                                {session.exercisesPerformed.length} Exercise{session.exercisesPerformed.length !== 1 ? 's' : ''} • {session.exercisesPerformed.map((e: any) => e.exerciseName).join(', ')}
-                                            </Text>
+
+                                        {/* Actions */}
+                                        <View style={styles.actionButtons}>
+                                            <TouchableOpacity
+                                                style={styles.actionBtn}
+                                                onPress={() => handleEdit(session._id)}
+                                            >
+                                                <MaterialIcons name="edit" size={20} color={Colors.textSecondary} />
+                                            </TouchableOpacity>
+                                            <TouchableOpacity
+                                                style={[styles.actionBtn, styles.deleteBtn]}
+                                                onPress={() => handleDelete(session._id)}
+                                            >
+                                                <MaterialIcons name="delete-outline" size={20} color={Colors.error || '#FF453A'} />
+                                            </TouchableOpacity>
                                         </View>
                                     </View>
                                 ))}
@@ -153,13 +199,16 @@ const styles = StyleSheet.create({
         textAlign: 'center',
     },
     historyItem: {
-        flexDirection: 'row',
         backgroundColor: Colors.surface,
         borderRadius: 16,
-        padding: 16,
         marginBottom: 12,
         borderWidth: 1,
         borderColor: Colors.border,
+        overflow: 'hidden',
+    },
+    historyContent: {
+        flexDirection: 'row',
+        padding: 16,
         alignItems: 'center',
     },
     historyDateBox: {
@@ -194,5 +243,20 @@ const styles = StyleSheet.create({
     historySubtitle: {
         fontSize: 12,
         color: Colors.textSecondary,
+    },
+    actionButtons: {
+        flexDirection: 'row',
+        justifyContent: 'flex-end',
+        paddingHorizontal: 16,
+        paddingBottom: 16,
+        gap: 12,
+    },
+    actionBtn: {
+        padding: 8,
+        borderRadius: 8,
+        backgroundColor: 'rgba(255,255,255,0.05)',
+    },
+    deleteBtn: {
+        backgroundColor: 'rgba(255,69,58,0.1)',
     },
 });
