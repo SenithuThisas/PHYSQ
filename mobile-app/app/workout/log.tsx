@@ -74,6 +74,14 @@ export default function LogWorkout() {
         setSets(newSets);
     };
 
+    const [date, setDate] = useState(new Date());
+
+    const changeDate = (days: number) => {
+        const newDate = new Date(date);
+        newDate.setDate(date.getDate() + days);
+        setDate(newDate);
+    };
+
     const handleLogWorkout = async () => {
         if (!token) return;
         const validSets = sets.filter(s => s.weight && s.reps).map(s => ({
@@ -95,7 +103,7 @@ export default function LogWorkout() {
                 }],
                 templateName: description || 'Quick Log',
                 duration: 30,
-                date: new Date()
+                date: date // Use the selected date
             };
 
             await logWorkoutSession(token, sessionData);
@@ -127,6 +135,21 @@ export default function LogWorkout() {
 
                     {/* LEFT PANEL: CONTEXT & HISTORY */}
                     <View style={[styles.panelLeft, isDesktop && styles.panelLeftDesktop, { gap: 16 }]}>
+                        <View style={styles.dateSelectorContainer}>
+                            <TouchableOpacity onPress={() => changeDate(-1)} style={styles.dateNavBtn}>
+                                <Ionicons name="chevron-back" size={20} color={Colors.primary} />
+                            </TouchableOpacity>
+                            <View style={styles.dateDisplay}>
+                                <MaterialCommunityIcons name="calendar" size={16} color={Colors.textSecondary} />
+                                <Text style={styles.dateText}>
+                                    {date.toDateString() === new Date().toDateString() ? 'Today' : date.toDateString()}
+                                </Text>
+                            </View>
+                            <TouchableOpacity onPress={() => changeDate(1)} style={styles.dateNavBtn}>
+                                <Ionicons name="chevron-forward" size={20} color={Colors.primary} />
+                            </TouchableOpacity>
+                        </View>
+
                         <TouchableOpacity style={styles.exerciseHeader} onPress={() => setShowExerciseModal(true)}>
                             <View>
                                 <Text style={styles.exerciseLabel}>EXERCISE</Text>
@@ -318,6 +341,33 @@ const styles = StyleSheet.create({
     panelRightDesktop: {
         flex: 1.5,
     },
+    /* Date Selector */
+    dateSelectorContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        backgroundColor: Colors.surface,
+        padding: 12,
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.05)',
+    },
+    dateNavBtn: {
+        padding: 8,
+        backgroundColor: 'rgba(255,255,255,0.05)',
+        borderRadius: 8,
+    },
+    dateDisplay: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+    },
+    dateText: {
+        color: Colors.text,
+        fontSize: 16,
+        fontWeight: 'bold',
+    },
+
     /* EXERCISE HEADER */
     exerciseHeader: {
         flexDirection: 'row',
