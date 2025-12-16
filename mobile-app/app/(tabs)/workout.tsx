@@ -182,6 +182,18 @@ export default function WorkoutHub() {
                     <Ionicons name="chevron-forward" size={24} color={Colors.textSecondary} />
                 </TouchableOpacity>
 
+                {/* --- VIEW ALL RECORDS CARD --- */}
+                <TouchableOpacity style={styles.recordsCard} onPress={() => router.push('/stats')}>
+                    <View style={styles.recordsIconCircle}>
+                        <MaterialIcons name="history" size={26} color={Colors.background} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                        <Text style={styles.recordsCardTitle}>View All My Records</Text>
+                        <Text style={styles.recordsCardSubtitle}>See your complete workout history</Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={24} color={Colors.textSecondary} />
+                </TouchableOpacity>
+
                 {/* --- RECENT ACTIVITY SECTION --- */}
                 <Text style={styles.sectionTitle}>Recent Activity</Text>
                 {loadingHistory ? (
@@ -366,6 +378,34 @@ const styles = StyleSheet.create({
         color: Colors.text,
     },
     logCardSubtitle: {
+        fontSize: 13,
+        color: Colors.textSecondary,
+    },
+    recordsCard: {
+        flexDirection: 'row',
+        backgroundColor: Colors.surface,
+        borderRadius: 20,
+        padding: 24,
+        alignItems: 'center',
+        marginBottom: 24,
+        borderWidth: 1,
+        borderColor: Colors.border,
+    },
+    recordsIconCircle: {
+        width: 50,
+        height: 50,
+        borderRadius: 25,
+        backgroundColor: 'rgba(204, 255, 0, 0.2)', // Lighter primary color
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 16,
+    },
+    recordsCardTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: Colors.text,
+    },
+    recordsCardSubtitle: {
         fontSize: 13,
         color: Colors.textSecondary,
     },
