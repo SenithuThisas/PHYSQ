@@ -14,6 +14,19 @@ export const logWorkoutSession = async (token: string, sessionData: any) => {
         console.error('Error logging workout:', error);
         throw error;
     }
+}
+};
+
+export const deleteWorkout = async (token: string, workoutId: string) => {
+    try {
+        await axios.delete(`${API_URL}/workouts/${workoutId}`, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        return true;
+    } catch (error) {
+        console.error('Error deleting workout:', error);
+        throw error;
+    }
 };
 
 export const getWorkoutHistory = async (token: string) => {
