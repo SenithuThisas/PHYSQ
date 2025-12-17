@@ -66,6 +66,9 @@ const UserSchema = new mongoose.Schema({
     profilePicture: {
         type: String // URL or Base64
     },
+    scheduleImage: {
+        type: String // URL or Base64   
+    },
     workoutSessions: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'WorkoutSession'
