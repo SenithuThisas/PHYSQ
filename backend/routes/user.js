@@ -30,7 +30,7 @@ router.get('/profile', authenticateToken, async (req, res) => {
 // PUT /user/profile
 router.put('/profile', authenticateToken, async (req, res) => {
     try {
-        const { fullName, username, age, gender, height, weight, profilePicture } = req.body;
+        const { fullName, username, age, gender, height, weight, profilePicture, scheduleImage } = req.body;
 
         // Build update object
         const updateData = {};
@@ -46,6 +46,7 @@ router.put('/profile', authenticateToken, async (req, res) => {
             updateData.weight = weight;
         }
         if (profilePicture) updateData.profilePicture = profilePicture;
+        if (scheduleImage) updateData.scheduleImage = scheduleImage;
 
         const updateQuery = { $set: updateData };
         const pushQuery = {};
