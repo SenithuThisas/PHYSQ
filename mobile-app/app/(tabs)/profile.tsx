@@ -5,15 +5,42 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import ProfileEditForm from '../../components/ProfileEditForm';
+import * as ImagePicker from 'expo-image-picker';
+import axios from 'axios';
+import { Config } from '../../constants/Config';
 
 export default function Profile() {
-    const { signOut, user } = useAuth();
+    const { signOut, user, updateUser } = useAuth();
     const router = useRouter();
     const [view, setView] = useState<'dashboard' | 'edit'>('dashboard');
 
     const handleLogout = async () => {
         await signOut();
         router.replace('/');
+    };
+
+    const pickScheduleImage = async () => {
+        let result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ['images'],
+            allowsEditing: true,
+            aspect: [4, 3],
+            quality: 0.5,
+            base64: true,
+        });
+
+        if (!result.canceled && result.assets && result.assets[0].base64) {
+            const base64Img = `data:image/jpeg;base64,${result.assets[0].base64}`;
+            try {
+                // Determine API URL based on config or hardcode if config issue (assuming Config works as imports are correct)
+                await axios.put(`${Config.API_URL}/user/profile`, {
+                    scheduleImage: base64Img
+                });
+                await updateUser({ scheduleImage: base64Img });
+            } catch (error) {
+                console.error("Failed to upload schedule", error);
+                alert("Failed to upload schedule");
+            }
+        }
     };
 
     if (view === 'edit') {
@@ -44,6 +71,21 @@ export default function Profile() {
                     </TouchableOpacity>
                 </View>
                 <Text style={styles.userName}>{user?.fullName || 'User'}</Text>
+            </View>
+
+            {/* My Schedule Card */}
+            <View style={styles.scheduleCard}>
+                <View style={styles.cardHeader}>
+                    <Text style={styles.cardTitle}>My Schedule</Text>
+                    <TouchableOpacity onPress={pickScheduleImage}>
+                        <Text style={styles.editLink}>Edit</Text>
+                    </TouchableOpacity>
+                </View>
+                {user?.scheduleImage ? (
+                    <Image source={{ uri: user.scheduleImage }} style={styles.scheduleImage} resizeMode="cover" />
+                ) : (
+                    <Text style={styles.noScheduleText}>No schedule set.</Text>
+                )}
             </View>
 
             {/* Weekly Report Card - Placeholder */}
@@ -136,6 +178,29 @@ const styles = StyleSheet.create({
         borderRadius: 24,
         padding: 24,
         alignItems: 'center',
+    },
+    scheduleCard: {
+        backgroundColor: '#1C1C1E',
+        borderRadius: 24,
+        padding: 24,
+        minHeight: 100,
+        justifyContent: 'center',
+    },
+    editLink: {
+        color: '#dfff00', // Neon yellow/green like in screenshot
+        fontSize: 14,
+        fontWeight: 'bold',
+    },
+    scheduleImage: {
+        width: '100%',
+        height: 200,
+        borderRadius: 12,
+        marginTop: 10,
+    },
+    noScheduleText: {
+        color: '#8E8E93',
+        marginTop: 10,
+        fontSize: 14,
     },
     avatarSection: {
         marginBottom: 16,
