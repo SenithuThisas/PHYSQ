@@ -1,6 +1,5 @@
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, ActivityIndicator } from 'react-native';
-import { Utils } from 'expo-router/build/ui/utils'; // Keep existing if needed, or remove if unused. 
-// Assuming line 1 is imports.
+
 import { Colors as DefaultColors } from '../../constants/Colors';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
@@ -155,7 +154,7 @@ export default function Profile() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#000000', // Deep black background
+        backgroundColor: DefaultColors.background,
     },
     content: {
         padding: 20,
@@ -172,26 +171,26 @@ const styles = StyleSheet.create({
     headerTitle: {
         fontSize: 32,
         fontWeight: 'bold',
-        color: '#FFFFFF',
+        color: DefaultColors.text,
     },
     menuButton: {
         padding: 4,
     },
     profileCard: {
-        backgroundColor: '#1C1C1E', // Dark grey card
+        backgroundColor: DefaultColors.surface,
         borderRadius: 24,
         padding: 24,
         alignItems: 'center',
     },
     scheduleCard: {
-        backgroundColor: '#1C1C1E',
+        backgroundColor: DefaultColors.surface,
         borderRadius: 24,
         padding: 24,
         minHeight: 100,
         justifyContent: 'center',
     },
     editLink: {
-        color: '#dfff00', // Neon yellow/green like in screenshot
+        color: DefaultColors.primary,
         fontSize: 14,
         fontWeight: 'bold',
     },
@@ -202,7 +201,7 @@ const styles = StyleSheet.create({
         marginTop: 10,
     },
     noScheduleText: {
-        color: '#8E8E93',
+        color: DefaultColors.textSecondary,
         marginTop: 10,
         fontSize: 14,
     },
@@ -221,20 +220,20 @@ const styles = StyleSheet.create({
         width: 100,
         height: 100,
         borderRadius: 50,
-        backgroundColor: Colors.surfaceLight,
+        backgroundColor: DefaultColors.surfaceLight,
         justifyContent: 'center',
         alignItems: 'center',
     },
     avatarText: {
         fontSize: 36,
         fontWeight: 'bold',
-        color: Colors.text,
+        color: DefaultColors.text,
     },
     editButton: {
         position: 'absolute',
         bottom: 0,
         right: -40,
-        backgroundColor: '#3A3A3C',
+        backgroundColor: '#3A3A3C', // Keep a dark float or use surfaceLight
         paddingHorizontal: 16,
         paddingVertical: 8,
         borderRadius: 20,
@@ -247,10 +246,10 @@ const styles = StyleSheet.create({
     userName: {
         fontSize: 24,
         fontWeight: 'bold',
-        color: '#FFFFFF',
+        color: DefaultColors.text,
     },
     reportCard: {
-        backgroundColor: '#1C1C1E',
+        backgroundColor: DefaultColors.surface,
         borderRadius: 24,
         padding: 24,
     },
@@ -263,10 +262,10 @@ const styles = StyleSheet.create({
     cardTitle: {
         fontSize: 20,
         fontWeight: 'bold',
-        color: '#FFFFFF',
+        color: DefaultColors.text,
     },
     dateRange: {
-        color: '#8E8E93',
+        color: DefaultColors.textSecondary,
         fontSize: 14,
     },
     reportRow: {
@@ -278,32 +277,32 @@ const styles = StyleSheet.create({
     },
     divider: {
         width: 1,
-        backgroundColor: '#3A3A3C',
+        backgroundColor: DefaultColors.border,
         marginHorizontal: 16,
     },
     reportLabel: {
-        color: '#FFFFFF',
+        color: DefaultColors.text,
         fontSize: 16,
         fontWeight: '600',
         marginBottom: 4,
     },
     reportSubLabel: {
-        color: '#8E8E93',
+        color: DefaultColors.textSecondary,
         fontSize: 12,
         marginBottom: 8,
     },
     reportValue: {
         fontSize: 24,
         fontWeight: 'bold',
-        color: '#FFFFFF',
+        color: DefaultColors.text,
         marginBottom: 4,
     },
     trendUp: {
-        color: '#8E8E93',
+        color: DefaultColors.textSecondary,
         fontSize: 14,
     },
     badgesCard: {
-        backgroundColor: '#1C1C1E',
+        backgroundColor: DefaultColors.surface,
         borderRadius: 24,
         padding: 24,
     },
@@ -323,14 +322,14 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     badgeName: {
-        color: '#FFFFFF',
+        color: DefaultColors.text,
         fontWeight: 'bold',
         fontSize: 14,
         textAlign: 'center',
         marginBottom: 4,
     },
     badgeDate: {
-        color: '#8E8E93',
+        color: DefaultColors.textSecondary,
         fontSize: 12,
         textAlign: 'center',
     },
