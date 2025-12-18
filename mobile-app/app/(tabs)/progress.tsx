@@ -44,26 +44,26 @@ export default function Progress() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: Colors.background,
+        backgroundColor: DefaultColors.background,
         padding: 24,
         paddingTop: 60,
     },
     header: {
         fontSize: 32,
         fontWeight: 'bold',
-        color: Colors.text,
+        color: DefaultColors.text,
         marginBottom: 32,
     },
     chartTitle: {
         fontSize: 18,
-        color: Colors.text,
+        color: DefaultColors.text,
         fontWeight: '600',
         marginBottom: 12,
         marginTop: 12,
     },
     placeholderChart: {
         height: 220,
-        backgroundColor: Colors.surface,
+        backgroundColor: DefaultColors.surface,
         borderRadius: 16,
         justifyContent: 'center',
         alignItems: 'center',
