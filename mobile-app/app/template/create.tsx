@@ -1,13 +1,15 @@
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert, ScrollView } from 'react-native';
 import { useState } from 'react';
 import { useRouter } from 'expo-router';
-import { Colors } from '../../constants/Colors';
+import { Colors as DefaultColors } from '../../constants/Colors';
 import { FontAwesome5 } from '@expo/vector-icons';
 import axios from 'axios';
 import { Config } from '../../constants/Config';
+import { useTheme } from '../../context/ThemeContext';
 
 export default function CreateTemplate() {
     const router = useRouter();
+    const { colors } = useTheme();
     const [name, setName] = useState('');
     const [exercises, setExercises] = useState<{ name: string }[]>([]);
     const [currentExercise, setCurrentExercise] = useState('');
@@ -42,44 +44,44 @@ export default function CreateTemplate() {
     };
 
     return (
-        <View style={styles.container}>
-            <Text style={styles.header}>New Template</Text>
+        <View style={[styles.container, { backgroundColor: colors.background }]}>
+            <Text style={[styles.header, { color: colors.text }]}>New Template</Text>
 
             <View style={styles.form}>
-                <Text style={styles.label}>Template Name</Text>
+                <Text style={[styles.label, { color: colors.textSecondary }]}>Template Name</Text>
                 <TextInput
-                    style={styles.input}
+                    style={[styles.input, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border, borderWidth: 1 }]}
                     placeholder="e.g. Pull Day"
-                    placeholderTextColor="#666"
+                    placeholderTextColor={colors.textSecondary}
                     value={name}
                     onChangeText={setName}
                 />
 
-                <Text style={styles.label}>Add Exercises</Text>
+                <Text style={[styles.label, { color: colors.textSecondary }]}>Add Exercises</Text>
                 <View style={styles.row}>
                     <TextInput
-                        style={[styles.input, { flex: 1, marginRight: 8 }]}
+                        style={[styles.input, { flex: 1, marginRight: 8, backgroundColor: colors.surface, color: colors.text, borderColor: colors.border, borderWidth: 1 }]}
                         placeholder="Exercise Name"
-                        placeholderTextColor="#666"
+                        placeholderTextColor={colors.textSecondary}
                         value={currentExercise}
                         onChangeText={setCurrentExercise}
                     />
-                    <TouchableOpacity style={styles.addButton} onPress={addExercise}>
-                        <FontAwesome5 name="plus" size={16} color={Colors.background} />
+                    <TouchableOpacity style={[styles.addButton, { backgroundColor: colors.primary }]} onPress={addExercise}>
+                        <FontAwesome5 name="plus" size={16} color={colors.background} />
                     </TouchableOpacity>
                 </View>
 
                 <ScrollView style={styles.list}>
                     {exercises.map((ex, i) => (
-                        <View key={i} style={styles.listItem}>
-                            <Text style={styles.listText}>{ex.name}</Text>
+                        <View key={i} style={[styles.listItem, { backgroundColor: colors.surface }]}>
+                            <Text style={[styles.listText, { color: colors.text }]}>{ex.name}</Text>
                         </View>
                     ))}
                 </ScrollView>
             </View>
 
-            <TouchableOpacity style={styles.saveButton} onPress={saveTemplate}>
-                <Text style={styles.saveText}>Save Template</Text>
+            <TouchableOpacity style={[styles.saveButton, { backgroundColor: colors.primary }]} onPress={saveTemplate}>
+                <Text style={[styles.saveText, { color: colors.background }]}>Save Template</Text>
             </TouchableOpacity>
         </View>
     );
@@ -88,26 +90,26 @@ export default function CreateTemplate() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: Colors.background,
+        backgroundColor: DefaultColors.background,
         padding: 24,
         paddingTop: 60,
     },
     header: {
         fontSize: 24,
         fontWeight: 'bold',
-        color: Colors.text,
+        color: DefaultColors.text,
         marginBottom: 32,
     },
     form: {
         flex: 1,
     },
     label: {
-        color: Colors.textSecondary,
+        color: DefaultColors.textSecondary,
         marginBottom: 8,
     },
     input: {
-        backgroundColor: Colors.surface,
-        color: Colors.text,
+        backgroundColor: DefaultColors.surface,
+        color: DefaultColors.text,
         padding: 16,
         borderRadius: 12,
         fontSize: 16,
@@ -118,7 +120,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     addButton: {
-        backgroundColor: Colors.primary,
+        backgroundColor: DefaultColors.primary,
         width: 50,
         height: 50,
         borderRadius: 12,
@@ -130,24 +132,24 @@ const styles = StyleSheet.create({
         marginTop: 16,
     },
     listItem: {
-        backgroundColor: Colors.surface,
+        backgroundColor: DefaultColors.surface,
         padding: 16,
         borderRadius: 12,
         marginBottom: 8,
     },
     listText: {
-        color: Colors.text,
+        color: DefaultColors.text,
         fontSize: 16,
     },
     saveButton: {
-        backgroundColor: Colors.primary,
+        backgroundColor: DefaultColors.primary,
         padding: 16,
         borderRadius: 12,
         alignItems: 'center',
         marginBottom: 20,
     },
     saveText: {
-        color: Colors.background,
+        color: DefaultColors.background,
         fontWeight: 'bold',
         fontSize: 16,
     }
