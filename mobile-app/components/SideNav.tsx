@@ -1,14 +1,15 @@
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform, LayoutAnimation, Pressable, Animated, Modal } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
-import { Colors } from '../constants/Colors';
+import { Colors as DefaultColors } from '../constants/Colors';
 import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
-const NavItem = ({ item, isActive, isCollapsed, onPress }: { item: any, isActive: boolean, isCollapsed: boolean, onPress: () => void }) => {
+const NavItem = ({ item, isActive, isCollapsed, onPress, colors }: { item: any, isActive: boolean, isCollapsed: boolean, onPress: () => void, colors: any }) => {
     const scale = useRef(new Animated.Value(1)).current;
 
     // Web Hover Handling
@@ -42,11 +43,11 @@ const NavItem = ({ item, isActive, isCollapsed, onPress }: { item: any, isActive
                 <FontAwesome5
                     name={item.icon}
                     size={20}
-                    color={activeOrHovered ? Colors.primary : Colors.textSecondary}
+                    color={activeOrHovered ? colors.primary : colors.textSecondary}
                 />
             </View>
             {!isCollapsed && (
-                <Text style={[styles.navText, activeOrHovered && styles.navTextActive]}>
+                <Text style={[styles.navText, { color: activeOrHovered ? colors.primary : colors.textSecondary }, activeOrHovered && styles.navTextActive]}>
                     {item.name}
                 </Text>
             )}
@@ -59,6 +60,7 @@ export default function SideNav() {
     const pathname = usePathname();
     const [collapsed, setCollapsed] = useState(false);
     const { signOut } = useAuth();
+    const { theme, toggleTheme, colors } = useTheme();
     const [showLogoutModal, setShowLogoutModal] = useState(false);
 
     const navItems = [
@@ -84,12 +86,12 @@ export default function SideNav() {
     };
 
     return (
-        <View style={[styles.container, collapsed ? styles.collapsedContainer : styles.expandedContainer]}>
+        <View style={[styles.container, collapsed ? styles.collapsedContainer : styles.expandedContainer, { backgroundColor: colors.surface, borderRightColor: colors.border }]}>
             <View style={styles.header}>
                 <TouchableOpacity onPress={toggleCollapse} style={styles.toggleBtn}>
-                    <FontAwesome5 name={collapsed ? "bars" : "chevron-left"} size={20} color={Colors.text} />
+                    <FontAwesome5 name={collapsed ? "bars" : "chevron-left"} size={20} color={colors.text} />
                 </TouchableOpacity>
-                {!collapsed && <Text style={styles.logoText}>PHYSQ</Text>}
+                {!collapsed && <Text style={[styles.logoText, { color: colors.primary }]}>PHYSQ</Text>}
             </View>
 
             <ScrollView
@@ -111,15 +113,21 @@ export default function SideNav() {
                             isActive={isActive}
                             isCollapsed={collapsed}
                             onPress={() => router.push(item.path as any)}
+                            colors={colors}
                         />
                     );
                 })}
             </ScrollView>
 
-            <View style={styles.footer}>
+            <View style={[styles.footer, { borderTopColor: colors.border }]}>
+                <TouchableOpacity onPress={toggleTheme} style={styles.logoutBtn}>
+                    <FontAwesome5 name={theme === 'dark' ? "sun" : "moon"} size={20} color={colors.textSecondary} />
+                    {!collapsed && <Text style={[styles.logoutText, { color: colors.textSecondary }]}>{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</Text>}
+                </TouchableOpacity>
+
                 <TouchableOpacity onPress={handleLogout} style={styles.logoutBtn}>
-                    <FontAwesome5 name="sign-out-alt" size={20} color={Colors.textSecondary} />
-                    {!collapsed && <Text style={styles.logoutText}>Logout</Text>}
+                    <FontAwesome5 name="sign-out-alt" size={20} color={colors.textSecondary} />
+                    {!collapsed && <Text style={[styles.logoutText, { color: colors.textSecondary }]}>Logout</Text>}
                 </TouchableOpacity>
             </View>
 
@@ -157,9 +165,10 @@ export default function SideNav() {
 
 const styles = StyleSheet.create({
     container: {
-        backgroundColor: Colors.surface,
+        // backgroundColor: Colors.surface, // Removed static
+
         borderRightWidth: 1,
-        borderRightColor: Colors.border,
+        // borderRightColor: Colors.border, // Removed static
         height: '100%',
         paddingVertical: 24,
         paddingHorizontal: 12,
@@ -186,7 +195,7 @@ const styles = StyleSheet.create({
         padding: 8,
     },
     logoText: {
-        color: Colors.primary,
+        // color: Colors.primary, // Removed static
         fontSize: 24,
         fontWeight: 'bold',
         marginLeft: 16,
@@ -221,19 +230,17 @@ const styles = StyleSheet.create({
         // backgroundColor: Colors.background, // Removed
     },
     navText: {
-        color: Colors.textSecondary,
         fontSize: 16,
         marginLeft: 12,
         fontWeight: '600',
     },
     navTextActive: {
-        color: Colors.primary,
         fontWeight: 'bold',
     },
     footer: {
         marginTop: 'auto',
         borderTopWidth: 1,
-        borderTopColor: Colors.border,
+        // borderTopColor: DefaultColors.border, // Dynamic
         paddingTop: 24,
     },
     logoutBtn: {
@@ -243,7 +250,7 @@ const styles = StyleSheet.create({
         opacity: 0.8,
     },
     logoutText: {
-        color: Colors.textSecondary,
+        // color: DefaultColors.textSecondary,
         marginLeft: 12,
         fontSize: 14,
     },
@@ -255,7 +262,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     modalContent: {
-        backgroundColor: Colors.surface,
+        backgroundColor: DefaultColors.surface,
         borderRadius: 20,
         padding: 24,
         width: '90%',
@@ -270,17 +277,17 @@ const styles = StyleSheet.create({
         shadowRadius: 3.84,
         elevation: 5,
         borderWidth: 1,
-        borderColor: Colors.border,
+        borderColor: DefaultColors.border,
     },
     modalTitle: {
         fontSize: 20,
         fontWeight: 'bold',
-        color: Colors.text,
+        color: DefaultColors.text,
         marginBottom: 12,
     },
     modalMessage: {
         fontSize: 16,
-        color: Colors.textSecondary,
+        color: DefaultColors.textSecondary,
         marginBottom: 24,
         textAlign: 'center',
     },
@@ -297,12 +304,12 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     cancelButton: {
-        backgroundColor: Colors.surface,
+        backgroundColor: DefaultColors.surface,
         borderWidth: 1,
-        borderColor: Colors.border,
+        borderColor: DefaultColors.border,
     },
     cancelButtonText: {
-        color: Colors.text,
+        color: DefaultColors.text,
         fontWeight: '600',
     },
     logoutConfirmButton: {
