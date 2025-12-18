@@ -1,5 +1,8 @@
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, ActivityIndicator } from 'react-native';
-import { Colors } from '../../constants/Colors';
+import { Utils } from 'expo-router/build/ui/utils'; // Keep existing if needed, or remove if unused. 
+// Assuming line 1 is imports.
+import { Colors as DefaultColors } from '../../constants/Colors';
+import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
@@ -11,6 +14,7 @@ import { Config } from '../../constants/Config';
 
 export default function Profile() {
     const { signOut, user, updateUser } = useAuth();
+    const { colors } = useTheme();
     const router = useRouter();
     const [view, setView] = useState<'dashboard' | 'edit'>('dashboard');
 
@@ -48,100 +52,100 @@ export default function Profile() {
     }
 
     return (
-        <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+        <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
             <View style={styles.header}>
-                <Text style={styles.headerTitle}>My page</Text>
+                <Text style={[styles.headerTitle, { color: colors.text }]}>My page</Text>
                 <TouchableOpacity onPress={handleLogout} style={styles.menuButton}>
-                    <Ionicons name="ellipsis-vertical" size={24} color={Colors.text} />
+                    <Ionicons name="ellipsis-vertical" size={24} color={colors.text} />
                 </TouchableOpacity>
             </View>
 
             {/* Profile Summary Card */}
-            <View style={styles.profileCard}>
+            <View style={[styles.profileCard, { backgroundColor: colors.surface }]}>
                 <View style={styles.avatarSection}>
                     {user?.profilePicture ? (
                         <Image source={{ uri: user.profilePicture }} style={styles.avatarImage} />
                     ) : (
-                        <View style={styles.avatarPlaceholder}>
-                            <Text style={styles.avatarText}>{(user?.fullName?.[0] || user?.email?.[0] || 'U').toUpperCase()}</Text>
+                        <View style={[styles.avatarPlaceholder, { backgroundColor: colors.surfaceLight }]}>
+                            <Text style={[styles.avatarText, { color: colors.text }]}>{(user?.fullName?.[0] || user?.email?.[0] || 'U').toUpperCase()}</Text>
                         </View>
                     )}
-                    <TouchableOpacity style={styles.editButton} onPress={() => setView('edit')}>
-                        <Text style={styles.editButtonText}>Edit</Text>
+                    <TouchableOpacity style={[styles.editButton, { backgroundColor: colors.surfaceLight }]} onPress={() => setView('edit')}>
+                        <Text style={[styles.editButtonText, { color: colors.text }]}>Edit</Text>
                     </TouchableOpacity>
                 </View>
-                <Text style={styles.userName}>{user?.fullName || 'User'}</Text>
+                <Text style={[styles.userName, { color: colors.text }]}>{user?.fullName || 'User'}</Text>
             </View>
 
             {/* My Schedule Card */}
-            <View style={styles.scheduleCard}>
+            <View style={[styles.scheduleCard, { backgroundColor: colors.surface }]}>
                 <View style={styles.cardHeader}>
-                    <Text style={styles.cardTitle}>My Schedule</Text>
+                    <Text style={[styles.cardTitle, { color: colors.text }]}>My Schedule</Text>
                     <TouchableOpacity onPress={pickScheduleImage}>
-                        <Text style={styles.editLink}>Edit</Text>
+                        <Text style={[styles.editLink, { color: colors.primary }]}>Edit</Text>
                     </TouchableOpacity>
                 </View>
                 {user?.scheduleImage ? (
                     <Image source={{ uri: user.scheduleImage }} style={styles.scheduleImage} resizeMode="cover" />
                 ) : (
-                    <Text style={styles.noScheduleText}>No schedule set.</Text>
+                    <Text style={[styles.noScheduleText, { color: colors.textSecondary }]}>No schedule set.</Text>
                 )}
             </View>
 
             {/* Weekly Report Card - Placeholder */}
-            <View style={styles.reportCard}>
+            <View style={[styles.reportCard, { backgroundColor: colors.surface }]}>
                 <View style={styles.cardHeader}>
-                    <Text style={styles.cardTitle}>Weekly report</Text>
-                    <Text style={styles.dateRange}>15-21 Dec</Text>
+                    <Text style={[styles.cardTitle, { color: colors.text }]}>Weekly report</Text>
+                    <Text style={[styles.dateRange, { color: colors.textSecondary }]}>15-21 Dec</Text>
                 </View>
 
                 <View style={styles.reportRow}>
                     <View style={styles.reportItem}>
-                        <Text style={styles.reportLabel}>Average sleep time</Text>
-                        <Text style={styles.reportSubLabel}>Previous week 8 h 10 m</Text>
-                        <Text style={styles.reportValue}>9 h 10 m</Text>
-                        <Text style={styles.trendUp}>▲ 1 h</Text>
+                        <Text style={[styles.reportLabel, { color: colors.text }]}>Average sleep time</Text>
+                        <Text style={[styles.reportSubLabel, { color: colors.textSecondary }]}>Previous week 8 h 10 m</Text>
+                        <Text style={[styles.reportValue, { color: colors.text }]}>9 h 10 m</Text>
+                        <Text style={[styles.trendUp, { color: colors.textSecondary }]}>▲ 1 h</Text>
                     </View>
-                    <View style={styles.divider} />
+                    <View style={[styles.divider, { backgroundColor: colors.border }]} />
                     <View style={styles.reportItem}>
-                        <Text style={styles.reportLabel}>Avg. wake-up time</Text>
-                        <Text style={styles.reportSubLabel}>Previous week 10 h</Text>
-                        <Text style={styles.reportValue}>10 h 40 m</Text>
-                        <Text style={styles.trendUp}>▲ 40 m</Text>
+                        <Text style={[styles.reportLabel, { color: colors.text }]}>Avg. wake-up time</Text>
+                        <Text style={[styles.reportSubLabel, { color: colors.textSecondary }]}>Previous week 10 h</Text>
+                        <Text style={[styles.reportValue, { color: colors.text }]}>10 h 40 m</Text>
+                        <Text style={[styles.trendUp, { color: colors.textSecondary }]}>▲ 40 m</Text>
                     </View>
                 </View>
             </View>
 
             {/* Badges Card - Placeholder */}
-            <TouchableOpacity style={styles.badgesCard}>
+            <TouchableOpacity style={[styles.badgesCard, { backgroundColor: colors.surface }]}>
                 <View style={styles.cardHeader}>
-                    <Text style={styles.cardTitle}>Badges</Text>
-                    <Ionicons name="chevron-forward" size={20} color={Colors.text} />
+                    <Text style={[styles.cardTitle, { color: colors.text }]}>Badges</Text>
+                    <Ionicons name="chevron-forward" size={20} color={colors.text} />
                 </View>
 
                 <View style={styles.badgesRow}>
                     <View style={styles.badgeItem}>
                         {/* Placeholder for badge icon */}
                         <View style={styles.badgeIconPlaceholder}>
-                            <Ionicons name="walk-outline" size={32} color={Colors.textSecondary} />
+                            <Ionicons name="walk-outline" size={32} color={colors.textSecondary} />
                         </View>
-                        <Text style={styles.badgeName}>First walking workout</Text>
-                        <Text style={styles.badgeDate}>3 Jun</Text>
+                        <Text style={[styles.badgeName, { color: colors.text }]}>First walking workout</Text>
+                        <Text style={[styles.badgeDate, { color: colors.textSecondary }]}>3 Jun</Text>
                     </View>
                     <View style={styles.badgeItem}>
                         {/* Placeholder for badge icon */}
                         <View style={styles.badgeIconPlaceholder}>
-                            <Ionicons name="flame-outline" size={32} color={Colors.error} />
+                            <Ionicons name="flame-outline" size={32} color={colors.error} />
                         </View>
-                        <Text style={styles.badgeName}>First run</Text>
-                        <Text style={styles.badgeDate}>17 Sept 2024</Text>
+                        <Text style={[styles.badgeName, { color: colors.text }]}>First run</Text>
+                        <Text style={[styles.badgeDate, { color: colors.textSecondary }]}>17 Sept 2024</Text>
                     </View>
                 </View>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.logoutRow} onPress={handleLogout}>
-                <Ionicons name="log-out-outline" size={24} color={Colors.textSecondary} />
-                <Text style={styles.logoutRowText}>Log out</Text>
+                <Ionicons name="log-out-outline" size={24} color={colors.textSecondary} />
+                <Text style={[styles.logoutRowText, { color: colors.textSecondary }]}>Log out</Text>
             </TouchableOpacity>
 
         </ScrollView>
@@ -338,7 +342,7 @@ const styles = StyleSheet.create({
         gap: 8,
     },
     logoutRowText: {
-        color: Colors.textSecondary,
+        color: DefaultColors.textSecondary,
         fontSize: 16,
         fontWeight: '600',
     }
