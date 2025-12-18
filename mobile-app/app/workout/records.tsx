@@ -3,15 +3,17 @@ import {
     View, Text, StyleSheet, ScrollView, ActivityIndicator,
     SafeAreaView, TouchableOpacity, Alert
 } from 'react-native';
-import { Colors } from '../../constants/Colors';
+import { Colors as DefaultColors } from '../../constants/Colors';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
 import { getWorkoutHistory, deleteWorkout } from '../../services/workouts';
 import { useRouter, useFocusEffect } from 'expo-router';
 
 export default function WorkoutRecords() {
     const { token } = useAuth();
     const router = useRouter();
+    const { colors } = useTheme();
     const [history, setHistory] = useState<any[]>([]);
     const [loadingHistory, setLoadingHistory] = useState(false);
 
@@ -65,9 +67,9 @@ export default function WorkoutRecords() {
     };
 
     return (
-        <SafeAreaView style={styles.safeArea}>
+        <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
             {/* Header */}
-            <View style={styles.header}>
+            <View style={[styles.header, { borderBottomColor: colors.border }]}>
                 <TouchableOpacity
                     onPress={() => {
                         if (router.canGoBack()) {
@@ -78,44 +80,44 @@ export default function WorkoutRecords() {
                     }}
                     style={styles.backButton}
                 >
-                    <Ionicons name="arrow-back" size={24} color={Colors.text} />
+                    <Ionicons name="arrow-back" size={24} color={colors.text} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>My Workout Records</Text>
+                <Text style={[styles.headerTitle, { color: colors.text }]}>My Workout Records</Text>
                 <View style={{ width: 24 }} />
             </View>
 
             <ScrollView contentContainerStyle={styles.container}>
                 {loadingHistory ? (
-                    <ActivityIndicator color={Colors.primary} style={{ marginTop: 40 }} />
+                    <ActivityIndicator color={colors.primary} style={{ marginTop: 40 }} />
                 ) : (
                     <View>
                         {history.length === 0 ? (
                             <View style={styles.emptyState}>
-                                <Ionicons name="barbell-outline" size={64} color={Colors.textSecondary} />
-                                <Text style={styles.emptyText}>No workouts logged yet.</Text>
-                                <Text style={styles.emptySubtext}>Start logging your workouts to see them here!</Text>
+                                <Ionicons name="barbell-outline" size={64} color={colors.textSecondary} />
+                                <Text style={[styles.emptyText, { color: colors.text }]}>No workouts logged yet.</Text>
+                                <Text style={[styles.emptySubtext, { color: colors.textSecondary }]}>Start logging your workouts to see them here!</Text>
                             </View>
                         ) : (
                             <>
-                                <Text style={styles.recordsCount}>
+                                <Text style={[styles.recordsCount, { color: colors.textSecondary }]}>
                                     {history.length} workout{history.length !== 1 ? 's' : ''} logged
                                 </Text>
                                 {history.map((session, index) => (
-                                    <View key={index} style={styles.historyItem}>
+                                    <View key={index} style={[styles.historyItem, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                                         <View style={styles.historyContent}>
-                                            <View style={styles.historyDateBox}>
-                                                <Text style={styles.historyDateDay}>
+                                            <View style={[styles.historyDateBox, { backgroundColor: colors.background }]}>
+                                                <Text style={[styles.historyDateDay, { color: colors.text }]}>
                                                     {new Date(session.date).getDate()}
                                                 </Text>
-                                                <Text style={styles.historyDateMonth}>
+                                                <Text style={[styles.historyDateMonth, { color: colors.primary }]}>
                                                     {new Date(session.date).toLocaleString('default', { month: 'short' })}
                                                 </Text>
                                             </View>
                                             <View style={styles.historyDetails}>
-                                                <Text style={styles.historyTitle}>
+                                                <Text style={[styles.historyTitle, { color: colors.text }]}>
                                                     {session.templateName || 'Workout'}
                                                 </Text>
-                                                <Text style={styles.historySubtitle}>
+                                                <Text style={[styles.historySubtitle, { color: colors.textSecondary }]}>
                                                     {session.exercisesPerformed.length} Exercise{session.exercisesPerformed.length !== 1 ? 's' : ''} • {session.exercisesPerformed.map((e: any) => e.exerciseName).join(', ')}
                                                 </Text>
                                             </View>
@@ -124,16 +126,16 @@ export default function WorkoutRecords() {
                                         {/* Actions */}
                                         <View style={styles.actionButtons}>
                                             <TouchableOpacity
-                                                style={styles.actionBtn}
+                                                style={[styles.actionBtn, { backgroundColor: colors.surfaceLight || 'rgba(255,255,255,0.05)' }]}
                                                 onPress={() => handleEdit(session._id)}
                                             >
-                                                <MaterialIcons name="edit" size={20} color={Colors.textSecondary} />
+                                                <MaterialIcons name="edit" size={20} color={colors.textSecondary} />
                                             </TouchableOpacity>
                                             <TouchableOpacity
                                                 style={[styles.actionBtn, styles.deleteBtn]}
                                                 onPress={() => handleDelete(session._id)}
                                             >
-                                                <MaterialIcons name="delete-outline" size={20} color={Colors.error || '#FF453A'} />
+                                                <MaterialIcons name="delete-outline" size={20} color={colors.error || '#FF453A'} />
                                             </TouchableOpacity>
                                         </View>
                                     </View>
@@ -152,7 +154,7 @@ export default function WorkoutRecords() {
 const styles = StyleSheet.create({
     safeArea: {
         flex: 1,
-        backgroundColor: Colors.background,
+        backgroundColor: DefaultColors.background,
     },
     header: {
         flexDirection: 'row',
@@ -167,7 +169,7 @@ const styles = StyleSheet.create({
         padding: 4,
     },
     headerTitle: {
-        color: Colors.text,
+        color: DefaultColors.text,
         fontSize: 18,
         fontWeight: 'bold',
     },
@@ -177,7 +179,7 @@ const styles = StyleSheet.create({
     },
     recordsCount: {
         fontSize: 14,
-        color: Colors.textSecondary,
+        color: DefaultColors.textSecondary,
         marginBottom: 16,
         fontWeight: '600',
     },
@@ -190,20 +192,20 @@ const styles = StyleSheet.create({
     emptyText: {
         fontSize: 18,
         fontWeight: 'bold',
-        color: Colors.text,
+        color: DefaultColors.text,
         marginTop: 16,
     },
     emptySubtext: {
         fontSize: 14,
-        color: Colors.textSecondary,
+        color: DefaultColors.textSecondary,
         textAlign: 'center',
     },
     historyItem: {
-        backgroundColor: Colors.surface,
+        backgroundColor: DefaultColors.surface,
         borderRadius: 16,
         marginBottom: 12,
         borderWidth: 1,
-        borderColor: Colors.border,
+        borderColor: DefaultColors.border,
         overflow: 'hidden',
     },
     historyContent: {
@@ -212,7 +214,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     historyDateBox: {
-        backgroundColor: Colors.background,
+        backgroundColor: DefaultColors.background,
         borderRadius: 12,
         padding: 8,
         alignItems: 'center',
@@ -223,12 +225,12 @@ const styles = StyleSheet.create({
     historyDateDay: {
         fontSize: 18,
         fontWeight: 'bold',
-        color: Colors.text,
+        color: DefaultColors.text,
     },
     historyDateMonth: {
         fontSize: 10,
         textTransform: 'uppercase',
-        color: Colors.primary,
+        color: DefaultColors.primary,
         fontWeight: 'bold',
     },
     historyDetails: {
@@ -237,12 +239,12 @@ const styles = StyleSheet.create({
     historyTitle: {
         fontSize: 16,
         fontWeight: 'bold',
-        color: Colors.text,
+        color: DefaultColors.text,
         marginBottom: 4,
     },
     historySubtitle: {
         fontSize: 12,
-        color: Colors.textSecondary,
+        color: DefaultColors.textSecondary,
     },
     actionButtons: {
         flexDirection: 'row',
