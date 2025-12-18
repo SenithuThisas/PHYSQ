@@ -1,5 +1,6 @@
 import { Tabs } from 'expo-router';
-import { Colors } from '../../constants/Colors';
+import { Colors as DefaultColors } from '../../constants/Colors';
+import { useTheme } from '../../context/ThemeContext';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { View, useWindowDimensions, Platform } from 'react-native';
 import SideNav from '../../components/SideNav';
@@ -7,6 +8,7 @@ import SideNav from '../../components/SideNav';
 export default function TabLayout() {
     const { width } = useWindowDimensions();
     const isWeb = Platform.OS === 'web' && width > 768;
+    const { colors } = useTheme();
 
     return (
         <View style={{ flex: 1, flexDirection: isWeb ? 'row' : 'column' }}>
@@ -15,14 +17,14 @@ export default function TabLayout() {
                 screenOptions={{
                     headerShown: false,
                     tabBarStyle: isWeb ? { display: 'none' } : {
-                        backgroundColor: Colors.surface,
-                        borderTopColor: Colors.border,
+                        backgroundColor: colors.surface,
+                        borderTopColor: colors.border,
                         height: Platform.OS === 'ios' ? 90 : 70,
                         paddingBottom: Platform.OS === 'ios' ? 30 : 12,
                         paddingTop: 8,
                     },
-                    tabBarActiveTintColor: Colors.primary,
-                    tabBarInactiveTintColor: Colors.textSecondary,
+                    tabBarActiveTintColor: colors.primary,
+                    tabBarInactiveTintColor: colors.textSecondary,
                     tabBarShowLabel: true,
                 }}
             >
