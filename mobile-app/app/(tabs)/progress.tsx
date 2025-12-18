@@ -1,13 +1,15 @@
 import { View, Text, StyleSheet, Dimensions, ScrollView } from 'react-native';
-import { Colors } from '../../constants/Colors';
+import { Colors as DefaultColors } from '../../constants/Colors';
 import { LineChart } from 'react-native-chart-kit';
+import { useTheme } from '../../context/ThemeContext';
 
 export default function Progress() {
+    const { colors } = useTheme();
     return (
-        <ScrollView style={styles.container}>
-            <Text style={styles.header}>Progress</Text>
+        <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
+            <Text style={[styles.header, { color: colors.text }]}>Progress</Text>
 
-            <Text style={styles.chartTitle}>Squat E1RM (lbs)</Text>
+            <Text style={[styles.chartTitle, { color: colors.text }]}>Squat E1RM (lbs)</Text>
             <LineChart
                 data={{
                     labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
@@ -18,22 +20,22 @@ export default function Progress() {
                 yAxisLabel=""
                 yAxisSuffix=""
                 chartConfig={{
-                    backgroundColor: Colors.surface,
-                    backgroundGradientFrom: Colors.surface,
-                    backgroundGradientTo: Colors.surface,
+                    backgroundColor: colors.surface,
+                    backgroundGradientFrom: colors.surface,
+                    backgroundGradientTo: colors.surface,
                     decimalPlaces: 0,
                     color: (opacity = 1) => `rgba(204, 255, 0, ${opacity})`,
-                    labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
+                    labelColor: (opacity = 1) => colors.text,
                     style: { borderRadius: 16 },
-                    propsForDots: { r: "4", strokeWidth: "2", stroke: Colors.primary }
+                    propsForDots: { r: "4", strokeWidth: "2", stroke: colors.primary }
                 }}
                 bezier
                 style={{ marginVertical: 8, borderRadius: 16 }}
             />
 
-            <Text style={styles.chartTitle}>Bench Press E1RM (lbs)</Text>
-            <View style={styles.placeholderChart}>
-                <Text style={styles.placeholderText}>Not enough data yet</Text>
+            <Text style={[styles.chartTitle, { color: colors.text }]}>Bench Press E1RM (lbs)</Text>
+            <View style={[styles.placeholderChart, { backgroundColor: colors.surface }]}>
+                <Text style={[styles.placeholderText, { color: colors.textSecondary }]}>Not enough data yet</Text>
             </View>
         </ScrollView>
     );
@@ -67,6 +69,6 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     placeholderText: {
-        color: Colors.textSecondary,
+        color: DefaultColors.textSecondary,
     }
 });
