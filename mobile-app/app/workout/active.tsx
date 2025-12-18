@@ -1,10 +1,11 @@
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, TextInput } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState, useEffect } from 'react';
-import { Colors } from '../../constants/Colors';
+import { Colors as DefaultColors } from '../../constants/Colors';
 import { FontAwesome5 } from '@expo/vector-icons';
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
 
 // Types
 type Set = {
@@ -28,6 +29,7 @@ const API_URL = Config.API_URL;
 export default function ActiveWorkout() {
     const router = useRouter();
     const { user } = useAuth();
+    const { colors } = useTheme();
     const params = useLocalSearchParams();
 
     const [duration, setDuration] = useState(0);
@@ -126,21 +128,21 @@ export default function ActiveWorkout() {
     };
 
     return (
-        <View style={styles.container}>
-            <View style={styles.header}>
-                <Text style={styles.timer}>{formatTime(duration)}</Text>
-                <TouchableOpacity style={styles.finishButton} onPress={finishWorkout} disabled={isSaving}>
-                    <Text style={styles.finishText}>{isSaving ? 'Saving...' : 'Finish'}</Text>
+        <View style={[styles.container, { backgroundColor: colors.background }]}>
+            <View style={[styles.header, { backgroundColor: colors.surface }]}>
+                <Text style={[styles.timer, { color: colors.text }]}>{formatTime(duration)}</Text>
+                <TouchableOpacity style={[styles.finishButton, { backgroundColor: colors.success }]} onPress={finishWorkout} disabled={isSaving}>
+                    <Text style={[styles.finishText, { color: colors.background }]}>{isSaving ? 'Saving...' : 'Finish'}</Text>
                 </TouchableOpacity>
             </View>
 
             <ScrollView style={styles.scroll}>
                 {exercises.map((ex, index) => (
-                    <View key={ex.id} style={styles.exerciseCard}>
+                    <View key={ex.id} style={[styles.exerciseCard, { backgroundColor: colors.surface }]}>
                         <View style={styles.exerciseHeader}>
-                            <Text style={styles.exerciseName}>{ex.name}</Text>
+                            <Text style={[styles.exerciseName, { color: colors.primary }]}>{ex.name}</Text>
                             <TouchableOpacity>
-                                <FontAwesome5 name="ellipsis-h" size={16} color={Colors.textSecondary} />
+                                <FontAwesome5 name="ellipsis-h" size={16} color={colors.textSecondary} />
                             </TouchableOpacity>
                         </View>
 
@@ -155,55 +157,55 @@ export default function ActiveWorkout() {
                         {ex.sets.map((set, i) => (
                             <View key={set.id} style={[styles.setRow, set.completed && styles.setRowCompleted]}>
                                 <View style={[styles.col, styles.colSet]}>
-                                    <Text style={styles.setText}>{i + 1}</Text>
+                                    <Text style={[styles.setText, { color: colors.textSecondary }]}>{i + 1}</Text>
                                 </View>
                                 <View style={[styles.col, styles.colOther]}>
                                     <TextInput
-                                        style={styles.input}
+                                        style={[styles.input, { backgroundColor: colors.background, color: colors.text }]}
                                         keyboardType="numeric"
                                         placeholder="0"
-                                        placeholderTextColor="#555"
+                                        placeholderTextColor={colors.textSecondary}
                                         value={set.weight}
                                         onChangeText={(val) => updateSet(ex.id, set.id, 'weight', val)}
                                     />
                                 </View>
                                 <View style={[styles.col, styles.colOther]}>
                                     <TextInput
-                                        style={styles.input}
+                                        style={[styles.input, { backgroundColor: colors.background, color: colors.text }]}
                                         keyboardType="numeric"
                                         placeholder="0"
-                                        placeholderTextColor="#555"
+                                        placeholderTextColor={colors.textSecondary}
                                         value={set.reps}
                                         onChangeText={(val) => updateSet(ex.id, set.id, 'reps', val)}
                                     />
                                 </View>
                                 <View style={[styles.col, styles.colOther]}>
                                     <TextInput
-                                        style={styles.input}
+                                        style={[styles.input, { backgroundColor: colors.background, color: colors.text }]}
                                         keyboardType="numeric"
                                         placeholder="-"
-                                        placeholderTextColor="#555"
+                                        placeholderTextColor={colors.textSecondary}
                                         value={set.rpe}
                                         onChangeText={(val) => updateSet(ex.id, set.id, 'rpe', val)}
                                     />
                                 </View>
                                 <TouchableOpacity
-                                    style={[styles.col, styles.colCheck, styles.checkButton, set.completed && styles.checkButtonActive]}
+                                    style={[styles.col, styles.colCheck, styles.checkButton, { backgroundColor: colors.surfaceLight }, set.completed && [styles.checkButtonActive, { backgroundColor: colors.primary }]]}
                                     onPress={() => toggleSetComplete(ex.id, set.id)}
                                 >
-                                    <FontAwesome5 name="check" size={12} color={set.completed ? Colors.background : Colors.textSecondary} />
+                                    <FontAwesome5 name="check" size={12} color={set.completed ? colors.background : colors.textSecondary} />
                                 </TouchableOpacity>
                             </View>
                         ))}
 
-                        <TouchableOpacity style={styles.addSetButton} onPress={() => addSet(ex.id)}>
-                            <Text style={styles.addSetText}>+ Add Set</Text>
+                        <TouchableOpacity style={[styles.addSetButton, { borderTopColor: colors.border }]} onPress={() => addSet(ex.id)}>
+                            <Text style={[styles.addSetText, { color: colors.textSecondary }]}>+ Add Set</Text>
                         </TouchableOpacity>
                     </View>
                 ))}
 
-                <TouchableOpacity style={styles.addExerciseButton} onPress={addExercise}>
-                    <Text style={styles.addExerciseText}>+ Add Exercise</Text>
+                <TouchableOpacity style={[styles.addExerciseButton, { backgroundColor: colors.surface, borderColor: colors.border }]} onPress={addExercise}>
+                    <Text style={[styles.addExerciseText, { color: colors.primary }]}>+ Add Exercise</Text>
                 </TouchableOpacity>
 
                 <View style={{ height: 100 }} />
@@ -215,7 +217,7 @@ export default function ActiveWorkout() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: Colors.background,
+        backgroundColor: DefaultColors.background,
     },
     header: {
         flexDirection: 'row',
@@ -224,29 +226,29 @@ const styles = StyleSheet.create({
         paddingTop: 50,
         paddingHorizontal: 20,
         paddingBottom: 20,
-        backgroundColor: Colors.surface,
+        backgroundColor: DefaultColors.surface,
     },
     timer: {
         fontSize: 24,
         fontWeight: 'bold',
-        color: Colors.text,
+        color: DefaultColors.text,
         fontVariant: ['tabular-nums'],
     },
     finishButton: {
-        backgroundColor: Colors.success,
+        backgroundColor: DefaultColors.success,
         paddingHorizontal: 20,
         paddingVertical: 10,
         borderRadius: 20,
     },
     finishText: {
-        color: Colors.background,
+        color: DefaultColors.background,
         fontWeight: 'bold',
     },
     scroll: {
         padding: 16,
     },
     exerciseCard: {
-        backgroundColor: Colors.surface,
+        backgroundColor: DefaultColors.surface,
         borderRadius: 16,
         padding: 16,
         marginBottom: 16,
@@ -260,7 +262,7 @@ const styles = StyleSheet.create({
     exerciseName: {
         fontSize: 18,
         fontWeight: 'bold',
-        color: Colors.primary,
+        color: DefaultColors.primary,
     },
     setRowHeader: {
         flexDirection: 'row',
@@ -282,12 +284,12 @@ const styles = StyleSheet.create({
     colOther: { flex: 1 },
     colCheck: { width: 40 },
     setText: {
-        color: Colors.textSecondary,
+        color: DefaultColors.textSecondary,
         fontWeight: 'bold',
     },
     input: {
-        backgroundColor: Colors.background,
-        color: Colors.text,
+        backgroundColor: DefaultColors.background,
+        color: DefaultColors.text,
         width: '90%',
         textAlign: 'center',
         paddingVertical: 8,
@@ -297,35 +299,35 @@ const styles = StyleSheet.create({
         height: 30,
         width: 30,
         borderRadius: 8,
-        backgroundColor: Colors.surfaceLight,
+        backgroundColor: DefaultColors.surfaceLight,
         justifyContent: 'center',
         alignItems: 'center',
     },
     checkButtonActive: {
-        backgroundColor: Colors.primary,
+        backgroundColor: DefaultColors.primary,
     },
     addSetButton: {
         alignItems: 'center',
         paddingVertical: 12,
         borderTopWidth: 1,
-        borderTopColor: Colors.border,
+        borderTopColor: DefaultColors.border,
         marginTop: 8,
     },
     addSetText: {
-        color: Colors.textSecondary,
+        color: DefaultColors.textSecondary,
         fontWeight: '600',
     },
     addExerciseButton: {
-        backgroundColor: Colors.surface,
+        backgroundColor: DefaultColors.surface,
         padding: 16,
         borderRadius: 16,
         alignItems: 'center',
         borderWidth: 1,
-        borderColor: Colors.border,
+        borderColor: DefaultColors.border,
         borderStyle: 'dashed',
     },
     addExerciseText: {
-        color: Colors.primary,
+        color: DefaultColors.primary,
         fontWeight: 'bold',
         fontSize: 16,
     }
