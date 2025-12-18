@@ -6,7 +6,7 @@ import {
 import { Colors } from '../../constants/Colors';
 import { FontAwesome5, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
-import { logWorkoutSession, getLastSession } from '../../services/workouts';
+import { logWorkoutSession } from '../../services/workouts';
 import { useRouter, useNavigation } from 'expo-router';
 
 // Removed static dimensions
@@ -37,20 +37,7 @@ export default function LogWorkout() {
     const [loggingState, setLoggingState] = useState(false);
     const [showExerciseModal, setShowExerciseModal] = useState(false);
 
-    // History Data
-    const [lastSession, setLastSession] = useState<any>(null);
-    const [loadingLast, setLoadingLast] = useState(false);
 
-    useEffect(() => {
-        if (!token) return;
-        const fetchLast = async () => {
-            setLoadingLast(true);
-            const data = await getLastSession(token, selectedExercise);
-            setLastSession(data);
-            setLoadingLast(false);
-        };
-        fetchLast();
-    }, [selectedExercise, token]);
 
     const addSet = () => {
         const lastSet = sets[sets.length - 1];
@@ -216,38 +203,7 @@ export default function LogWorkout() {
                     </View>
 
                     {/* Last Performance */}
-                    <View style={styles.historyCard}>
-                        <View style={styles.historyHeader}>
-                            <MaterialCommunityIcons name="history" size={18} color={Colors.textSecondary} />
-                            <Text style={styles.historyTitle}>LAST PERFORMANCE</Text>
-                        </View>
-                        {loadingLast ? (
-                            <ActivityIndicator color={Colors.textSecondary} style={{ marginTop: 20 }} />
-                        ) : lastSession ? (
-                            <View>
-                                <Text style={styles.lastDate}>{new Date(lastSession.date).toDateString()}</Text>
-                                <View style={styles.lastStatsGrid}>
-                                    {lastSession.exerciseData.sets.map((s: any, i: number) => (
-                                        <View key={i} style={styles.lastStatBadge}>
-                                            <Text style={styles.lastStatText}>
-                                                <Text style={{ fontWeight: 'bold', color: Colors.text }}>{s.weight}</Text>kg x {s.reps}
-                                            </Text>
-                                        </View>
-                                    ))}
-                                </View>
-                                <View style={styles.volumeBadge}>
-                                    <Text style={styles.volumeLabel}>MAX E1RM</Text>
-                                    <Text style={styles.volumeValue}>
-                                        {Math.max(...lastSession.exerciseData.sets.map((s: any) => s.weight * (1 + s.reps / 30))).toFixed(0)} kg
-                                    </Text>
-                                </View>
-                            </View>
-                        ) : (
-                            <View style={styles.emptyHistory}>
-                                <Text style={styles.emptyHistoryText}>No previous data</Text>
-                            </View>
-                        )}
-                    </View>
+
                 </View>
             </ScrollView>
 
