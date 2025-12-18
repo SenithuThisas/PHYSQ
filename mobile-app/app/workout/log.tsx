@@ -3,9 +3,10 @@ import {
     View, Text, StyleSheet, ScrollView, TouchableOpacity,
     TextInput, ActivityIndicator, Alert, Modal, SafeAreaView, Platform
 } from 'react-native';
-import { Colors } from '../../constants/Colors';
+import { Colors as DefaultColors } from '../../constants/Colors';
 import { FontAwesome5, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
 import { logWorkoutSession } from '../../services/workouts';
 import { useRouter, useNavigation } from 'expo-router';
 
@@ -20,6 +21,7 @@ const EXERCISES = [
 
 export default function LogWorkout() {
     const { token } = useAuth();
+    const { colors } = useTheme();
     const router = useRouter();
     const navigation = useNavigation();
 
@@ -102,35 +104,35 @@ export default function LogWorkout() {
     };
 
     return (
-        <SafeAreaView style={styles.safeArea}>
+        <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
             {/* Navbar */}
             <View style={styles.navbar}>
                 <View style={styles.navContent}>
                     <TouchableOpacity onPress={handleBack} style={styles.navIcon}>
-                        <Ionicons name="arrow-back" size={24} color={Colors.text} />
+                        <Ionicons name="arrow-back" size={24} color={colors.text} />
                     </TouchableOpacity>
-                    <Text style={styles.navTitle}>New Entry</Text>
+                    <Text style={[styles.navTitle, { color: colors.text }]}>New Entry</Text>
                     <TouchableOpacity onPress={handleLogWorkout} disabled={loggingState}>
-                        {loggingState ? <ActivityIndicator color={Colors.primary} /> : <Text style={styles.navAction}>SAVE</Text>}
+                        {loggingState ? <ActivityIndicator color={colors.primary} /> : <Text style={styles.navAction}>SAVE</Text>}
                     </TouchableOpacity>
                 </View>
             </View>
 
             <ScrollView contentContainerStyle={styles.scrollContent}>
-                <View style={styles.container}>
+                <View style={[styles.container, { backgroundColor: colors.background }]}>
                     {/* Record Workout Card with Date */}
-                    <View style={styles.recordCard}>
+                    <View style={[styles.recordCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                         <View style={styles.recordCardHeader}>
-                            <Text style={styles.recordCardTitle}>Record workout</Text>
+                            <Text style={[styles.recordCardTitle, { color: colors.text }]}>Record workout</Text>
                             <View style={styles.dateSelector}>
                                 <TouchableOpacity onPress={() => changeDate(-1)} style={styles.dateNavBtnSmall}>
-                                    <Ionicons name="chevron-back" size={18} color={Colors.primary} />
+                                    <Ionicons name="chevron-back" size={18} color={colors.primary} />
                                 </TouchableOpacity>
                                 <Text style={styles.dateTextSmall}>
                                     {date.toDateString() === new Date().toDateString() ? 'Today' : date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                                 </Text>
                                 <TouchableOpacity onPress={() => changeDate(1)} style={styles.dateNavBtnSmall}>
-                                    <Ionicons name="chevron-forward" size={18} color={Colors.primary} />
+                                    <Ionicons name="chevron-forward" size={18} color={colors.primary} />
                                 </TouchableOpacity>
                             </View>
                         </View>
@@ -139,8 +141,8 @@ export default function LogWorkout() {
                         <TouchableOpacity style={styles.exerciseHeader} onPress={() => setShowExerciseModal(true)}>
                             <View style={{ flex: 1 }}>
                                 <View style={styles.exerciseSelector}>
-                                    <Text style={styles.exerciseTitle}>{selectedExercise}</Text>
-                                    <FontAwesome5 name="chevron-down" size={16} color={Colors.primary} />
+                                    <Text style={[styles.exerciseTitle, { color: colors.text }]}>{selectedExercise}</Text>
+                                    <FontAwesome5 name="chevron-down" size={16} color={colors.primary} />
                                 </View>
                             </View>
                             <View style={styles.exerciseIconBg}>
@@ -151,7 +153,7 @@ export default function LogWorkout() {
 
                     {/* Sets Entry */}
 
-                    <View style={styles.setsContainer}>
+                    <View style={[styles.setsContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                         <View style={styles.setsHeaderRow}>
                             <Text style={styles.colHeader}>SET</Text>
                             <Text style={styles.colHeader}>KG</Text>
@@ -163,28 +165,28 @@ export default function LogWorkout() {
                             <View key={index} style={styles.setRow}>
                                 <Text style={styles.setIndex}>{index + 1}</Text>
                                 <TextInput
-                                    style={styles.inputBox}
+                                    style={[styles.inputBox, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
                                     keyboardType="numeric"
                                     placeholder="0"
-                                    placeholderTextColor={Colors.textSecondary}
+                                    placeholderTextColor={colors.textSecondary}
                                     value={set.weight}
                                     onChangeText={(v) => updateSet(index, 'weight', v)}
                                 />
                                 <TextInput
-                                    style={styles.inputBox}
+                                    style={[styles.inputBox, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
                                     keyboardType="numeric"
                                     placeholder="0"
-                                    placeholderTextColor={Colors.textSecondary}
+                                    placeholderTextColor={colors.textSecondary}
                                     value={set.reps}
                                     onChangeText={(v) => updateSet(index, 'reps', v)}
                                 />
                                 <TouchableOpacity style={styles.delBtn} onPress={() => removeSet(index)}>
-                                    <Ionicons name="close-circle" size={24} color={Colors.textSecondary} />
+                                    <Ionicons name="close-circle" size={24} color={colors.textSecondary} />
                                 </TouchableOpacity>
                             </View>
                         ))}
 
-                        <TouchableOpacity style={styles.addBtn} onPress={addSet}>
+                        <TouchableOpacity style={[styles.addBtn, { backgroundColor: colors.primary }]} onPress={addSet}>
                             <FontAwesome5 name="plus" size={14} color="#000" />
                             <Text style={styles.addBtnText}>ADD SET</Text>
                         </TouchableOpacity>
@@ -195,7 +197,7 @@ export default function LogWorkout() {
                         <TextInput
                             style={styles.notesInput}
                             placeholder="Add notes (optional)..."
-                            placeholderTextColor={Colors.textSecondary}
+                            placeholderTextColor={colors.textSecondary}
                             value={description}
                             onChangeText={setDescription}
                             multiline
@@ -223,7 +225,7 @@ export default function LogWorkout() {
                                     }}
                                 >
                                     <Text style={[styles.modalOptionText, selectedExercise === ex && styles.modalOptionTextActive]}>{ex}</Text>
-                                    {selectedExercise === ex && <FontAwesome5 name="check" size={14} color={Colors.primary} />}
+                                    {selectedExercise === ex && <FontAwesome5 name="check" size={14} color={colors.primary} />}
                                 </TouchableOpacity>
                             ))}
                         </ScrollView>
@@ -240,7 +242,7 @@ export default function LogWorkout() {
 const styles = StyleSheet.create({
     safeArea: {
         flex: 1,
-        backgroundColor: Colors.background,
+        backgroundColor: DefaultColors.background,
     },
     navbar: {
         paddingHorizontal: 20,
@@ -260,12 +262,12 @@ const styles = StyleSheet.create({
         padding: 4,
     },
     navTitle: {
-        color: Colors.text,
+        color: DefaultColors.text,
         fontSize: 18,
         fontWeight: 'bold',
     },
     navAction: {
-        color: Colors.primary,
+        color: DefaultColors.primary,
         fontSize: 16,
         fontWeight: 'bold',
     },
@@ -280,7 +282,7 @@ const styles = StyleSheet.create({
     },
     /* Record Workout Card */
     recordCard: {
-        backgroundColor: Colors.surface,
+        backgroundColor: DefaultColors.surface,
         borderRadius: 20,
         padding: 20,
         borderWidth: 1,
@@ -296,7 +298,7 @@ const styles = StyleSheet.create({
     recordCardTitle: {
         fontSize: 18,
         fontWeight: 'bold',
-        color: Colors.text,
+        color: DefaultColors.text,
     },
     dateSelector: {
         flexDirection: 'row',
@@ -307,7 +309,7 @@ const styles = StyleSheet.create({
         padding: 4,
     },
     dateTextSmall: {
-        color: Colors.primary,
+        color: DefaultColors.primary,
         fontSize: 14,
         fontWeight: '600',
         minWidth: 60,
@@ -324,7 +326,7 @@ const styles = StyleSheet.create({
         borderRadius: 16,
     },
     exerciseLabel: {
-        color: Colors.textSecondary,
+        color: DefaultColors.textSecondary,
         fontSize: 12,
         fontWeight: 'bold',
         marginBottom: 4,
@@ -335,13 +337,13 @@ const styles = StyleSheet.create({
         gap: 8,
     },
     exerciseTitle: {
-        color: Colors.text,
+        color: DefaultColors.text,
         fontSize: 24,
         fontWeight: 'bold',
         lineHeight: 32, // Fix vertical alignment
     },
     exerciseIconBg: {
-        backgroundColor: Colors.primary,
+        backgroundColor: DefaultColors.primary,
         width: 48,
         height: 48,
         borderRadius: 14,
@@ -363,7 +365,7 @@ const styles = StyleSheet.create({
         marginBottom: 16,
     },
     historyTitle: {
-        color: Colors.textSecondary,
+        color: DefaultColors.textSecondary,
         fontSize: 12,
         fontWeight: 'bold',
         letterSpacing: 1,
@@ -373,11 +375,11 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     emptyHistoryText: {
-        color: Colors.textSecondary,
+        color: DefaultColors.textSecondary,
         fontStyle: 'italic',
     },
     lastDate: {
-        color: Colors.text,
+        color: DefaultColors.text,
         fontWeight: '600',
         fontSize: 16,
         marginBottom: 12,
@@ -389,7 +391,7 @@ const styles = StyleSheet.create({
         marginBottom: 16,
     },
     lastStatBadge: {
-        backgroundColor: Colors.background,
+        backgroundColor: DefaultColors.background,
         paddingHorizontal: 10,
         paddingVertical: 6,
         borderRadius: 8,
@@ -397,7 +399,7 @@ const styles = StyleSheet.create({
         borderColor: 'rgba(255,255,255,0.1)',
     },
     lastStatText: {
-        color: Colors.textSecondary,
+        color: DefaultColors.textSecondary,
         fontSize: 13,
     },
     volumeBadge: {
@@ -409,12 +411,12 @@ const styles = StyleSheet.create({
         borderRadius: 12,
     },
     volumeLabel: {
-        color: Colors.primary,
+        color: DefaultColors.primary,
         fontSize: 12,
         fontWeight: 'bold',
     },
     volumeValue: {
-        color: Colors.text,
+        color: DefaultColors.text,
         fontSize: 16,
         fontWeight: 'bold',
     },
@@ -423,8 +425,8 @@ const styles = StyleSheet.create({
         marginBottom: 8,
     },
     notesInput: {
-        backgroundColor: Colors.surface,
-        color: Colors.text,
+        backgroundColor: DefaultColors.surface,
+        color: DefaultColors.text,
         padding: 16,
         borderRadius: 16,
         fontSize: 16,
@@ -432,7 +434,7 @@ const styles = StyleSheet.create({
         borderColor: 'rgba(255,255,255,0.05)',
     },
     setsContainer: {
-        backgroundColor: Colors.surface,
+        backgroundColor: DefaultColors.surface,
         borderRadius: 24,
         padding: 20,
         borderWidth: 1,
@@ -446,7 +448,7 @@ const styles = StyleSheet.create({
     },
     colHeader: {
         flex: 1,
-        color: Colors.textSecondary,
+        color: DefaultColors.textSecondary,
         fontSize: 11,
         fontWeight: 'bold',
         textAlign: 'center',
@@ -458,7 +460,7 @@ const styles = StyleSheet.create({
         gap: 8, // Reduced gap
     },
     setIndex: {
-        color: Colors.textSecondary,
+        color: DefaultColors.textSecondary,
         width: 16, // Reduced width
         textAlign: 'center',
         fontWeight: 'bold',
@@ -466,8 +468,8 @@ const styles = StyleSheet.create({
     },
     inputBox: {
         flex: 1,
-        backgroundColor: Colors.background,
-        color: Colors.text,
+        backgroundColor: DefaultColors.background,
+        color: DefaultColors.text,
         padding: 12, // Slight reduce padding
         borderRadius: 12,
         textAlign: 'center',
@@ -482,7 +484,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     addBtn: {
-        backgroundColor: Colors.primary,
+        backgroundColor: DefaultColors.primary,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
@@ -506,7 +508,7 @@ const styles = StyleSheet.create({
         padding: 20,
     },
     modalContainer: {
-        backgroundColor: Colors.surface,
+        backgroundColor: DefaultColors.surface,
         width: '100%',
         maxWidth: 400,
         borderRadius: 24,
@@ -514,7 +516,7 @@ const styles = StyleSheet.create({
         maxHeight: '70%',
     },
     modalHeaderTitle: {
-        color: Colors.text,
+        color: DefaultColors.text,
         fontSize: 20,
         fontWeight: 'bold',
         marginBottom: 20,
@@ -533,11 +535,11 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(204, 255, 0, 0.05)',
     },
     modalOptionText: {
-        color: Colors.textSecondary,
+        color: DefaultColors.textSecondary,
         fontSize: 16,
     },
     modalOptionTextActive: {
-        color: Colors.text,
+        color: DefaultColors.text,
         fontWeight: 'bold',
     },
     modalClose: {
@@ -546,7 +548,7 @@ const styles = StyleSheet.create({
         padding: 12,
     },
     modalCloseText: {
-        color: Colors.textSecondary,
+        color: DefaultColors.textSecondary,
         fontSize: 16,
     },
 });
