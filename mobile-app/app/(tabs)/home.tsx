@@ -1,12 +1,14 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, useWindowDimensions, Platform, Image } from 'react-native';
-import { Colors } from '../../constants/Colors';
+import { Colors as DefaultColors } from '../../constants/Colors';
 import { useAuth } from '../../context/AuthContext';
 import { useRouter, useFocusEffect } from 'expo-router';
+import { useTheme } from '../../context/ThemeContext';
 
 export default function Dashboard() {
     const { user } = useAuth();
     const router = useRouter();
+    const { colors } = useTheme();
     const width = useWindowDimensions().width;
     const isWeb = width > 768; // Simple breakpoint for tablet/web
 
@@ -45,9 +47,9 @@ export default function Dashboard() {
 
     const getBMIColor = (category: string) => {
         if (category === 'Underweight') return '#FFC107'; // Amber/Dark Yellow
-        if (category === 'Normal') return Colors.primary;
-        if (category === 'Overweight' || category === 'Obese') return Colors.error;
-        return Colors.primary;
+        if (category === 'Normal') return colors.primary;
+        if (category === 'Overweight' || category === 'Obese') return colors.error;
+        return colors.primary;
     };
 
     const currentBMI = user ? calculateBMI(user.weight, user.height) : '--';
@@ -69,33 +71,33 @@ export default function Dashboard() {
     );
 
     return (
-        <ScrollView style={styles.container} contentContainerStyle={[styles.content, isWeb && styles.webContent]}>
+        <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={[styles.content, isWeb && styles.webContent]}>
             <View style={[styles.mainWrapper, isWeb && styles.webMainWrapper]}>
                 <View style={styles.header}>
                     <View>
                         <Text style={styles.greeting}>Hello,</Text>
-                        <Text style={styles.username}>{user?.fullName?.split(' ')[0] || user?.email?.split('@')[0] || 'Athlete'}</Text>
+                        <Text style={[styles.username, { color: colors.text }]}>{user?.fullName?.split(' ')[0] || user?.email?.split('@')[0] || 'Athlete'}</Text>
                     </View>
                     <TouchableOpacity
-                        style={styles.avatar}
+                        style={[styles.avatar, { backgroundColor: colors.surfaceLight }]}
                         onPress={() => router.push('/(tabs)/profile')}
                     >
                         {user?.profilePicture ? (
                             <Image source={{ uri: user.profilePicture }} style={styles.avatarImage} />
                         ) : (
-                            <Text style={styles.avatarText}>{(user?.fullName?.[0] || user?.email?.[0] || 'A').toUpperCase()}</Text>
+                            <Text style={[styles.avatarText, { color: colors.primary }]}>{(user?.fullName?.[0] || user?.email?.[0] || 'A').toUpperCase()}</Text>
                         )}
                     </TouchableOpacity>
                 </View>
 
                 <View style={[styles.gridContainer, isWeb && styles.webGridContainer]}>
                     <View style={[styles.section, isWeb && styles.webSection]}>
-                        <Text style={styles.sectionTitle}>Ready to lift?</Text>
+                        <Text style={[styles.sectionTitle, { color: colors.text }]}>Ready to lift?</Text>
                         <TouchableOpacity
-                            style={[styles.actionCard, isWeb && styles.webActionCard]}
+                            style={[styles.actionCard, { backgroundColor: colors.primary }, isWeb && styles.webActionCard]}
                             onPress={() => router.push('/(tabs)/workout')}
                         >
-                            <Text style={styles.actionTitle}>Start New Session</Text>
+                            <Text style={[styles.actionTitle, { color: colors.background }]}>Start New Session</Text>
                             <Text style={styles.actionSubtitle}>Log your sets and reps</Text>
                         </TouchableOpacity>
                     </View>
@@ -104,7 +106,7 @@ export default function Dashboard() {
                     {user && (
 
                         <View style={[styles.section, { width: '100%' }]}>
-                            <Text style={styles.sectionTitle}>Body Stats</Text>
+                            <Text style={[styles.sectionTitle, { color: colors.text }]}>Body Stats</Text>
                             <View style={styles.statsRow}>
                                 {/* BMI Card */}
                                 <TouchableOpacity
@@ -113,12 +115,12 @@ export default function Dashboard() {
                                 >
                                     <View>
                                         <Text style={styles.statLabelLight}>BMI</Text>
-                                        <Text style={styles.statValueLight}>
+                                        <Text style={[styles.statValueLight, { color: colors.background }]}>
                                             {currentBMI}
                                         </Text>
                                     </View>
                                     <View style={styles.bmiBadge}>
-                                        <Text style={styles.bmiBadgeText}>
+                                        <Text style={[styles.bmiBadgeText, { color: colors.background }]}>
                                             {currentCategory}
                                         </Text>
                                     </View>
@@ -126,22 +128,22 @@ export default function Dashboard() {
 
                                 {/* Weight Card */}
                                 <TouchableOpacity
-                                    style={styles.statCard}
+                                    style={[styles.statCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
                                     onPress={() => router.push('/stats')}
                                 >
                                     <Text style={styles.statLabel}>Weight</Text>
-                                    <Text style={styles.statValue}>
+                                    <Text style={[styles.statValue, { color: colors.text }]}>
                                         {user.weight?.value || '--'} <Text style={styles.unitText}>{user.weight?.unit || 'kg'}</Text>
                                     </Text>
                                 </TouchableOpacity>
 
                                 {/* Height Card */}
                                 <TouchableOpacity
-                                    style={styles.statCard}
+                                    style={[styles.statCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
                                     onPress={() => router.push('/stats')}
                                 >
                                     <Text style={styles.statLabel}>Height</Text>
-                                    <Text style={styles.statValue}>
+                                    <Text style={[styles.statValue, { color: colors.text }]}>
                                         {formatHeight(user.height)}
                                     </Text>
                                 </TouchableOpacity>
@@ -150,10 +152,10 @@ export default function Dashboard() {
                     )}
 
                     <View style={[styles.section, isWeb && styles.webSection]}>
-                        <Text style={styles.sectionTitle}>Recent Progress</Text>
-                        <View style={styles.statCard}>
+                        <Text style={[styles.sectionTitle, { color: colors.text }]}>Recent Progress</Text>
+                        <View style={[styles.statCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                             <Text style={styles.statLabel}>Workouts this week</Text>
-                            <Text style={styles.statValue}>{weeklyCount}</Text>
+                            <Text style={[styles.statValue, { color: colors.text }]}>{weeklyCount}</Text>
                         </View>
                     </View>
                 </View>
@@ -165,7 +167,7 @@ export default function Dashboard() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: Colors.background,
+        backgroundColor: DefaultColors.background,
     },
     content: {
         padding: 24,
@@ -189,18 +191,18 @@ const styles = StyleSheet.create({
     },
     greeting: {
         fontSize: 16,
-        color: Colors.textSecondary,
+        color: DefaultColors.textSecondary,
     },
     username: {
         fontSize: 24,
         fontWeight: 'bold',
-        color: Colors.text,
+        color: DefaultColors.text,
     },
     avatar: {
         width: 40,
         height: 40,
         borderRadius: 20,
-        backgroundColor: Colors.surfaceLight,
+        backgroundColor: DefaultColors.surfaceLight,
         justifyContent: 'center',
         alignItems: 'center',
         overflow: 'hidden', // Ensure image clips to circle
@@ -210,7 +212,7 @@ const styles = StyleSheet.create({
         height: '100%',
     },
     avatarText: {
-        color: Colors.primary,
+        color: DefaultColors.primary,
         fontWeight: 'bold',
         fontSize: 18,
     },
@@ -230,15 +232,15 @@ const styles = StyleSheet.create({
     },
     sectionTitle: {
         fontSize: 18,
-        color: Colors.text,
+        color: DefaultColors.text,
         fontWeight: '600',
         marginBottom: 16,
     },
     actionCard: {
-        backgroundColor: Colors.primary,
+        backgroundColor: DefaultColors.primary,
         padding: 24,
         borderRadius: 20,
-        shadowColor: Colors.primary,
+        shadowColor: DefaultColors.primary,
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.2,
         shadowRadius: 8,
@@ -252,7 +254,7 @@ const styles = StyleSheet.create({
     actionTitle: {
         fontSize: 20,
         fontWeight: 'bold',
-        color: Colors.background,
+        color: DefaultColors.background,
         marginBottom: 4,
     },
     actionSubtitle: {
@@ -260,11 +262,11 @@ const styles = StyleSheet.create({
         color: 'rgba(0,0,0,0.6)',
     },
     statCard: {
-        backgroundColor: Colors.surface,
+        backgroundColor: DefaultColors.surface,
         padding: 16,
         borderRadius: 16,
         borderWidth: 1,
-        borderColor: Colors.border,
+        borderColor: DefaultColors.border,
         minHeight: 100, // Reduced height for smaller cards
         justifyContent: 'center',
         flex: 1,
@@ -275,13 +277,13 @@ const styles = StyleSheet.create({
         marginBottom: 8,
     },
     bmiCard: {
-        backgroundColor: Colors.primary,
-        borderColor: Colors.primary,
+        backgroundColor: DefaultColors.primary,
+        borderColor: DefaultColors.primary,
         flex: 1.2, // Slightly wider
         justifyContent: 'space-between',
     },
     statLabel: {
-        color: Colors.textSecondary,
+        color: DefaultColors.textSecondary,
         fontSize: 12,
         marginBottom: 4,
         textTransform: 'uppercase',
@@ -295,18 +297,18 @@ const styles = StyleSheet.create({
         textTransform: 'uppercase',
     },
     statValue: {
-        color: Colors.text,
+        color: DefaultColors.text,
         fontSize: 22,
         fontWeight: 'bold',
     },
     statValueLight: {
-        color: Colors.background,
+        color: DefaultColors.background,
         fontSize: 28,
         fontWeight: '900',
     },
     unitText: {
         fontSize: 14,
-        color: Colors.textSecondary,
+        color: DefaultColors.textSecondary,
         fontWeight: 'normal',
     },
     bmiBadge: {
@@ -317,7 +319,7 @@ const styles = StyleSheet.create({
         alignSelf: 'flex-start',
     },
     bmiBadgeText: {
-        color: Colors.background,
+        color: DefaultColors.background,
         fontSize: 12,
         fontWeight: '700',
     }
