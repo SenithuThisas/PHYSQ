@@ -170,146 +170,147 @@ export default function Signup() {
                     </View>
                 </View>
             </View>
-            );
+        </View>
+    );
 }
 
-            const styles = StyleSheet.create({
-                container: {
-                flex: 1,
-            backgroundColor: DefaultColors.background,
-            justifyContent: 'center',
-            alignItems: 'center',
-            padding: 24,
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: DefaultColors.background,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 24,
     },
-            contentContainer: {
-                width: '100%',
-            // Max Width handled dynamically in component
-            borderWidth: 1,
-            borderColor: DefaultColors.primary,
-            borderRadius: 24,
-            padding: 32,
-            shadowColor: DefaultColors.primary,
-            shadowOffset: {
-                width: 0,
+    contentContainer: {
+        width: '100%',
+        // Max Width handled dynamically in component
+        borderWidth: 1,
+        borderColor: DefaultColors.primary,
+        borderRadius: 24,
+        padding: 32,
+        shadowColor: DefaultColors.primary,
+        shadowOffset: {
+            width: 0,
             height: 0,
         },
-            shadowOpacity: 0.25,
-            shadowRadius: 20,
-            elevation: 10,
-            backgroundColor: DefaultColors.background,
+        shadowOpacity: 0.25,
+        shadowRadius: 20,
+        elevation: 10,
+        backgroundColor: DefaultColors.background,
     },
-            header: {
-                fontSize: 32,
-            fontWeight: 'bold',
-            color: DefaultColors.text,
-            marginBottom: 8,
-            textAlign: 'center',
+    header: {
+        fontSize: 32,
+        fontWeight: 'bold',
+        color: DefaultColors.text,
+        marginBottom: 8,
+        textAlign: 'center',
     },
-            subHeader: {
-                fontSize: 16,
-            color: DefaultColors.textSecondary,
-            marginBottom: 32,
-            textAlign: 'center',
+    subHeader: {
+        fontSize: 16,
+        color: DefaultColors.textSecondary,
+        marginBottom: 32,
+        textAlign: 'center',
     },
-            form: {
-                gap: 12,
+    form: {
+        gap: 12,
     },
-            errorText: {
-                color: 'red',
-            textAlign: 'center',
-            marginBottom: 12,
-            fontSize: 14,
-            fontWeight: '600',
+    errorText: {
+        color: 'red',
+        textAlign: 'center',
+        marginBottom: 12,
+        fontSize: 14,
+        fontWeight: '600',
     },
-            label: {
-                color: DefaultColors.text,
-            fontSize: 14,
-            fontWeight: '600',
-            marginBottom: 4,
-            marginLeft: 4,
+    label: {
+        color: DefaultColors.text,
+        fontSize: 14,
+        fontWeight: '600',
+        marginBottom: 4,
+        marginLeft: 4,
     },
-            input: {
-                backgroundColor: DefaultColors.surface,
-            color: DefaultColors.text,
-            padding: 14,
-            borderRadius: 16,
-            fontSize: 16,
-            borderWidth: 1,
-            borderColor: DefaultColors.border,
+    input: {
+        backgroundColor: DefaultColors.surface,
+        color: DefaultColors.text,
+        padding: 14,
+        borderRadius: 16,
+        fontSize: 16,
+        borderWidth: 1,
+        borderColor: DefaultColors.border,
     },
-            passwordContainer: {
-                flexDirection: 'row',
-            alignItems: 'center',
-            backgroundColor: DefaultColors.surface,
-            borderRadius: 16,
-            borderWidth: 1,
-            borderColor: DefaultColors.border,
-            paddingRight: 12,
+    passwordContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: DefaultColors.surface,
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: DefaultColors.border,
+        paddingRight: 12,
     },
-            passwordInput: {
-                flex: 1,
-            padding: 14,
-            color: DefaultColors.text,
-            fontSize: 16,
+    passwordInput: {
+        flex: 1,
+        padding: 14,
+        color: DefaultColors.text,
+        fontSize: 16,
     },
-            eyeIcon: {
-                padding: 4,
+    eyeIcon: {
+        padding: 4,
     },
-            button: {
-                backgroundColor: DefaultColors.primary,
-            padding: 14,
-            borderRadius: 16,
-            alignItems: 'center',
-            marginTop: 20,
-            shadowColor: DefaultColors.primary,
-            shadowOffset: {width: 0, height: 4 },
-            shadowOpacity: 0.3,
-            shadowRadius: 10,
-            elevation: 5,
+    button: {
+        backgroundColor: DefaultColors.primary,
+        padding: 14,
+        borderRadius: 16,
+        alignItems: 'center',
+        marginTop: 20,
+        shadowColor: DefaultColors.primary,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 10,
+        elevation: 5,
     },
-            buttonText: {
-                color: DefaultColors.background,
-            fontSize: 16,
-            fontWeight: 'bold',
+    buttonText: {
+        color: DefaultColors.background,
+        fontSize: 16,
+        fontWeight: 'bold',
     },
-            footer: {
-                flexDirection: 'row',
-            justifyContent: 'center',
-            marginTop: 20,
+    footer: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        marginTop: 20,
     },
-            footerText: {
-                color: DefaultColors.textSecondary,
+    footerText: {
+        color: DefaultColors.textSecondary,
     },
-            link: {
-                color: DefaultColors.primary,
-            fontWeight: 'bold',
+    link: {
+        color: DefaultColors.primary,
+        fontWeight: 'bold',
     },
-            dividerContainer: {
-                flexDirection: 'row',
-            alignItems: 'center',
-            marginVertical: 20,
+    dividerContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginVertical: 20,
     },
-            divider: {
-                flex: 1,
-            height: 1,
-            backgroundColor: DefaultColors.border,
+    divider: {
+        flex: 1,
+        height: 1,
+        backgroundColor: DefaultColors.border,
     },
-            dividerText: {
-                color: DefaultColors.textSecondary,
-            marginHorizontal: 16,
-            fontSize: 14,
+    dividerText: {
+        color: DefaultColors.textSecondary,
+        marginHorizontal: 16,
+        fontSize: 14,
     },
-            googleButton: {
-                backgroundColor: DefaultColors.surface,
-            padding: 14,
-            borderRadius: 16,
-            alignItems: 'center',
-            borderWidth: 1,
-            borderColor: DefaultColors.border,
+    googleButton: {
+        backgroundColor: DefaultColors.surface,
+        padding: 14,
+        borderRadius: 16,
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: DefaultColors.border,
     },
-            googleButtonText: {
-                color: DefaultColors.text,
-            fontSize: 16,
-            fontWeight: 'bold',
+    googleButtonText: {
+        color: DefaultColors.text,
+        fontSize: 16,
+        fontWeight: 'bold',
     }
 });
