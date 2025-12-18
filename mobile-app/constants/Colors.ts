@@ -11,7 +11,7 @@ const DarkColors = {
 };
 
 const LightColors = {
-    primary: '#7AB800', // Darker Lime for better contrast on light
+    primary: '#007AFF', // Standard Blue for better look on light theme
     background: '#F2F2F7', // Off White
     surface: '#FFFFFF', // Pure White
     surfaceLight: '#E5E5EA',
