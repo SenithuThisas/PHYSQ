@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, useWindowDimensions, ImageBackground } from 'react-native';
 import { Link, useRouter } from 'expo-router';
-import { Colors } from '../../constants/Colors';
+import { Colors as DefaultColors } from '../../constants/Colors';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
 import axios from 'axios';
 import { FontAwesome } from '@expo/vector-icons';
 
@@ -12,6 +13,7 @@ const API_URL = Config.API_URL;
 
 export default function Signup() {
     const { width } = useWindowDimensions();
+    const { colors } = useTheme();
     const isDesktop = width > 768;
 
     const [fullName, setFullName] = useState('');
@@ -65,20 +67,25 @@ export default function Signup() {
     };
 
     return (
-        <View style={styles.container}>
-            <View style={[styles.contentContainer, { maxWidth: isDesktop ? 600 : 400 }]}>
-                <Text style={styles.header}>Create Account</Text>
-                <Text style={styles.subHeader}>Start your journey to greatness.</Text>
+        <View style={[styles.container, { backgroundColor: colors.background }]}>
+            <View style={[styles.contentContainer, {
+                maxWidth: isDesktop ? 600 : 400,
+                backgroundColor: colors.background,
+                borderColor: colors.primary,
+                shadowColor: colors.primary
+            }]}>
+                <Text style={[styles.header, { color: colors.text }]}>Create Account</Text>
+                <Text style={[styles.subHeader, { color: colors.textSecondary }]}>Start your journey to greatness.</Text>
 
                 {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
                 <View style={styles.form}>
                     <View>
-                        <Text style={styles.label}>Full Name</Text>
+                        <Text style={[styles.label, { color: colors.text }]}>Full Name</Text>
                         <TextInput
-                            style={styles.input}
+                            style={[styles.input, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
                             placeholder="Gym Bro"
-                            placeholderTextColor="#666"
+                            placeholderTextColor={colors.textSecondary}
                             value={fullName}
                             onChangeText={setFullName}
                             autoCapitalize="words"
@@ -86,11 +93,11 @@ export default function Signup() {
                     </View>
 
                     <View>
-                        <Text style={styles.label}>Email</Text>
+                        <Text style={[styles.label, { color: colors.text }]}>Email</Text>
                         <TextInput
-                            style={styles.input}
+                            style={[styles.input, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
                             placeholder="gymbro@example.com"
-                            placeholderTextColor="#666"
+                            placeholderTextColor={colors.textSecondary}
                             value={email}
                             onChangeText={setEmail}
                             autoCapitalize="none"
@@ -101,25 +108,25 @@ export default function Signup() {
                     {/* Passwords Row */}
                     <View style={{ flexDirection: isDesktop ? 'row' : 'column', gap: 12 }}>
                         <View style={{ flex: 1 }}>
-                            <Text style={styles.label}>Password</Text>
-                            <View style={styles.passwordContainer}>
+                            <Text style={[styles.label, { color: colors.text }]}>Password</Text>
+                            <View style={[styles.passwordContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                                 <TextInput
-                                    style={styles.passwordInput}
+                                    style={[styles.passwordInput, { color: colors.text }]}
                                     placeholder="Password"
-                                    placeholderTextColor="#666"
+                                    placeholderTextColor={colors.textSecondary}
                                     value={password}
                                     onChangeText={setPassword}
                                     secureTextEntry={!showPassword}
                                 />
                                 <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
-                                    <FontAwesome name={showPassword ? "eye" : "eye-slash"} size={20} color={Colors.textSecondary} />
+                                    <FontAwesome name={showPassword ? "eye" : "eye-slash"} size={20} color={colors.textSecondary} />
                                 </TouchableOpacity>
                             </View>
                         </View>
 
                         <View style={{ flex: 1 }}>
-                            <Text style={styles.label}>Confirm</Text>
-                            <View style={styles.passwordContainer}>
+                            <Text style={[styles.label, { color: colors.text }]}>Confirm</Text>
+                            <View style={[styles.passwordContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                                 <TextInput
                                     style={styles.passwordInput}
                                     placeholder="Confirm pwd"
@@ -128,42 +135,41 @@ export default function Signup() {
                                     onChangeText={setConfirmPassword}
                                     secureTextEntry={!showConfirmPassword}
                                 />
-                                <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)} style={styles.eyeIcon}>
-                                    <FontAwesome name={showConfirmPassword ? "eye" : "eye-slash"} size={20} color={Colors.textSecondary} />
-                                </TouchableOpacity>
-                            </View>
+                                <FontAwesome name={showConfirmPassword ? "eye" : "eye-slash"} size={20} color={colors.textSecondary} />
+                            </TouchableOpacity>
                         </View>
                     </View>
+                </View>
 
-                    <TouchableOpacity style={styles.button} onPress={handleSignup} disabled={loading}>
-                        {loading ? (
-                            <ActivityIndicator color={Colors.background} />
-                        ) : (
-                            <Text style={styles.buttonText}>Sign Up</Text>
-                        )}
-                    </TouchableOpacity>
+                <TouchableOpacity style={[styles.button, { backgroundColor: colors.primary, shadowColor: colors.primary }]} onPress={handleSignup} disabled={loading}>
+                    {loading ? (
+                        <ActivityIndicator color={colors.background} />
+                    ) : (
+                        <Text style={[styles.buttonText, { color: colors.background }]}>Sign Up</Text>
+                    )}
+                </TouchableOpacity>
 
-                    <View style={styles.dividerContainer}>
-                        <View style={styles.divider} />
-                        <Text style={styles.dividerText}>OR</Text>
-                        <View style={styles.divider} />
-                    </View>
+                <View style={styles.dividerContainer}>
+                    <View style={[styles.divider, { backgroundColor: colors.border }]} />
+                    <Text style={[styles.dividerText, { color: colors.textSecondary }]}>OR</Text>
+                    <View style={[styles.divider, { backgroundColor: colors.border }]} />
+                </View>
 
-                    <TouchableOpacity style={styles.googleButton} onPress={() => Alert.alert('Coming Soon', 'Google Auth requires GCP setup!')}>
-                        <Text style={styles.googleButtonText}>Continue with Google</Text>
-                    </TouchableOpacity>
+                <TouchableOpacity style={[styles.googleButton, { backgroundColor: colors.surface, borderColor: colors.border }]} onPress={() => Alert.alert('Coming Soon', 'Google Auth requires GCP setup!')}>
+                    <Text style={[styles.googleButtonText, { color: colors.text }]}>Continue with Google</Text>
+                </TouchableOpacity>
 
-                    <View style={styles.footer}>
-                        <Text style={styles.footerText}>Already have an account? </Text>
-                        <Link href="/(auth)/login" asChild>
-                            <TouchableOpacity>
-                                <Text style={styles.link}>Login</Text>
-                            </TouchableOpacity>
-                        </Link>
-                    </View>
+                <View style={styles.footer}>
+                    <Text style={[styles.footerText, { color: colors.textSecondary }]}>Already have an account? </Text>
+                    <Link href="/(auth)/login" asChild>
+                        <TouchableOpacity>
+                            <Text style={[styles.link, { color: colors.primary }]}>Login</Text>
+                        </TouchableOpacity>
+                    </Link>
                 </View>
             </View>
         </View>
+        </View >
     );
 }
 
@@ -302,7 +308,7 @@ const styles = StyleSheet.create({
         borderColor: Colors.border,
     },
     googleButtonText: {
-        color: Colors.text,
+        color: DefaultColors.text,
         fontSize: 16,
         fontWeight: 'bold',
     }
