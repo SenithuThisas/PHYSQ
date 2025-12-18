@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from 'react-native';
 import { Link, useRouter } from 'expo-router';
+
 import { Colors as DefaultColors } from '../../constants/Colors';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
