@@ -1,4 +1,4 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import { DarkTheme, DefaultTheme, ThemeProvider as ReactNavigationThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -7,6 +7,7 @@ import { useEffect } from 'react';
 import { View, Platform } from 'react-native';
 import { Colors } from '../constants/Colors';
 import { AuthProvider, useAuth } from '../context/AuthContext';
+import { ThemeProvider, useTheme } from '../context/ThemeContext';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -35,6 +36,7 @@ const InitialLayout = () => {
     const segments = useSegments();
     const router = useRouter();
     const { user, isLoading } = useAuth();
+    const { colors, theme } = useTheme();
 
     useEffect(() => {
         if (loaded) {
@@ -59,26 +61,28 @@ const InitialLayout = () => {
     if (!loaded) return null;
 
     return (
-        <ThemeProvider value={DarkTheme}>
-            <View style={{ flex: 1, backgroundColor: Colors.background }}>
-                <StatusBar style="light" />
+        <ReactNavigationThemeProvider value={theme === 'dark' ? DarkTheme : DefaultTheme}>
+            <View style={{ flex: 1, backgroundColor: colors.background }}>
+                <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
                 <Stack screenOptions={{
                     headerShown: false,
-                    contentStyle: { backgroundColor: Colors.background }
+                    contentStyle: { backgroundColor: colors.background }
                 }}>
                     <Stack.Screen name="index" />
                     <Stack.Screen name="(auth)" />
                     <Stack.Screen name="(tabs)" />
                 </Stack>
             </View>
-        </ThemeProvider>
+        </ReactNavigationThemeProvider>
     );
 };
 
 export default function RootLayout() {
     return (
         <AuthProvider>
-            <InitialLayout />
+            <ThemeProvider>
+                <InitialLayout />
+            </ThemeProvider>
         </AuthProvider>
     );
 }
