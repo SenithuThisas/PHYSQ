@@ -118,13 +118,15 @@ export default function LogWorkout() {
         <SafeAreaView style={styles.safeArea}>
             {/* Navbar */}
             <View style={styles.navbar}>
-                <TouchableOpacity onPress={handleBack} style={styles.navIcon}>
-                    <Ionicons name="arrow-back" size={24} color={Colors.text} />
-                </TouchableOpacity>
-                <Text style={styles.navTitle}>New Entry</Text>
-                <TouchableOpacity onPress={handleLogWorkout} disabled={loggingState}>
-                    {loggingState ? <ActivityIndicator color={Colors.primary} /> : <Text style={styles.navAction}>SAVE</Text>}
-                </TouchableOpacity>
+                <View style={styles.navContent}>
+                    <TouchableOpacity onPress={handleBack} style={styles.navIcon}>
+                        <Ionicons name="arrow-back" size={24} color={Colors.text} />
+                    </TouchableOpacity>
+                    <Text style={styles.navTitle}>New Entry</Text>
+                    <TouchableOpacity onPress={handleLogWorkout} disabled={loggingState}>
+                        {loggingState ? <ActivityIndicator color={Colors.primary} /> : <Text style={styles.navAction}>SAVE</Text>}
+                    </TouchableOpacity>
+                </View>
             </View>
 
             <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -285,13 +287,18 @@ const styles = StyleSheet.create({
         backgroundColor: Colors.background,
     },
     navbar: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
         paddingHorizontal: 20,
         paddingVertical: 16,
         borderBottomWidth: 1,
         borderBottomColor: 'rgba(255,255,255,0.05)',
+        alignItems: 'center',
+    },
+    navContent: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        width: '100%',
+        maxWidth: 700,
     },
     navIcon: {
         padding: 4,
@@ -311,6 +318,9 @@ const styles = StyleSheet.create({
     },
     container: {
         gap: 16,
+        width: '100%',
+        maxWidth: 700,
+        alignSelf: 'center',
     },
     /* Record Workout Card */
     recordCard: {
