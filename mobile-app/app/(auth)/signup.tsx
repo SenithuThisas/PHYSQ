@@ -135,181 +135,181 @@ export default function Signup() {
                                     onChangeText={setConfirmPassword}
                                     secureTextEntry={!showConfirmPassword}
                                 />
-                                <FontAwesome name={showConfirmPassword ? "eye" : "eye-slash"} size={20} color={colors.textSecondary} />
-                            </TouchableOpacity>
+                                <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)} style={styles.eyeIcon}>
+                                    <FontAwesome name={showConfirmPassword ? "eye" : "eye-slash"} size={20} color={colors.textSecondary} />
+                                </TouchableOpacity>
+                            </View>
                         </View>
                     </View>
-                </View>
 
-                <TouchableOpacity style={[styles.button, { backgroundColor: colors.primary, shadowColor: colors.primary }]} onPress={handleSignup} disabled={loading}>
-                    {loading ? (
-                        <ActivityIndicator color={colors.background} />
-                    ) : (
-                        <Text style={[styles.buttonText, { color: colors.background }]}>Sign Up</Text>
-                    )}
-                </TouchableOpacity>
+                    <TouchableOpacity style={[styles.button, { backgroundColor: colors.primary, shadowColor: colors.primary }]} onPress={handleSignup} disabled={loading}>
+                        {loading ? (
+                            <ActivityIndicator color={colors.background} />
+                        ) : (
+                            <Text style={[styles.buttonText, { color: colors.background }]}>Sign Up</Text>
+                        )}
+                    </TouchableOpacity>
 
-                <View style={styles.dividerContainer}>
-                    <View style={[styles.divider, { backgroundColor: colors.border }]} />
-                    <Text style={[styles.dividerText, { color: colors.textSecondary }]}>OR</Text>
-                    <View style={[styles.divider, { backgroundColor: colors.border }]} />
-                </View>
+                    <View style={styles.dividerContainer}>
+                        <View style={[styles.divider, { backgroundColor: colors.border }]} />
+                        <Text style={[styles.dividerText, { color: colors.textSecondary }]}>OR</Text>
+                        <View style={[styles.divider, { backgroundColor: colors.border }]} />
+                    </View>
 
-                <TouchableOpacity style={[styles.googleButton, { backgroundColor: colors.surface, borderColor: colors.border }]} onPress={() => Alert.alert('Coming Soon', 'Google Auth requires GCP setup!')}>
-                    <Text style={[styles.googleButtonText, { color: colors.text }]}>Continue with Google</Text>
-                </TouchableOpacity>
+                    <TouchableOpacity style={[styles.googleButton, { backgroundColor: colors.surface, borderColor: colors.border }]} onPress={() => Alert.alert('Coming Soon', 'Google Auth requires GCP setup!')}>
+                        <Text style={[styles.googleButtonText, { color: colors.text }]}>Continue with Google</Text>
+                    </TouchableOpacity>
 
-                <View style={styles.footer}>
-                    <Text style={[styles.footerText, { color: colors.textSecondary }]}>Already have an account? </Text>
-                    <Link href="/(auth)/login" asChild>
-                        <TouchableOpacity>
-                            <Text style={[styles.link, { color: colors.primary }]}>Login</Text>
-                        </TouchableOpacity>
-                    </Link>
+                    <View style={styles.footer}>
+                        <Text style={[styles.footerText, { color: colors.textSecondary }]}>Already have an account? </Text>
+                        <Link href="/(auth)/login" asChild>
+                            <TouchableOpacity>
+                                <Text style={[styles.link, { color: colors.primary }]}>Login</Text>
+                            </TouchableOpacity>
+                        </Link>
+                    </View>
                 </View>
             </View>
-        </View>
-        </View >
-    );
+            );
 }
 
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: Colors.background,
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: 24,
+            const styles = StyleSheet.create({
+                container: {
+                flex: 1,
+            backgroundColor: DefaultColors.background,
+            justifyContent: 'center',
+            alignItems: 'center',
+            padding: 24,
     },
-    contentContainer: {
-        width: '100%',
-        // Max Width handled dynamically in component
-        borderWidth: 1,
-        borderColor: Colors.primary,
-        borderRadius: 24,
-        padding: 32,
-        shadowColor: Colors.primary,
-        shadowOffset: {
-            width: 0,
+            contentContainer: {
+                width: '100%',
+            // Max Width handled dynamically in component
+            borderWidth: 1,
+            borderColor: DefaultColors.primary,
+            borderRadius: 24,
+            padding: 32,
+            shadowColor: DefaultColors.primary,
+            shadowOffset: {
+                width: 0,
             height: 0,
         },
-        shadowOpacity: 0.25,
-        shadowRadius: 20,
-        elevation: 10,
-        backgroundColor: Colors.background,
+            shadowOpacity: 0.25,
+            shadowRadius: 20,
+            elevation: 10,
+            backgroundColor: DefaultColors.background,
     },
-    header: {
-        fontSize: 32,
-        fontWeight: 'bold',
-        color: Colors.text,
-        marginBottom: 8,
-        textAlign: 'center',
+            header: {
+                fontSize: 32,
+            fontWeight: 'bold',
+            color: DefaultColors.text,
+            marginBottom: 8,
+            textAlign: 'center',
     },
-    subHeader: {
-        fontSize: 16,
-        color: Colors.textSecondary,
-        marginBottom: 32, // Reduced from 48
-        textAlign: 'center',
+            subHeader: {
+                fontSize: 16,
+            color: DefaultColors.textSecondary,
+            marginBottom: 32,
+            textAlign: 'center',
     },
-    form: {
-        gap: 12, // Reduced from 16
+            form: {
+                gap: 12,
     },
-    errorText: {
-        color: 'red',
-        textAlign: 'center',
-        marginBottom: 12,
-        fontSize: 14,
-        fontWeight: '600',
+            errorText: {
+                color: 'red',
+            textAlign: 'center',
+            marginBottom: 12,
+            fontSize: 14,
+            fontWeight: '600',
     },
-    label: {
-        color: Colors.text,
-        fontSize: 14,
-        fontWeight: '600',
-        marginBottom: 4,
-        marginLeft: 4,
+            label: {
+                color: DefaultColors.text,
+            fontSize: 14,
+            fontWeight: '600',
+            marginBottom: 4,
+            marginLeft: 4,
     },
-    input: {
-        backgroundColor: Colors.surface,
-        color: Colors.text,
-        padding: 14, // Reduced from 16
-        borderRadius: 16,
-        fontSize: 16,
-        borderWidth: 1,
-        borderColor: Colors.border,
+            input: {
+                backgroundColor: DefaultColors.surface,
+            color: DefaultColors.text,
+            padding: 14,
+            borderRadius: 16,
+            fontSize: 16,
+            borderWidth: 1,
+            borderColor: DefaultColors.border,
     },
-    passwordContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: Colors.surface,
-        borderRadius: 16,
-        borderWidth: 1,
-        borderColor: Colors.border,
-        paddingRight: 12, // Reduced right padding
+            passwordContainer: {
+                flexDirection: 'row',
+            alignItems: 'center',
+            backgroundColor: DefaultColors.surface,
+            borderRadius: 16,
+            borderWidth: 1,
+            borderColor: DefaultColors.border,
+            paddingRight: 12,
     },
-    passwordInput: {
-        flex: 1,
-        padding: 14, // Reduced from 16
-        color: Colors.text,
-        fontSize: 16,
+            passwordInput: {
+                flex: 1,
+            padding: 14,
+            color: DefaultColors.text,
+            fontSize: 16,
     },
-    eyeIcon: {
-        padding: 4,
+            eyeIcon: {
+                padding: 4,
     },
-    button: {
-        backgroundColor: Colors.primary,
-        padding: 14, // Reduced from 16
-        borderRadius: 16,
-        alignItems: 'center',
-        marginTop: 20, // Reduced from 24
-        shadowColor: Colors.primary,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 10,
-        elevation: 5,
+            button: {
+                backgroundColor: DefaultColors.primary,
+            padding: 14,
+            borderRadius: 16,
+            alignItems: 'center',
+            marginTop: 20,
+            shadowColor: DefaultColors.primary,
+            shadowOffset: {width: 0, height: 4 },
+            shadowOpacity: 0.3,
+            shadowRadius: 10,
+            elevation: 5,
     },
-    buttonText: {
-        color: Colors.background,
-        fontSize: 16,
-        fontWeight: 'bold',
+            buttonText: {
+                color: DefaultColors.background,
+            fontSize: 16,
+            fontWeight: 'bold',
     },
-    footer: {
-        flexDirection: 'row',
-        justifyContent: 'center',
-        marginTop: 20, // Reduced from 24
+            footer: {
+                flexDirection: 'row',
+            justifyContent: 'center',
+            marginTop: 20,
     },
-    footerText: {
-        color: Colors.textSecondary,
+            footerText: {
+                color: DefaultColors.textSecondary,
     },
-    link: {
-        color: Colors.primary,
-        fontWeight: 'bold',
+            link: {
+                color: DefaultColors.primary,
+            fontWeight: 'bold',
     },
-    dividerContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginVertical: 20, // Reduced from 24
+            dividerContainer: {
+                flexDirection: 'row',
+            alignItems: 'center',
+            marginVertical: 20,
     },
-    divider: {
-        flex: 1,
-        height: 1,
-        backgroundColor: Colors.border,
+            divider: {
+                flex: 1,
+            height: 1,
+            backgroundColor: DefaultColors.border,
     },
-    dividerText: {
-        color: Colors.textSecondary,
-        marginHorizontal: 16,
-        fontSize: 14,
+            dividerText: {
+                color: DefaultColors.textSecondary,
+            marginHorizontal: 16,
+            fontSize: 14,
     },
-    googleButton: {
-        backgroundColor: Colors.surface,
-        padding: 14, // Reduced from 16
-        borderRadius: 16,
-        alignItems: 'center',
-        borderWidth: 1,
-        borderColor: Colors.border,
+            googleButton: {
+                backgroundColor: DefaultColors.surface,
+            padding: 14,
+            borderRadius: 16,
+            alignItems: 'center',
+            borderWidth: 1,
+            borderColor: DefaultColors.border,
     },
-    googleButtonText: {
-        color: DefaultColors.text,
-        fontSize: 16,
-        fontWeight: 'bold',
+            googleButtonText: {
+                color: DefaultColors.text,
+            fontSize: 16,
+            fontWeight: 'bold',
     }
 });
