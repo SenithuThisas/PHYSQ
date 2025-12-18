@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from 'react-native';
 import { Link, useRouter } from 'expo-router';
-import { Link, useRouter } from 'expo-router';
 import { Colors as DefaultColors } from '../../constants/Colors';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
@@ -118,19 +117,19 @@ export default function Login() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: Colors.background,
+        backgroundColor: DefaultColors.background,
         justifyContent: 'center',
-        alignItems: 'center', // Center content horizontally
+        alignItems: 'center',
         padding: 24,
     },
-    contentContainer: { // New wrapper for form content
+    contentContainer: {
         width: '100%',
-        maxWidth: 400, // Limit width for web/tablet
+        maxWidth: 400,
         borderWidth: 1,
-        borderColor: Colors.primary,
+        borderColor: DefaultColors.primary,
         borderRadius: 24,
         padding: 32,
-        shadowColor: Colors.primary,
+        shadowColor: DefaultColors.primary,
         shadowOffset: {
             width: 0,
             height: 0,
@@ -138,20 +137,20 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.25,
         shadowRadius: 20,
         elevation: 10,
-        backgroundColor: Colors.background,
+        backgroundColor: DefaultColors.background,
     },
     header: {
         fontSize: 32,
         fontWeight: 'bold',
-        color: Colors.text,
+        color: DefaultColors.text,
         marginBottom: 8,
-        textAlign: 'center', // Center text
+        textAlign: 'center',
     },
     subHeader: {
         fontSize: 16,
-        color: Colors.textSecondary,
+        color: DefaultColors.textSecondary,
         marginBottom: 48,
-        textAlign: 'center', // Center text
+        textAlign: 'center',
     },
     form: {
         gap: 16,
@@ -159,51 +158,51 @@ const styles = StyleSheet.create({
     passwordContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: Colors.surface,
+        backgroundColor: DefaultColors.surface,
         borderRadius: 16,
         borderWidth: 1,
-        borderColor: Colors.border,
-        paddingRight: 16, // Space for icon
+        borderColor: DefaultColors.border,
+        paddingRight: 16,
     },
     passwordInput: {
         flex: 1,
         padding: 16,
-        color: Colors.text,
+        color: DefaultColors.text,
         fontSize: 16,
     },
     eyeIcon: {
         padding: 4,
     },
     label: {
-        color: Colors.text,
+        color: DefaultColors.text,
         fontSize: 14,
         fontWeight: '600',
         marginBottom: 4,
-        marginLeft: 4, // Align with input radius
+        marginLeft: 4,
     },
     input: {
-        backgroundColor: Colors.surface,
-        color: Colors.text,
+        backgroundColor: DefaultColors.surface,
+        color: DefaultColors.text,
         padding: 16,
-        borderRadius: 16, // Softer corners
+        borderRadius: 16,
         fontSize: 16,
         borderWidth: 1,
-        borderColor: Colors.border,
+        borderColor: DefaultColors.border,
     },
     button: {
-        backgroundColor: Colors.primary,
+        backgroundColor: DefaultColors.primary,
         padding: 16,
-        borderRadius: 16, // Match input radius
+        borderRadius: 16,
         alignItems: 'center',
         marginTop: 24,
-        shadowColor: Colors.primary,
+        shadowColor: DefaultColors.primary,
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.3,
         shadowRadius: 10,
         elevation: 5,
     },
     buttonText: {
-        color: Colors.background,
+        color: DefaultColors.background,
         fontSize: 16,
         fontWeight: 'bold',
     },
@@ -213,10 +212,10 @@ const styles = StyleSheet.create({
         marginTop: 24,
     },
     footerText: {
-        color: Colors.textSecondary,
+        color: DefaultColors.textSecondary,
     },
     link: {
-        color: Colors.primary,
+        color: DefaultColors.primary,
         fontWeight: 'bold',
     },
     dividerContainer: {
@@ -227,26 +226,25 @@ const styles = StyleSheet.create({
     divider: {
         flex: 1,
         height: 1,
-        backgroundColor: Colors.border,
+        backgroundColor: DefaultColors.border,
     },
     dividerText: {
-        color: Colors.textSecondary,
+        color: DefaultColors.textSecondary,
         marginHorizontal: 16,
         fontSize: 14,
     },
     googleButton: {
-        backgroundColor: Colors.surface,
+        backgroundColor: DefaultColors.surface,
         padding: 16,
         borderRadius: 16,
         alignItems: 'center',
         borderWidth: 1,
-        borderColor: Colors.border,
+        borderColor: DefaultColors.border,
     },
     googleButtonText: {
         color: DefaultColors.text,
         fontSize: 16,
         fontWeight: 'bold',
     },
-
 });
 
