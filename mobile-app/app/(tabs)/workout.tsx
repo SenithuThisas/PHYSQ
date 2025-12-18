@@ -188,7 +188,7 @@ export default function WorkoutHub() {
 const styles = StyleSheet.create({
     safeArea: {
         flex: 1,
-        backgroundColor: Colors.background,
+        backgroundColor: DefaultColors.background,
     },
     container: {
         padding: 24,
@@ -197,16 +197,16 @@ const styles = StyleSheet.create({
     header: {
         fontSize: 28,
         fontWeight: 'bold',
-        color: Colors.text,
+        color: DefaultColors.text,
         marginBottom: 24,
     },
     card: {
-        backgroundColor: Colors.surface,
+        backgroundColor: DefaultColors.surface,
         borderRadius: 20,
         padding: 20,
         marginBottom: 24,
         borderWidth: 1,
-        borderColor: Colors.border,
+        borderColor: DefaultColors.border,
     },
     cardHeader: {
         flexDirection: 'row',
@@ -217,22 +217,22 @@ const styles = StyleSheet.create({
     cardTitle: {
         fontSize: 20,
         fontWeight: 'bold',
-        color: Colors.text,
+        color: DefaultColors.text,
     },
     editLink: {
-        color: Colors.primary,
+        color: DefaultColors.primary,
         fontWeight: '600',
     },
     sectionTitle: {
         fontSize: 20,
         fontWeight: 'bold',
-        color: Colors.text,
+        color: DefaultColors.text,
         marginBottom: 16,
         marginTop: 8,
     },
     toggleContainer: {
         flexDirection: 'row',
-        backgroundColor: Colors.background,
+        backgroundColor: DefaultColors.background,
         borderRadius: 12,
         padding: 4,
         marginBottom: 16,
@@ -244,33 +244,33 @@ const styles = StyleSheet.create({
         borderRadius: 8,
     },
     toggleBtnActive: {
-        backgroundColor: Colors.surface,
+        backgroundColor: DefaultColors.surface,
         borderWidth: 1,
-        borderColor: Colors.border,
+        borderColor: DefaultColors.border,
     },
     toggleText: {
-        color: Colors.textSecondary,
+        color: DefaultColors.textSecondary,
         fontWeight: '600',
     },
     toggleTextActive: {
-        color: Colors.primary,
+        color: DefaultColors.primary,
     },
     scheduleContent: {
         minHeight: 100,
         justifyContent: 'center',
     },
     scheduleInput: {
-        backgroundColor: Colors.background,
-        color: Colors.text,
+        backgroundColor: DefaultColors.background,
+        color: DefaultColors.text,
         padding: 12,
         borderRadius: 12,
         minHeight: 100,
         textAlignVertical: 'top',
         borderWidth: 1,
-        borderColor: Colors.border,
+        borderColor: DefaultColors.border,
     },
     scheduleDisplayText: {
-        color: Colors.text,
+        color: DefaultColors.text,
         fontSize: 16,
         lineHeight: 24,
     },
@@ -281,7 +281,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#000',
     },
     placeholderText: {
-        color: Colors.textSecondary,
+        color: DefaultColors.textSecondary,
         textAlign: 'center',
         fontStyle: 'italic',
         marginTop: 20,
@@ -290,7 +290,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: Colors.primary,
+        backgroundColor: DefaultColors.primary,
         padding: 12,
         borderRadius: 12,
         marginTop: 12,
@@ -301,7 +301,7 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
     },
     saveBtn: {
-        backgroundColor: Colors.primary,
+        backgroundColor: DefaultColors.primary,
         padding: 12,
         borderRadius: 12,
         alignItems: 'center',
@@ -313,19 +313,19 @@ const styles = StyleSheet.create({
     },
     logCard: {
         flexDirection: 'row',
-        backgroundColor: Colors.surface,
+        backgroundColor: DefaultColors.surface,
         borderRadius: 20,
         padding: 24, // Larger padding for emphasis
         alignItems: 'center',
         marginBottom: 24,
         borderWidth: 1,
-        borderColor: Colors.primary, // Highlight border
+        borderColor: DefaultColors.primary, // Highlight border
     },
     logIconCircle: {
         width: 50,
         height: 50,
         borderRadius: 25,
-        backgroundColor: Colors.primary,
+        backgroundColor: DefaultColors.primary,
         justifyContent: 'center',
         alignItems: 'center',
         marginRight: 16,
@@ -333,21 +333,21 @@ const styles = StyleSheet.create({
     logCardTitle: {
         fontSize: 18,
         fontWeight: 'bold',
-        color: Colors.text,
+        color: DefaultColors.text,
     },
     logCardSubtitle: {
         fontSize: 13,
-        color: Colors.textSecondary,
+        color: DefaultColors.textSecondary,
     },
     recordsCard: {
         flexDirection: 'row',
-        backgroundColor: Colors.surface,
+        backgroundColor: DefaultColors.surface,
         borderRadius: 20,
         padding: 24,
         alignItems: 'center',
         marginBottom: 24,
         borderWidth: 1,
-        borderColor: Colors.border,
+        borderColor: DefaultColors.border,
     },
     recordsIconCircle: {
         width: 50,
@@ -361,24 +361,24 @@ const styles = StyleSheet.create({
     recordsCardTitle: {
         fontSize: 18,
         fontWeight: 'bold',
-        color: Colors.text,
+        color: DefaultColors.text,
     },
     recordsCardSubtitle: {
         fontSize: 13,
-        color: Colors.textSecondary,
+        color: DefaultColors.textSecondary,
     },
     historyItem: {
         flexDirection: 'row',
-        backgroundColor: Colors.surface,
+        backgroundColor: DefaultColors.surface,
         borderRadius: 16,
         padding: 16,
         marginBottom: 12,
         borderWidth: 1,
-        borderColor: Colors.border,
+        borderColor: DefaultColors.border,
         alignItems: 'center',
     },
     historyDateBox: {
-        backgroundColor: Colors.background,
+        backgroundColor: DefaultColors.background,
         borderRadius: 12,
         padding: 8,
         alignItems: 'center',
@@ -389,12 +389,12 @@ const styles = StyleSheet.create({
     historyDateDay: {
         fontSize: 18,
         fontWeight: 'bold',
-        color: Colors.text,
+        color: DefaultColors.text,
     },
     historyDateMonth: {
         fontSize: 10,
         textTransform: 'uppercase',
-        color: Colors.primary,
+        color: DefaultColors.primary,
         fontWeight: 'bold',
     },
     historyDetails: {
@@ -403,7 +403,7 @@ const styles = StyleSheet.create({
     historyTitle: {
         fontSize: 16,
         fontWeight: 'bold',
-        color: Colors.text,
+        color: DefaultColors.text,
         marginBottom: 4,
     },
     historySubtitle: {
