@@ -3,15 +3,17 @@ import {
     View, Text, StyleSheet, ScrollView, TouchableOpacity,
     TextInput, Image, ActivityIndicator, Alert, SafeAreaView, FlatList
 } from 'react-native';
-import { Colors } from '../../constants/Colors';
+import { Colors as DefaultColors } from '../../constants/Colors';
 import { FontAwesome5, Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
 import * as ImagePicker from 'expo-image-picker';
 import { getSchedule, updateSchedule } from '../../services/schedule';
 import { useRouter, useFocusEffect } from 'expo-router';
 
 export default function WorkoutHub() {
     const { token, user } = useAuth();
+    const { colors } = useTheme();
     const router = useRouter();
     const [loadingSchedule, setLoadingSchedule] = useState(false);
 
@@ -79,53 +81,53 @@ export default function WorkoutHub() {
     };
 
     return (
-        <SafeAreaView style={styles.safeArea}>
+        <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
             <ScrollView contentContainerStyle={styles.container}>
-                <Text style={styles.header}>Workout Hub</Text>
+                <Text style={[styles.header, { color: colors.text }]}>Workout Hub</Text>
 
                 {/* --- SCHEDULE SECTION --- */}
-                <View style={styles.card}>
+                <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                     <View style={styles.cardHeader}>
-                        <Text style={styles.cardTitle}>My Schedule</Text>
+                        <Text style={[styles.cardTitle, { color: colors.text }]}>My Schedule</Text>
                         <TouchableOpacity onPress={() => setIsEditingSchedule(!isEditingSchedule)}>
-                            <Text style={styles.editLink}>{isEditingSchedule ? 'Cancel' : 'Edit'}</Text>
+                            <Text style={[styles.editLink, { color: colors.primary }]}>{isEditingSchedule ? 'Cancel' : 'Edit'}</Text>
                         </TouchableOpacity>
                     </View>
 
                     {isEditingSchedule && (
-                        <View style={styles.toggleContainer}>
+                        <View style={[styles.toggleContainer, { backgroundColor: colors.background }]}>
                             <TouchableOpacity
-                                style={[styles.toggleBtn, scheduleType === 'text' && styles.toggleBtnActive]}
+                                style={[styles.toggleBtn, scheduleType === 'text' && [styles.toggleBtnActive, { backgroundColor: colors.surface, borderColor: colors.border }]]}
                                 onPress={() => setScheduleType('text')}
                             >
-                                <Text style={[styles.toggleText, scheduleType === 'text' && styles.toggleTextActive]}>Text</Text>
+                                <Text style={[styles.toggleText, { color: colors.textSecondary }, scheduleType === 'text' && [styles.toggleTextActive, { color: colors.primary }]]}>Text</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
-                                style={[styles.toggleBtn, scheduleType === 'image' && styles.toggleBtnActive]}
+                                style={[styles.toggleBtn, scheduleType === 'image' && [styles.toggleBtnActive, { backgroundColor: colors.surface, borderColor: colors.border }]]}
                                 onPress={() => setScheduleType('image')}
                             >
-                                <Text style={[styles.toggleText, scheduleType === 'image' && styles.toggleTextActive]}>Image</Text>
+                                <Text style={[styles.toggleText, { color: colors.textSecondary }, scheduleType === 'image' && [styles.toggleTextActive, { color: colors.primary }]]}>Image</Text>
                             </TouchableOpacity>
                         </View>
                     )}
 
                     <View style={styles.scheduleContent}>
                         {loadingSchedule ? (
-                            <ActivityIndicator color={Colors.primary} />
+                            <ActivityIndicator color={colors.primary} />
                         ) : (
                             <>
                                 {scheduleType === 'text' ? (
                                     isEditingSchedule ? (
                                         <TextInput
-                                            style={styles.scheduleInput}
+                                            style={[styles.scheduleInput, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
                                             multiline
                                             value={scheduleText}
                                             onChangeText={setScheduleText}
                                             placeholder="Monday: Chest\nTuesday: Back..."
-                                            placeholderTextColor="#666"
+                                            placeholderTextColor={colors.textSecondary}
                                         />
                                     ) : (
-                                        <Text style={styles.scheduleDisplayText}>{scheduleText || 'No schedule set.'}</Text>
+                                        <Text style={[styles.scheduleDisplayText, { color: colors.text }]}>{scheduleText || 'No schedule set.'}</Text>
                                     )
                                 ) : (
                                     <View>
@@ -135,7 +137,7 @@ export default function WorkoutHub() {
                                             <Text style={styles.placeholderText}>No image uploaded.</Text>
                                         )}
                                         {isEditingSchedule && (
-                                            <TouchableOpacity style={styles.uploadBtn} onPress={pickImage}>
+                                            <TouchableOpacity style={[styles.uploadBtn, { backgroundColor: colors.primary }]} onPress={pickImage}>
                                                 <Ionicons name="cloud-upload-outline" size={20} color="#fff" />
                                                 <Text style={styles.uploadBtnText}>Upload Image</Text>
                                             </TouchableOpacity>
@@ -147,34 +149,34 @@ export default function WorkoutHub() {
                     </View>
 
                     {isEditingSchedule && (
-                        <TouchableOpacity style={styles.saveBtn} onPress={handleSaveSchedule}>
+                        <TouchableOpacity style={[styles.saveBtn, { backgroundColor: colors.primary }]} onPress={handleSaveSchedule}>
                             <Text style={styles.saveBtnText}>Save Schedule</Text>
                         </TouchableOpacity>
                     )}
                 </View>
 
                 {/* --- LOG WORKOUT CARD --- */}
-                <TouchableOpacity style={styles.logCard} onPress={() => router.push('/workout/log')}>
-                    <View style={styles.logIconCircle}>
-                        <FontAwesome5 name="dumbbell" size={24} color={Colors.background} />
+                <TouchableOpacity style={[styles.logCard, { backgroundColor: colors.surface, borderColor: colors.primary }]} onPress={() => router.push('/workout/log')}>
+                    <View style={[styles.logIconCircle, { backgroundColor: colors.primary }]}>
+                        <FontAwesome5 name="dumbbell" size={24} color={colors.background} />
                     </View>
                     <View style={{ flex: 1 }}>
-                        <Text style={styles.logCardTitle}>Log a Workout</Text>
-                        <Text style={styles.logCardSubtitle}>Track your sets, reps & progress</Text>
+                        <Text style={[styles.logCardTitle, { color: colors.text }]}>Log a Workout</Text>
+                        <Text style={[styles.logCardSubtitle, { color: colors.textSecondary }]}>Track your sets, reps & progress</Text>
                     </View>
-                    <Ionicons name="chevron-forward" size={24} color={Colors.textSecondary} />
+                    <Ionicons name="chevron-forward" size={24} color={colors.textSecondary} />
                 </TouchableOpacity>
 
                 {/* --- VIEW ALL RECORDS CARD --- */}
-                <TouchableOpacity style={styles.recordsCard} onPress={() => router.push('/workout/records')}>
+                <TouchableOpacity style={[styles.recordsCard, { backgroundColor: colors.surface, borderColor: colors.border }]} onPress={() => router.push('/workout/records')}>
                     <View style={styles.recordsIconCircle}>
-                        <MaterialIcons name="history" size={26} color={Colors.background} />
+                        <MaterialIcons name="history" size={26} color={colors.background} />
                     </View>
                     <View style={{ flex: 1 }}>
-                        <Text style={styles.recordsCardTitle}>View All My Records</Text>
-                        <Text style={styles.recordsCardSubtitle}>See your complete workout history</Text>
+                        <Text style={[styles.recordsCardTitle, { color: colors.text }]}>View All My Records</Text>
+                        <Text style={[styles.recordsCardSubtitle, { color: colors.textSecondary }]}>See your complete workout history</Text>
                     </View>
-                    <Ionicons name="chevron-forward" size={24} color={Colors.textSecondary} />
+                    <Ionicons name="chevron-forward" size={24} color={colors.textSecondary} />
                 </TouchableOpacity>
 
                 <View style={{ height: 40 }} />
@@ -406,6 +408,6 @@ const styles = StyleSheet.create({
     },
     historySubtitle: {
         fontSize: 12,
-        color: Colors.textSecondary,
+        color: DefaultColors.textSecondary,
     },
 });
