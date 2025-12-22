@@ -1,13 +1,17 @@
 import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, useWindowDimensions, ImageBackground } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, useWindowDimensions } from 'react-native';
 import { Link, useRouter } from 'expo-router';
 import { Colors as DefaultColors } from '../../constants/Colors';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
+import { useToast } from '../../context/ToastContext';
 import axios from 'axios';
-import { FontAwesome } from '@expo/vector-icons';
 
 import { Config } from '../../constants/Config';
+import { Input } from '../../components/Input';
+import { UsernameInput } from '../../components/UsernameInput';
+import { useFormValidation, validateEmail, validateRequired, validatePassword } from '../../utils/validation';
+import { handleApiError } from '../../utils/apiHelper';
 
 const API_URL = Config.API_URL;
 
@@ -15,52 +19,86 @@ export default function Signup() {
     const { width } = useWindowDimensions();
     const { colors } = useTheme();
     const isDesktop = width > 768;
+    const { showToast } = useToast();
 
     const [fullName, setFullName] = useState('');
+    const [username, setUsername] = useState('');
+    const [usernameAvailable, setUsernameAvailable] = useState(false);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
-    const [showPassword, setShowPassword] = useState(false);
-    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-    const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+
     const router = useRouter();
     const { signIn } = useAuth();
 
-    const isValidEmail = (email: string) => {
-        return /\S+@\S+\.\S+/.test(email);
-    };
+    const { errors, setFieldError, clearErrors } = useFormValidation({
+        fullName: '',
+        email: '',
+        password: '',
+        confirmPassword: ''
+    });
 
-    const handleSignup = async () => {
-        setError(''); // Clear previous errors
-        if (!fullName || !email || !password || !confirmPassword) {
-            setError('Please fill in all fields');
-            return;
+    const validateForm = () => {
+        clearErrors();
+        let isValid = true;
+
+        if (!validateRequired(fullName)) {
+            setFieldError('fullName', 'Full Name is required');
+            isValid = false;
         }
 
-        if (!isValidEmail(email)) {
-            setError('Please enter a valid email address');
-            return;
+        if (username && username.length < 3) {
+            showToast('Username must be at least 3 characters', 'error');
+            isValid = false;
         }
 
-        if (password.length < 6) {
-            setError('Password must be at least 6 characters long');
-            return;
+        if (username && !usernameAvailable) {
+            showToast('Please choose an available username', 'error');
+            isValid = false;
+        }
+
+        if (!validateRequired(email)) {
+            setFieldError('email', 'Email is required');
+            isValid = false;
+        } else if (!validateEmail(email)) {
+            setFieldError('email', 'Invalid email format');
+            isValid = false;
+        }
+
+        const passwordValidation = validatePassword(password);
+        if (!passwordValidation.isValid) {
+            setFieldError('password', passwordValidation.message || 'Invalid password');
+            isValid = false;
         }
 
         if (password !== confirmPassword) {
-            setError('Passwords do not match');
+            setFieldError('confirmPassword', 'Passwords do not match');
+            isValid = false;
+        }
+
+        return isValid;
+    };
+
+    const handleSignup = async () => {
+        if (!validateForm()) {
             return;
         }
 
         setLoading(true);
         try {
-            await axios.post(`${API_URL}/auth/signup`, { fullName, email, password });
-            Alert.alert('Success', 'Account created successfully! Please login.');
+            // Note: Adjust endpoint if needed, assuming /auth/signup based on original code
+            const res = await axios.post(`${API_URL}/auth/signup`, {
+                fullName,
+                email,
+                password,
+                username: username || undefined
+            });
+            showToast('Account created successfully! Please login.', 'success');
             router.replace('/(auth)/login');
         } catch (err: any) {
-            const msg = err.response?.data?.error || 'Signup failed';
-            setError(msg);
+            const errorMessage = handleApiError(err);
+            showToast(errorMessage, 'error');
         } finally {
             setLoading(false);
         }
@@ -77,72 +115,75 @@ export default function Signup() {
                 <Text style={[styles.header, { color: colors.text }]}>Create Account</Text>
                 <Text style={[styles.subHeader, { color: colors.textSecondary }]}>Start your journey to greatness.</Text>
 
-                {error ? <Text style={styles.errorText}>{error}</Text> : null}
-
                 <View style={styles.form}>
-                    <View>
-                        <Text style={[styles.label, { color: colors.text }]}>Full Name</Text>
-                        <TextInput
-                            style={[styles.input, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
-                            placeholder="Gym Bro"
-                            placeholderTextColor={colors.textSecondary}
-                            value={fullName}
-                            onChangeText={setFullName}
-                            autoCapitalize="words"
-                        />
-                    </View>
+                    <Input
+                        label="Full Name"
+                        placeholder="Gym Bro"
+                        value={fullName}
+                        onChangeText={(text) => {
+                            setFullName(text);
+                            setFieldError('fullName', null);
+                        }}
+                        autoCapitalize="words"
+                        error={errors.fullName}
+                    />
 
-                    <View>
-                        <Text style={[styles.label, { color: colors.text }]}>Email</Text>
-                        <TextInput
-                            style={[styles.input, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
-                            placeholder="gymbro@example.com"
-                            placeholderTextColor={colors.textSecondary}
-                            value={email}
-                            onChangeText={setEmail}
-                            autoCapitalize="none"
-                            keyboardType="email-address"
-                        />
-                    </View>
+                    <UsernameInput
+                        value={username}
+                        onChangeText={setUsername}
+                        onAvailabilityChange={setUsernameAvailable}
+                    />
 
-                    {/* Passwords Row */}
+                    <Input
+                        label="Email"
+                        placeholder="gymbro@example.com"
+                        value={email}
+                        onChangeText={(text) => {
+                            setEmail(text);
+                            setFieldError('email', null);
+                        }}
+                        autoCapitalize="none"
+                        keyboardType="email-address"
+                        error={errors.email}
+                    />
+
                     <View style={{ flexDirection: isDesktop ? 'row' : 'column', gap: 12 }}>
                         <View style={{ flex: 1 }}>
-                            <Text style={[styles.label, { color: colors.text }]}>Password</Text>
-                            <View style={[styles.passwordContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                                <TextInput
-                                    style={[styles.passwordInput, { color: colors.text }]}
-                                    placeholder="Password"
-                                    placeholderTextColor={colors.textSecondary}
-                                    value={password}
-                                    onChangeText={setPassword}
-                                    secureTextEntry={!showPassword}
-                                />
-                                <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
-                                    <FontAwesome name={showPassword ? "eye" : "eye-slash"} size={20} color={colors.textSecondary} />
-                                </TouchableOpacity>
-                            </View>
+                            <Input
+                                label="Password"
+                                placeholder="Password"
+                                value={password}
+                                onChangeText={(text) => {
+                                    setPassword(text);
+                                    setFieldError('password', null);
+                                }}
+                                isPassword
+                                error={errors.password}
+                                style={{ marginBottom: 0 }} // Override container margin for row layout
+                            />
                         </View>
 
                         <View style={{ flex: 1 }}>
-                            <Text style={[styles.label, { color: colors.text }]}>Confirm</Text>
-                            <View style={[styles.passwordContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                                <TextInput
-                                    style={styles.passwordInput}
-                                    placeholder="Confirm pwd"
-                                    placeholderTextColor="#666"
-                                    value={confirmPassword}
-                                    onChangeText={setConfirmPassword}
-                                    secureTextEntry={!showConfirmPassword}
-                                />
-                                <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)} style={styles.eyeIcon}>
-                                    <FontAwesome name={showConfirmPassword ? "eye" : "eye-slash"} size={20} color={colors.textSecondary} />
-                                </TouchableOpacity>
-                            </View>
+                            <Input
+                                label="Confirm"
+                                placeholder="Confirm pwd"
+                                value={confirmPassword}
+                                onChangeText={(text) => {
+                                    setConfirmPassword(text);
+                                    setFieldError('confirmPassword', null);
+                                }}
+                                isPassword
+                                error={errors.confirmPassword}
+                                style={{ marginBottom: 0 }}
+                            />
                         </View>
                     </View>
 
-                    <TouchableOpacity style={[styles.button, { backgroundColor: colors.primary, shadowColor: colors.primary }]} onPress={handleSignup} disabled={loading}>
+                    <TouchableOpacity
+                        style={[styles.button, { backgroundColor: colors.primary, shadowColor: colors.primary, opacity: loading ? 0.7 : 1 }]}
+                        onPress={handleSignup}
+                        disabled={loading}
+                    >
                         {loading ? (
                             <ActivityIndicator color={colors.background} />
                         ) : (
@@ -156,7 +197,7 @@ export default function Signup() {
                         <View style={[styles.divider, { backgroundColor: colors.border }]} />
                     </View>
 
-                    <TouchableOpacity style={[styles.googleButton, { backgroundColor: colors.surface, borderColor: colors.border }]} onPress={() => Alert.alert('Coming Soon', 'Google Auth requires GCP setup!')}>
+                    <TouchableOpacity style={[styles.googleButton, { backgroundColor: colors.surface, borderColor: colors.border }]} onPress={() => showToast('Google Auth requires GCP setup!', 'info')}>
                         <Text style={[styles.googleButtonText, { color: colors.text }]}>Continue with Google</Text>
                     </TouchableOpacity>
 
@@ -213,48 +254,7 @@ const styles = StyleSheet.create({
         textAlign: 'center',
     },
     form: {
-        gap: 12,
-    },
-    errorText: {
-        color: 'red',
-        textAlign: 'center',
-        marginBottom: 12,
-        fontSize: 14,
-        fontWeight: '600',
-    },
-    label: {
-        color: DefaultColors.text,
-        fontSize: 14,
-        fontWeight: '600',
-        marginBottom: 4,
-        marginLeft: 4,
-    },
-    input: {
-        backgroundColor: DefaultColors.surface,
-        color: DefaultColors.text,
-        padding: 14,
-        borderRadius: 16,
-        fontSize: 16,
-        borderWidth: 1,
-        borderColor: DefaultColors.border,
-    },
-    passwordContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: DefaultColors.surface,
-        borderRadius: 16,
-        borderWidth: 1,
-        borderColor: DefaultColors.border,
-        paddingRight: 12,
-    },
-    passwordInput: {
-        flex: 1,
-        padding: 14,
-        color: DefaultColors.text,
-        fontSize: 16,
-    },
-    eyeIcon: {
-        padding: 4,
+        gap: 8,
     },
     button: {
         backgroundColor: DefaultColors.primary,
