@@ -67,7 +67,7 @@ export const Input: React.FC<InputProps> = ({
                     </TouchableOpacity>
                 )}
             </View>
-            {error && (
+            {error && error.trim().length > 0 && (
                 <Text style={[styles.errorText, { color: theme === 'dark' ? '#ef4444' : '#dc2626' }]}>
                     {error}
                 </Text>
