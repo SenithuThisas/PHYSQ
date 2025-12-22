@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Animated } from 'react-native';
 import { Link, useRouter } from 'expo-router';
 import { Colors as DefaultColors } from '../../constants/Colors';
 import { useAuth } from '../../context/AuthContext';
@@ -9,8 +9,9 @@ import axios from 'axios';
 
 import { Config } from '../../constants/Config';
 import { Input } from '../../components/Input';
-import { useFormValidation, validateEmail, validateRequired } from '../../utils/validation';
+import { validateEmail, validateRequired } from '../../utils/validation';
 import { handleApiError } from '../../utils/apiHelper';
+import { useShakeAnimation } from '../../utils/animations';
 
 const API_URL = Config.API_URL;
 
@@ -24,33 +25,44 @@ export default function Login() {
     const { colors } = useTheme();
     const { showToast } = useToast();
 
-    const { errors, setFieldError, clearErrors, hasErrors } = useFormValidation({
-        email: '',
-        password: ''
+    // Touched state
+    const [touched, setTouched] = useState({
+        email: false,
+        password: false,
     });
 
-    const validateForm = () => {
-        clearErrors();
-        let isValid = true;
+    // Shake animation
+    const { shake, style: shakeStyle } = useShakeAnimation();
 
-        if (!validateRequired(email)) {
-            setFieldError('email', 'Email is required');
-            isValid = false;
-        } else if (!validateEmail(email)) {
-            setFieldError('email', 'Invalid email format');
-            isValid = false;
-        }
+    // Real-time validation
+    const getEmailError = () => {
+        if (!touched.email || !email) return '';
+        if (!validateRequired(email)) return 'Email is required';
+        if (!validateEmail(email)) return 'Invalid email format';
+        return '';
+    };
 
-        if (!validateRequired(password)) {
-            setFieldError('password', 'Password is required');
-            isValid = false;
-        }
+    const getPasswordError = () => {
+        if (!touched.password || !password) return '';
+        return validateRequired(password) ? '' : 'Password is required';
+    };
 
-        return isValid;
+    // Check if form is valid
+    const isFormValid = () => {
+        return (
+            email.trim().length > 0 &&
+            validateEmail(email) &&
+            password.trim().length > 0
+        );
     };
 
     const handleLogin = async () => {
-        if (!validateForm()) {
+        // Mark all as touched
+        setTouched({ email: true, password: true });
+
+        if (!isFormValid()) {
+            shake();
+            showToast('Please fix all errors', 'error');
             return;
         }
 
@@ -63,7 +75,6 @@ export default function Login() {
         } catch (err: any) {
             const errorMessage = handleApiError(err);
             showToast(errorMessage, 'error');
-            // If it's a validation error from server (400), we could potentially map it to fields if the server returns field-specific errors
         } finally {
             setLoading(false);
         }
@@ -71,7 +82,11 @@ export default function Login() {
 
     return (
         <View style={[styles.container, { backgroundColor: colors.background }]}>
-            <View style={[styles.contentContainer, { backgroundColor: colors.background, borderColor: colors.primary, shadowColor: colors.primary }]}>
+            <Animated.View style={[
+                styles.contentContainer,
+                { backgroundColor: colors.background, borderColor: colors.primary, shadowColor: colors.primary },
+                shakeStyle
+            ]}>
                 <Text style={[styles.header, { color: colors.text }]}>Welcome Back</Text>
                 <Text style={[styles.subHeader, { color: colors.textSecondary }]}>Sign in to continue your progress.</Text>
 
@@ -82,11 +97,11 @@ export default function Login() {
                         value={email}
                         onChangeText={(text) => {
                             setEmail(text);
-                            setFieldError('email', null);
+                            if (!touched.email) setTouched(prev => ({ ...prev, email: true }));
                         }}
                         autoCapitalize="none"
                         keyboardType="email-address"
-                        error={errors.email}
+                        error={getEmailError()}
                     />
 
                     <Input
@@ -95,16 +110,23 @@ export default function Login() {
                         value={password}
                         onChangeText={(text) => {
                             setPassword(text);
-                            setFieldError('password', null);
+                            if (!touched.password) setTouched(prev => ({ ...prev, password: true }));
                         }}
                         isPassword
-                        error={errors.password}
+                        error={getPasswordError()}
                     />
 
                     <TouchableOpacity
-                        style={[styles.button, { backgroundColor: colors.primary, shadowColor: colors.primary, opacity: loading ? 0.7 : 1 }]}
+                        style={[
+                            styles.button,
+                            {
+                                backgroundColor: isFormValid() ? colors.primary : colors.border,
+                                shadowColor: colors.primary,
+                                opacity: loading ? 0.7 : 1
+                            }
+                        ]}
                         onPress={handleLogin}
-                        disabled={loading}
+                        disabled={loading || !isFormValid()}
                     >
                         {loading ? (
                             <ActivityIndicator color={colors.background} />
@@ -132,7 +154,7 @@ export default function Login() {
                         </Link>
                     </View>
                 </View>
-            </View>
+            </Animated.View>
         </View>
     );
 }
