@@ -4,10 +4,42 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
+// GET /auth/check-username?username=value
+router.get('/check-username', async (req, res) => {
+    try {
+        const { username } = req.query;
+
+        if (!username || username.trim().length < 3) {
+            return res.status(400).json({
+                available: false,
+                message: 'Username must be at least 3 characters'
+            });
+        }
+
+        // Check if username exists
+        const existingUser = await User.findOne({ username: username.trim() });
+
+        if (existingUser) {
+            return res.json({
+                available: false,
+                message: 'Username is already taken'
+            });
+        }
+
+        return res.json({
+            available: true,
+            message: 'Username is available'
+        });
+    } catch (err) {
+        console.error('Check username error:', err);
+        res.status(500).json({ error: 'Error checking username' });
+    }
+});
+
 // POST /auth/signup
 router.post('/signup', async (req, res) => {
     try {
-        const { fullName, email, password } = req.body;
+        const { fullName, email, password, username } = req.body;
         console.log('Signup attempt for:', email);
         if (!process.env.JWT_SECRET) {
             throw new Error('JWT_SECRET is missing in .env');
@@ -18,12 +50,18 @@ router.post('/signup', async (req, res) => {
         const existingUser = await User.findOne({ email });
         if (existingUser) return res.status(400).json({ error: 'User already exists' });
 
+        // Check if username is already taken (if provided)
+        if (username) {
+            const existingUsername = await User.findOne({ username });
+            if (existingUsername) return res.status(400).json({ error: 'Username already taken' });
+        }
+
         console.log('Hashing password...');
         const salt = await bcrypt.genSalt(10);
         const passwordHash = await bcrypt.hash(password, salt);
 
         console.log('Saving user to DB...');
-        const newUser = new User({ fullName, email, passwordHash });
+        const newUser = new User({ fullName, email, passwordHash, username: username || undefined });
         await newUser.save();
         console.log('User saved:', newUser._id);
 
