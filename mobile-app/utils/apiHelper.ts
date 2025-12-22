@@ -22,7 +22,7 @@ export const handleApiError = (error: unknown): string => {
             case 400:
                 return 'Invalid request. Please check your inputs.';
             case 401:
-                return 'Session expired. Please login again.';
+                return 'Invalid email or password.';
             case 403:
                 return 'You do not have permission to perform this action.';
             case 404:
