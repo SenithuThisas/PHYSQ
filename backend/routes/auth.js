@@ -4,6 +4,39 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
+// GET /auth/check-email?email=value
+router.get('/check-email', async (req, res) => {
+    try {
+        const { email } = req.query;
+
+        if (!email || !email.includes('@')) {
+            return res.status(400).json({
+                available: false,
+                message: 'Invalid email format'
+            });
+        }
+
+        // Check if email exists
+        const existingUser = await User.findOne({ email: email.trim().toLowerCase() });
+
+        if (existingUser) {
+            return res.json({
+                available: false,
+                message: 'This email is already in use'
+            });
+        }
+
+        return res.json({
+            available: true,
+            message: 'Email is available'
+        });
+    } catch (err) {
+        console.error('Check email error:', err);
+        res.status(500).json({ error: 'Error checking email availability' });
+    }
+});
+
+
 // GET /auth/check-username?username=value
 router.get('/check-username', async (req, res) => {
     try {
@@ -45,15 +78,22 @@ router.post('/signup', async (req, res) => {
             throw new Error('JWT_SECRET is missing in .env');
         }
 
-        if (!fullName || !email || !password) return res.status(400).json({ error: 'Full name, email, and password required' });
+        if (!fullName || !email || !password) {
+            return res.status(400).json({ error: 'Full name, email, and password are required' });
+        }
 
-        const existingUser = await User.findOne({ email });
-        if (existingUser) return res.status(400).json({ error: 'User already exists' });
+        // Check email uniqueness
+        const existingEmail = await User.findOne({ email: email.trim().toLowerCase() });
+        if (existingEmail) {
+            return res.status(409).json({ error: 'This email is already in use' });
+        }
 
-        // Check if username is already taken (if provided)
+        // Check username uniqueness (if provided)
         if (username) {
-            const existingUsername = await User.findOne({ username });
-            if (existingUsername) return res.status(400).json({ error: 'Username already taken' });
+            const existingUsername = await User.findOne({ username: username.trim() });
+            if (existingUsername) {
+                return res.status(409).json({ error: 'This username is already taken' });
+            }
         }
 
         console.log('Hashing password...');
@@ -61,7 +101,12 @@ router.post('/signup', async (req, res) => {
         const passwordHash = await bcrypt.hash(password, salt);
 
         console.log('Saving user to DB...');
-        const newUser = new User({ fullName, email, passwordHash, username: username || undefined });
+        const newUser = new User({
+            fullName,
+            email: email.trim().toLowerCase(),
+            passwordHash,
+            username: username ? username.trim() : undefined
+        });
         await newUser.save();
         console.log('User saved:', newUser._id);
 
@@ -90,11 +135,11 @@ router.post('/signup', async (req, res) => {
 router.post('/login', async (req, res) => {
     try {
         const { email, password } = req.body;
-        const user = await User.findOne({ email });
-        if (!user) return res.status(400).json({ error: 'Invalid credentials' });
+        const user = await User.findOne({ email: email.trim().toLowerCase() });
+        if (!user) return res.status(401).json({ error: 'Invalid email or password' });
 
         const isMatch = await bcrypt.compare(password, user.passwordHash);
-        if (!isMatch) return res.status(400).json({ error: 'Invalid credentials' });
+        if (!isMatch) return res.status(401).json({ error: 'Invalid email or password' });
 
         const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
         res.json({
