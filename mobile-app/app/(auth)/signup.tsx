@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, useWindowDimensions } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, useWindowDimensions, Animated } from 'react-native';
 import { Link, useRouter } from 'expo-router';
 import { Colors as DefaultColors } from '../../constants/Colors';
 import { useAuth } from '../../context/AuthContext';
@@ -10,8 +10,11 @@ import axios from 'axios';
 import { Config } from '../../constants/Config';
 import { Input } from '../../components/Input';
 import { UsernameInput } from '../../components/UsernameInput';
-import { useFormValidation, validateEmail, validateRequired, validatePassword } from '../../utils/validation';
+import { EmailInput } from '../../components/EmailInput';
+import { PasswordStrengthMeter } from '../../components/PasswordStrengthMeter';
+import { validateRequired, validatePassword, getPasswordStrength } from '../../utils/validation';
 import { handleApiError } from '../../utils/apiHelper';
+import { useShakeAnimation } from '../../utils/animations';
 
 const API_URL = Config.API_URL;
 
@@ -20,81 +23,84 @@ export default function Signup() {
     const { colors } = useTheme();
     const isDesktop = width > 768;
     const { showToast } = useToast();
+    const router = useRouter();
 
+    // Form state
     const [fullName, setFullName] = useState('');
     const [username, setUsername] = useState('');
     const [usernameAvailable, setUsernameAvailable] = useState(false);
     const [email, setEmail] = useState('');
+    const [emailAvailable, setEmailAvailable] = useState(false);
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [loading, setLoading] = useState(false);
 
-    const router = useRouter();
-    const { signIn } = useAuth();
-
-    const { errors, setFieldError, clearErrors } = useFormValidation({
-        fullName: '',
-        email: '',
-        password: '',
-        confirmPassword: ''
+    // Touched state for each field
+    const [touched, setTouched] = useState({
+        fullName: false,
+        username: false,
+        email: false,
+        password: false,
+        confirmPassword: false,
     });
 
-    const validateForm = () => {
-        clearErrors();
-        let isValid = true;
+    // Shake animation for form
+    const { shake, style: shakeStyle } = useShakeAnimation();
 
-        if (!validateRequired(fullName)) {
-            setFieldError('fullName', 'Full Name is required');
-            isValid = false;
-        }
+    // Real-time validation errors
+    const getFullNameError = () => {
+        if (!touched.fullName || !fullName) return '';
+        return validateRequired(fullName) ? '' : 'Full name is required';
+    };
 
-        if (username && username.length < 3) {
-            showToast('Username must be at least 3 characters', 'error');
-            isValid = false;
-        }
+    const getPasswordError = () => {
+        if (!touched.password || !password) return '';
+        const validation = validatePassword(password);
+        return validation.isValid ? '' : validation.message || '';
+    };
 
-        if (username && !usernameAvailable) {
-            showToast('Please choose an available username', 'error');
-            isValid = false;
-        }
+    const getConfirmPasswordError = () => {
+        if (!touched.confirmPassword || !confirmPassword) return '';
+        return password === confirmPassword ? '' : 'Passwords do not match';
+    };
 
-        if (!validateRequired(email)) {
-            setFieldError('email', 'Email is required');
-            isValid = false;
-        } else if (!validateEmail(email)) {
-            setFieldError('email', 'Invalid email format');
-            isValid = false;
-        }
-
-        const passwordValidation = validatePassword(password);
-        if (!passwordValidation.isValid) {
-            setFieldError('password', passwordValidation.message || 'Invalid password');
-            isValid = false;
-        }
-
-        if (password !== confirmPassword) {
-            setFieldError('confirmPassword', 'Passwords do not match');
-            isValid = false;
-        }
-
-        return isValid;
+    // Check if form is valid
+    const isFormValid = () => {
+        return (
+            fullName.trim().length > 0 &&
+            (username.length === 0 || usernameAvailable) && // Username is optional
+            emailAvailable &&
+            password.length >= 8 &&
+            password === confirmPassword
+        );
     };
 
     const handleSignup = async () => {
-        if (!validateForm()) {
+        // Mark all fields as touched
+        setTouched({
+            fullName: true,
+            username: true,
+            email: true,
+            password: true,
+            confirmPassword: true,
+        });
+
+        // Validate all fields
+        if (!isFormValid()) {
+            shake();
+            showToast('Please fix all errors before submitting', 'error');
             return;
         }
 
         setLoading(true);
         try {
-            // Note: Adjust endpoint if needed, assuming /auth/signup based on original code
             const res = await axios.post(`${API_URL}/auth/signup`, {
                 fullName,
                 email,
                 password,
                 username: username || undefined
             });
-            showToast('Account created successfully! Please login.', 'success');
+            showToast('Account created successfully!', 'success');
             router.replace('/(auth)/login');
         } catch (err: any) {
             const errorMessage = handleApiError(err);
@@ -104,14 +110,20 @@ export default function Signup() {
         }
     };
 
+    const passwordStrength = getPasswordStrength(password);
+
     return (
         <View style={[styles.container, { backgroundColor: colors.background }]}>
-            <View style={[styles.contentContainer, {
-                maxWidth: isDesktop ? 600 : 400,
-                backgroundColor: colors.background,
-                borderColor: colors.primary,
-                shadowColor: colors.primary
-            }]}>
+            <Animated.View style={[
+                styles.contentContainer,
+                {
+                    maxWidth: isDesktop ? 600 : 400,
+                    backgroundColor: colors.background,
+                    borderColor: colors.primary,
+                    shadowColor: colors.primary
+                },
+                shakeStyle
+            ]}>
                 <Text style={[styles.header, { color: colors.text }]}>Create Account</Text>
                 <Text style={[styles.subHeader, { color: colors.textSecondary }]}>Start your journey to greatness.</Text>
 
@@ -122,10 +134,10 @@ export default function Signup() {
                         value={fullName}
                         onChangeText={(text) => {
                             setFullName(text);
-                            setFieldError('fullName', null);
+                            if (!touched.fullName) setTouched(prev => ({ ...prev, fullName: true }));
                         }}
                         autoCapitalize="words"
-                        error={errors.fullName}
+                        error={getFullNameError()}
                     />
 
                     <UsernameInput
@@ -134,17 +146,10 @@ export default function Signup() {
                         onAvailabilityChange={setUsernameAvailable}
                     />
 
-                    <Input
-                        label="Email"
-                        placeholder="gymbro@example.com"
+                    <EmailInput
                         value={email}
-                        onChangeText={(text) => {
-                            setEmail(text);
-                            setFieldError('email', null);
-                        }}
-                        autoCapitalize="none"
-                        keyboardType="email-address"
-                        error={errors.email}
+                        onChangeText={setEmail}
+                        onAvailabilityChange={setEmailAvailable}
                     />
 
                     <View style={{ flexDirection: isDesktop ? 'row' : 'column', gap: 12 }}>
@@ -155,12 +160,13 @@ export default function Signup() {
                                 value={password}
                                 onChangeText={(text) => {
                                     setPassword(text);
-                                    setFieldError('password', null);
+                                    if (!touched.password) setTouched(prev => ({ ...prev, password: true }));
                                 }}
                                 isPassword
-                                error={errors.password}
-                                style={{ marginBottom: 0 }} // Override container margin for row layout
+                                error={getPasswordError()}
+                                style={{ marginBottom: 0 }}
                             />
+                            <PasswordStrengthMeter password={password} show={touched.password} />
                         </View>
 
                         <View style={{ flex: 1 }}>
@@ -170,19 +176,26 @@ export default function Signup() {
                                 value={confirmPassword}
                                 onChangeText={(text) => {
                                     setConfirmPassword(text);
-                                    setFieldError('confirmPassword', null);
+                                    if (!touched.confirmPassword) setTouched(prev => ({ ...prev, confirmPassword: true }));
                                 }}
                                 isPassword
-                                error={errors.confirmPassword}
+                                error={getConfirmPasswordError()}
                                 style={{ marginBottom: 0 }}
                             />
                         </View>
                     </View>
 
                     <TouchableOpacity
-                        style={[styles.button, { backgroundColor: colors.primary, shadowColor: colors.primary, opacity: loading ? 0.7 : 1 }]}
+                        style={[
+                            styles.button,
+                            {
+                                backgroundColor: isFormValid() ? colors.primary : colors.border,
+                                shadowColor: colors.primary,
+                                opacity: loading ? 0.7 : 1
+                            }
+                        ]}
                         onPress={handleSignup}
-                        disabled={loading}
+                        disabled={loading || !isFormValid()}
                     >
                         {loading ? (
                             <ActivityIndicator color={colors.background} />
@@ -210,7 +223,7 @@ export default function Signup() {
                         </Link>
                     </View>
                 </View>
-            </View>
+            </Animated.View>
         </View>
     );
 }
@@ -225,7 +238,6 @@ const styles = StyleSheet.create({
     },
     contentContainer: {
         width: '100%',
-        // Max Width handled dynamically in component
         borderWidth: 1,
         borderColor: DefaultColors.primary,
         borderRadius: 24,
