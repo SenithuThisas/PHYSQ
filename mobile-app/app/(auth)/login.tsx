@@ -1,39 +1,56 @@
 import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from 'react-native';
 import { Link, useRouter } from 'expo-router';
-
 import { Colors as DefaultColors } from '../../constants/Colors';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
+import { useToast } from '../../context/ToastContext';
 import axios from 'axios';
-import { FontAwesome } from '@expo/vector-icons';
 
-// IMPORTANT: Update this with your local IP if running on real device
 import { Config } from '../../constants/Config';
+import { Input } from '../../components/Input';
+import { useFormValidation, validateEmail, validateRequired } from '../../utils/validation';
+import { handleApiError } from '../../utils/apiHelper';
 
 const API_URL = Config.API_URL;
 
 export default function Login() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
+
     const router = useRouter();
     const { signIn } = useAuth();
     const { colors } = useTheme();
+    const { showToast } = useToast();
 
-    const isValidEmail = (email: string) => {
-        return /\S+@\S+\.\S+/.test(email);
+    const { errors, setFieldError, clearErrors, hasErrors } = useFormValidation({
+        email: '',
+        password: ''
+    });
+
+    const validateForm = () => {
+        clearErrors();
+        let isValid = true;
+
+        if (!validateRequired(email)) {
+            setFieldError('email', 'Email is required');
+            isValid = false;
+        } else if (!validateEmail(email)) {
+            setFieldError('email', 'Invalid email format');
+            isValid = false;
+        }
+
+        if (!validateRequired(password)) {
+            setFieldError('password', 'Password is required');
+            isValid = false;
+        }
+
+        return isValid;
     };
 
     const handleLogin = async () => {
-        if (!email || !password) {
-            Alert.alert('Error', 'Please fill in all fields');
-            return;
-        }
-
-        if (!isValidEmail(email)) {
-            Alert.alert('Error', 'Please enter a valid email address');
+        if (!validateForm()) {
             return;
         }
 
@@ -41,10 +58,12 @@ export default function Login() {
         try {
             const res = await axios.post(`${API_URL}/auth/login`, { email, password });
             await signIn(res.data.token, res.data.user);
+            showToast('Login successful!', 'success');
             router.replace('/(tabs)/home');
         } catch (err: any) {
-            const msg = err.response?.data?.error || 'Login failed';
-            Alert.alert('Error', msg);
+            const errorMessage = handleApiError(err);
+            showToast(errorMessage, 'error');
+            // If it's a validation error from server (400), we could potentially map it to fields if the server returns field-specific errors
         } finally {
             setLoading(false);
         }
@@ -57,33 +76,36 @@ export default function Login() {
                 <Text style={[styles.subHeader, { color: colors.textSecondary }]}>Sign in to continue your progress.</Text>
 
                 <View style={styles.form}>
-                    <Text style={[styles.label, { color: colors.text }]}>Email</Text>
-                    <TextInput
-                        style={[styles.input, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
+                    <Input
+                        label="Email"
                         placeholder="gymbro@example.com"
-                        placeholderTextColor={colors.textSecondary}
                         value={email}
-                        onChangeText={setEmail}
+                        onChangeText={(text) => {
+                            setEmail(text);
+                            setFieldError('email', null);
+                        }}
                         autoCapitalize="none"
                         keyboardType="email-address"
+                        error={errors.email}
                     />
 
-                    <Text style={[styles.label, { color: colors.text }]}>Password</Text>
-                    <View style={[styles.passwordContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                        <TextInput
-                            style={[styles.passwordInput, { color: colors.text }]}
-                            placeholder="••••••••"
-                            placeholderTextColor={colors.textSecondary}
-                            value={password}
-                            onChangeText={setPassword}
-                            secureTextEntry={!showPassword}
-                        />
-                        <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
-                            <FontAwesome name={showPassword ? "eye" : "eye-slash"} size={20} color={colors.textSecondary} />
-                        </TouchableOpacity>
-                    </View>
+                    <Input
+                        label="Password"
+                        placeholder="••••••••"
+                        value={password}
+                        onChangeText={(text) => {
+                            setPassword(text);
+                            setFieldError('password', null);
+                        }}
+                        isPassword
+                        error={errors.password}
+                    />
 
-                    <TouchableOpacity style={[styles.button, { backgroundColor: colors.primary, shadowColor: colors.primary }]} onPress={handleLogin} disabled={loading}>
+                    <TouchableOpacity
+                        style={[styles.button, { backgroundColor: colors.primary, shadowColor: colors.primary, opacity: loading ? 0.7 : 1 }]}
+                        onPress={handleLogin}
+                        disabled={loading}
+                    >
                         {loading ? (
                             <ActivityIndicator color={colors.background} />
                         ) : (
@@ -97,7 +119,7 @@ export default function Login() {
                         <View style={[styles.divider, { backgroundColor: colors.border }]} />
                     </View>
 
-                    <TouchableOpacity style={[styles.googleButton, { backgroundColor: colors.surface, borderColor: colors.border }]} onPress={() => Alert.alert('Coming Soon', 'Google Auth requires GCP setup!')}>
+                    <TouchableOpacity style={[styles.googleButton, { backgroundColor: colors.surface, borderColor: colors.border }]} onPress={() => showToast('Google Auth requires GCP setup!', 'info')}>
                         <Text style={[styles.googleButtonText, { color: colors.text }]}>Continue with Google</Text>
                     </TouchableOpacity>
 
@@ -150,52 +172,18 @@ const styles = StyleSheet.create({
     subHeader: {
         fontSize: 16,
         color: DefaultColors.textSecondary,
-        marginBottom: 48,
+        marginBottom: 32,
         textAlign: 'center',
     },
     form: {
-        gap: 16,
-    },
-    passwordContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: DefaultColors.surface,
-        borderRadius: 16,
-        borderWidth: 1,
-        borderColor: DefaultColors.border,
-        paddingRight: 16,
-    },
-    passwordInput: {
-        flex: 1,
-        padding: 16,
-        color: DefaultColors.text,
-        fontSize: 16,
-    },
-    eyeIcon: {
-        padding: 4,
-    },
-    label: {
-        color: DefaultColors.text,
-        fontSize: 14,
-        fontWeight: '600',
-        marginBottom: 4,
-        marginLeft: 4,
-    },
-    input: {
-        backgroundColor: DefaultColors.surface,
-        color: DefaultColors.text,
-        padding: 16,
-        borderRadius: 16,
-        fontSize: 16,
-        borderWidth: 1,
-        borderColor: DefaultColors.border,
+        gap: 8,
     },
     button: {
         backgroundColor: DefaultColors.primary,
         padding: 16,
         borderRadius: 16,
         alignItems: 'center',
-        marginTop: 24,
+        marginTop: 16,
         shadowColor: DefaultColors.primary,
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.3,
@@ -248,4 +236,3 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
     },
 });
-
