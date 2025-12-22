@@ -8,6 +8,7 @@ import { View, Platform } from 'react-native';
 import { Colors } from '../constants/Colors';
 import { AuthProvider, useAuth } from '../context/AuthContext';
 import { ThemeProvider, useTheme } from '../context/ThemeContext';
+import { ToastProvider } from '../context/ToastContext';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -81,7 +82,9 @@ export default function RootLayout() {
     return (
         <AuthProvider>
             <ThemeProvider>
-                <InitialLayout />
+                <ToastProvider>
+                    <InitialLayout />
+                </ToastProvider>
             </ThemeProvider>
         </AuthProvider>
     );
