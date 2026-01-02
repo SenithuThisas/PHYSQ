@@ -78,6 +78,42 @@ router.get('/history', authenticate, async (req, res) => {
     }
 });
 
+// PUT /workouts/:id - Update an existing workout
+router.put('/:id', authenticate, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { date, templateName, exercisesPerformed } = req.body;
+
+        // Find the workout session
+        const session = await WorkoutSession.findOne({ _id: id, userId: req.user.userId });
+        if (!session) {
+            return res.status(404).json({ error: 'Workout not found' });
+        }
+
+        // Recalculate volume and E1RM
+        let totalVolume = 0;
+        const processedExercises = exercisesPerformed.map(exercise => {
+            const processedSets = exercise.sets.map(set => {
+                const e1rm = calculateE1RM(set.weight, set.reps);
+                totalVolume += set.weight * set.reps;
+                return { ...set, e1rm };
+            });
+            return { ...exercise, sets: processedSets };
+        });
+
+        // Update fields
+        session.date = date || session.date;
+        session.templateName = templateName || session.templateName;
+        session.exercisesPerformed = processedExercises;
+        session.totalVolume = totalVolume;
+
+        await session.save();
+        res.json(session);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // GET /workouts/weekly - Count workouts this week
 router.get('/weekly', authenticate, async (req, res) => {
     try {
@@ -91,6 +127,26 @@ router.get('/weekly', authenticate, async (req, res) => {
             date: { $gte: startOfWeek }
         });
         res.json({ count });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// DELETE /workouts/:id - Delete a workout session
+router.delete('/:id', authenticate, async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const result = await WorkoutSession.deleteOne({
+            _id: id,
+            userId: req.user.userId
+        });
+
+        if (result.deletedCount === 0) {
+            return res.status(404).json({ error: 'Workout not found' });
+        }
+
+        res.json({ message: 'Workout deleted successfully' });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
