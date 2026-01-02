@@ -168,8 +168,8 @@ export default function WorkoutHub() {
                 </TouchableOpacity>
 
                 {/* --- VIEW ALL RECORDS CARD --- */}
-                <TouchableOpacity style={[styles.recordsCard, { backgroundColor: colors.surface, borderColor: colors.border }]} onPress={() => router.push('/workout/records')}>
-                    <View style={styles.recordsIconCircle}>
+                <TouchableOpacity style={[styles.recordsCard, { backgroundColor: colors.surface, borderColor: colors.primary }]} onPress={() => router.push('/workout/records')}>
+                    <View style={[styles.recordsIconCircle, { backgroundColor: colors.primary }]}>
                         <MaterialIcons name="history" size={26} color={colors.background} />
                     </View>
                     <View style={{ flex: 1 }}>
@@ -353,7 +353,7 @@ const styles = StyleSheet.create({
         width: 50,
         height: 50,
         borderRadius: 25,
-        backgroundColor: 'rgba(204, 255, 0, 0.2)', // Lighter primary color
+        backgroundColor: DefaultColors.primary,
         justifyContent: 'center',
         alignItems: 'center',
         marginRight: 16,
