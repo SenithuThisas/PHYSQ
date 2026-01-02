@@ -13,11 +13,29 @@ import { useRouter, useNavigation } from 'expo-router';
 // Removed static dimensions
 
 
-const EXERCISES = [
-    'Squat', 'Bench Press', 'Deadlift', 'Overhead Press',
-    'Pull Up', 'Dumbbell Row', 'Leg Press', 'Lunge',
-    'Bicep Curl', 'Tricep Extension', 'Lateral Raise'
+// Enhanced Exercise Data with Muscle Groups
+const EXERCISE_DATA = [
+    { name: 'Squat', muscle: 'Legs' },
+    { name: 'Bench Press', muscle: 'Chest' },
+    { name: 'Deadlift', muscle: 'Back' },
+    { name: 'Overhead Press', muscle: 'Shoulders' },
+    { name: 'Pull Up', muscle: 'Back' },
+    { name: 'Dumbbell Row', muscle: 'Back' },
+    { name: 'Leg Press', muscle: 'Legs' },
+    { name: 'Lunge', muscle: 'Legs' },
+    { name: 'Bicep Curl', muscle: 'Arms' },
+    { name: 'Tricep Extension', muscle: 'Arms' },
+    { name: 'Lateral Raise', muscle: 'Shoulders' },
+    { name: 'Chest Fly', muscle: 'Chest' },
+    { name: 'Leg Extension', muscle: 'Legs' },
+    { name: 'Leg Curl', muscle: 'Legs' },
+    { name: 'Calf Raise', muscle: 'Legs' },
+    { name: 'Face Pull', muscle: 'Shoulders' },
+    { name: 'Hammer Curl', muscle: 'Arms' },
+    { name: 'Skullcrusher', muscle: 'Arms' },
 ];
+
+const MUSCLE_GROUPS = ['All', 'Chest', 'Back', 'Legs', 'Shoulders', 'Arms', 'Core'];
 
 export default function LogWorkout() {
     const { token } = useAuth();
@@ -33,11 +51,31 @@ export default function LogWorkout() {
         }
     };
 
-    const [selectedExercise, setSelectedExercise] = useState(EXERCISES[0]);
+    const [selectedExercise, setSelectedExercise] = useState(EXERCISE_DATA[0].name);
     const [description, setDescription] = useState('');
     const [sets, setSets] = useState<{ weight: string, reps: string }[]>([{ weight: '', reps: '' }]);
     const [loggingState, setLoggingState] = useState(false);
-    const [showExerciseModal, setShowExerciseModal] = useState(false);
+
+    // Search and Filter State
+    const [searchQuery, setSearchQuery] = useState('');
+    const [activeFilter, setActiveFilter] = useState('All');
+    const [customExercises, setCustomExercises] = useState<{ name: string, muscle: string }[]>([]);
+    const [isExerciseSelected, setIsExerciseSelected] = useState(false); // Toggle between search and logging view
+
+    const filteredExercises = [...EXERCISE_DATA, ...customExercises].filter(ex => {
+        const matchesSearch = ex.name.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesFilter = activeFilter === 'All' || ex.muscle === activeFilter;
+        return matchesSearch && matchesFilter;
+    });
+
+    const handleAddCustomExercise = () => {
+        if (!searchQuery.trim()) return;
+        const newExercise = { name: searchQuery.trim(), muscle: 'Other' };
+        setCustomExercises([...customExercises, newExercise]);
+        setSelectedExercise(newExercise.name);
+        setSearchQuery('');
+        setIsExerciseSelected(true); // Go to logging view
+    };
 
 
 
@@ -105,30 +143,126 @@ export default function LogWorkout() {
 
     return (
         <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
-            {/* Navbar */}
+            {/* Search-Focused Navbar */}
             <View style={styles.navbar}>
                 <View style={styles.navContent}>
                     <TouchableOpacity onPress={handleBack} style={styles.navIcon}>
                         <Ionicons name="arrow-back" size={24} color={colors.text} />
                     </TouchableOpacity>
-                    <Text style={[styles.navTitle, { color: colors.text }]}>New Entry</Text>
-                    <TouchableOpacity onPress={handleLogWorkout} disabled={loggingState}>
-                        {loggingState ? <ActivityIndicator color={colors.primary} /> : <Text style={styles.navAction}>SAVE</Text>}
+
+                    <View style={styles.searchBarContainer}>
+                        <Ionicons name="search" size={20} color={colors.textSecondary} style={{ marginRight: 8 }} />
+                        <TextInput
+                            style={[styles.searchBarInput, { color: colors.text }]}
+                            placeholder="Search for exercise"
+                            placeholderTextColor={colors.textSecondary}
+                            value={searchQuery}
+                            onChangeText={setSearchQuery}
+                        />
+                        {searchQuery.length > 0 && (
+                            <TouchableOpacity onPress={() => setSearchQuery('')}>
+                                <Ionicons name="close-circle" size={18} color={colors.textSecondary} />
+                            </TouchableOpacity>
+                        )}
+                    </View>
+
+                    <TouchableOpacity style={styles.navIcon}>
+                        <Ionicons name="menu" size={24} color={colors.text} />
                     </TouchableOpacity>
                 </View>
             </View>
 
             <ScrollView contentContainerStyle={styles.scrollContent}>
-                <View style={[styles.container, { backgroundColor: colors.background }]}>
-                    {/* Record Workout Card with Date */}
-                    <View style={[styles.recordCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                        <View style={styles.recordCardHeader}>
-                            <Text style={[styles.recordCardTitle, { color: colors.text }]}>Record workout</Text>
+                {!isExerciseSelected ? (
+                    /* SEARCH VIEW - Exercise Selection */
+                    <View style={[styles.container, { backgroundColor: colors.background }]}>
+                        {/* Muscle Filter Chips */}
+                        <View style={{ marginBottom: 16 }}>
+                            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+                                {MUSCLE_GROUPS.map(group => (
+                                    <TouchableOpacity
+                                        key={group}
+                                        style={[
+                                            styles.filterChip,
+                                            { borderColor: colors.border },
+                                            activeFilter === group && { backgroundColor: colors.primary, borderColor: colors.primary }
+                                        ]}
+                                        onPress={() => setActiveFilter(group)}
+                                    >
+                                        <Text style={[
+                                            styles.filterChipText,
+                                            { color: colors.textSecondary },
+                                            activeFilter === group && { color: '#000', fontWeight: 'bold' }
+                                        ]}>{group}</Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </ScrollView>
+                        </View>
+
+                        {/* Exercise List */}
+                        <View style={{ flex: 1 }}>
+                            {filteredExercises.map((ex, index) => (
+                                <TouchableOpacity
+                                    key={index}
+                                    style={[styles.exerciseItem, { backgroundColor: colors.surface, borderColor: colors.border }]}
+                                    onPress={() => {
+                                        setSelectedExercise(ex.name);
+                                        setIsExerciseSelected(true);
+                                    }}
+                                >
+                                    <View style={[styles.exerciseIcon, { backgroundColor: `${colors.primary}20` }]}>
+                                        <MaterialCommunityIcons name="dumbbell" size={20} color={colors.primary} />
+                                    </View>
+                                    <View style={{ flex: 1 }}>
+                                        <Text style={[styles.exerciseName, { color: colors.text }]}>{ex.name}</Text>
+                                        <Text style={[styles.exerciseMuscle, { color: colors.textSecondary }]}>{ex.muscle}</Text>
+                                    </View>
+                                    <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+                                </TouchableOpacity>
+                            ))}
+
+                            {/* Empty State / Add Custom */}
+                            {filteredExercises.length === 0 && searchQuery.length > 0 && (
+                                <TouchableOpacity
+                                    style={[styles.addCustomBtn, { borderColor: colors.primary, backgroundColor: colors.surface }]}
+                                    onPress={handleAddCustomExercise}
+                                >
+                                    <FontAwesome5 name="plus" size={14} color={colors.primary} />
+                                    <Text style={[styles.addCustomBtnText, { color: colors.primary }]}>
+                                        Add "{searchQuery}"
+                                    </Text>
+                                </TouchableOpacity>
+                            )}
+                        </View>
+                    </View>
+                ) : (
+                    /* LOGGING VIEW - Record Workout */
+                    <View style={[styles.container, { backgroundColor: colors.background }]}>
+                        {/* Selected Exercise Header */}
+                        <View style={[styles.selectedExerciseCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                            <TouchableOpacity
+                                style={styles.backToSearchBtn}
+                                onPress={() => setIsExerciseSelected(false)}
+                            >
+                                <Ionicons name="arrow-back" size={20} color={colors.primary} />
+                                <Text style={[styles.backToSearchText, { color: colors.primary }]}>Change Exercise</Text>
+                            </TouchableOpacity>
+
+                            <View style={styles.selectedExerciseHeader}>
+                                <View style={{ flex: 1 }}>
+                                    <Text style={[styles.selectedExerciseTitle, { color: colors.text }]}>{selectedExercise}</Text>
+                                </View>
+                                <View style={[styles.exerciseIconBg, { backgroundColor: colors.primary }]}>
+                                    <MaterialCommunityIcons name="dumbbell" size={24} color="#000" />
+                                </View>
+                            </View>
+
+                            {/* Date Selector */}
                             <View style={styles.dateSelector}>
                                 <TouchableOpacity onPress={() => changeDate(-1)} style={styles.dateNavBtnSmall}>
                                     <Ionicons name="chevron-back" size={18} color={colors.primary} />
                                 </TouchableOpacity>
-                                <Text style={styles.dateTextSmall}>
+                                <Text style={[styles.dateTextSmall, { color: colors.text }]}>
                                     {date.toDateString() === new Date().toDateString() ? 'Today' : date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                                 </Text>
                                 <TouchableOpacity onPress={() => changeDate(1)} style={styles.dateNavBtnSmall}>
@@ -137,104 +271,75 @@ export default function LogWorkout() {
                             </View>
                         </View>
 
-                        {/* Exercise Selector */}
-                        <TouchableOpacity style={styles.exerciseHeader} onPress={() => setShowExerciseModal(true)}>
-                            <View style={{ flex: 1 }}>
-                                <View style={styles.exerciseSelector}>
-                                    <Text style={[styles.exerciseTitle, { color: colors.text }]}>{selectedExercise}</Text>
-                                    <FontAwesome5 name="chevron-down" size={16} color={colors.primary} />
+                        {/* Sets Entry */}
+                        <View style={[styles.setsContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                            <View style={styles.setsHeaderRow}>
+                                <Text style={[styles.colHeader, { color: colors.textSecondary }]}>SET</Text>
+                                <Text style={[styles.colHeader, { color: colors.textSecondary }]}>KG</Text>
+                                <Text style={[styles.colHeader, { color: colors.textSecondary }]}>REPS</Text>
+                                <View style={{ width: 40 }} />
+                            </View>
+
+                            {sets.map((set, index) => (
+                                <View key={index} style={styles.setRow}>
+                                    <Text style={[styles.setIndex, { color: colors.textSecondary }]}>{index + 1}</Text>
+                                    <TextInput
+                                        style={[styles.inputBox, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
+                                        keyboardType="numeric"
+                                        placeholder="0"
+                                        placeholderTextColor={colors.textSecondary}
+                                        value={set.weight}
+                                        onChangeText={(v) => updateSet(index, 'weight', v)}
+                                    />
+                                    <TextInput
+                                        style={[styles.inputBox, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
+                                        keyboardType="numeric"
+                                        placeholder="0"
+                                        placeholderTextColor={colors.textSecondary}
+                                        value={set.reps}
+                                        onChangeText={(v) => updateSet(index, 'reps', v)}
+                                    />
+                                    <TouchableOpacity style={styles.delBtn} onPress={() => removeSet(index)}>
+                                        <Ionicons name="close-circle" size={24} color={colors.textSecondary} />
+                                    </TouchableOpacity>
                                 </View>
-                            </View>
-                            <View style={styles.exerciseIconBg}>
-                                <MaterialCommunityIcons name="dumbbell" size={24} color="#000" />
-                            </View>
-                        </TouchableOpacity>
-                    </View>
+                            ))}
 
-                    {/* Sets Entry */}
-
-                    <View style={[styles.setsContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                        <View style={styles.setsHeaderRow}>
-                            <Text style={styles.colHeader}>SET</Text>
-                            <Text style={styles.colHeader}>KG</Text>
-                            <Text style={styles.colHeader}>REPS</Text>
-                            <View style={{ width: 40 }} />
+                            <TouchableOpacity style={[styles.addBtn, { backgroundColor: colors.primary }]} onPress={addSet}>
+                                <FontAwesome5 name="plus" size={14} color="#000" />
+                                <Text style={styles.addBtnText}>ADD SET</Text>
+                            </TouchableOpacity>
                         </View>
 
-                        {sets.map((set, index) => (
-                            <View key={index} style={styles.setRow}>
-                                <Text style={styles.setIndex}>{index + 1}</Text>
-                                <TextInput
-                                    style={[styles.inputBox, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
-                                    keyboardType="numeric"
-                                    placeholder="0"
-                                    placeholderTextColor={colors.textSecondary}
-                                    value={set.weight}
-                                    onChangeText={(v) => updateSet(index, 'weight', v)}
-                                />
-                                <TextInput
-                                    style={[styles.inputBox, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
-                                    keyboardType="numeric"
-                                    placeholder="0"
-                                    placeholderTextColor={colors.textSecondary}
-                                    value={set.reps}
-                                    onChangeText={(v) => updateSet(index, 'reps', v)}
-                                />
-                                <TouchableOpacity style={styles.delBtn} onPress={() => removeSet(index)}>
-                                    <Ionicons name="close-circle" size={24} color={colors.textSecondary} />
-                                </TouchableOpacity>
-                            </View>
-                        ))}
+                        {/* Workout Notes */}
+                        <View style={styles.notesContainer}>
+                            <TextInput
+                                style={[styles.notesInput, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
+                                placeholder="Add notes (optional)..."
+                                placeholderTextColor={colors.textSecondary}
+                                value={description}
+                                onChangeText={setDescription}
+                                multiline
+                            />
+                        </View>
 
-                        <TouchableOpacity style={[styles.addBtn, { backgroundColor: colors.primary }]} onPress={addSet}>
-                            <FontAwesome5 name="plus" size={14} color="#000" />
-                            <Text style={styles.addBtnText}>ADD SET</Text>
+                        {/* Save Button */}
+                        <TouchableOpacity
+                            style={[styles.saveWorkoutBtn, { backgroundColor: colors.primary }]}
+                            onPress={handleLogWorkout}
+                            disabled={loggingState}
+                        >
+                            {loggingState ? (
+                                <ActivityIndicator color="#000" />
+                            ) : (
+                                <Text style={styles.saveWorkoutBtnText}>SAVE WORKOUT</Text>
+                            )}
                         </TouchableOpacity>
                     </View>
+                )}
 
-                    {/* Workout Notes */}
-                    <View style={styles.notesContainer}>
-                        <TextInput
-                            style={styles.notesInput}
-                            placeholder="Add notes (optional)..."
-                            placeholderTextColor={colors.textSecondary}
-                            value={description}
-                            onChangeText={setDescription}
-                            multiline
-                        />
-                    </View>
-
-                    {/* Last Performance */}
-
-                </View>
+                <View style={{ height: 40 }} />
             </ScrollView>
-
-            {/* MODAL */}
-            <Modal visible={showExerciseModal} animationType="fade" transparent>
-                <View style={styles.modalBackdrop}>
-                    <View style={styles.modalContainer}>
-                        <Text style={styles.modalHeaderTitle}>Select Exercise</Text>
-                        <ScrollView style={{ maxHeight: 400 }}>
-                            {EXERCISES.map(ex => (
-                                <TouchableOpacity
-                                    key={ex}
-                                    style={[styles.modalOption, selectedExercise === ex && styles.modalOptionActive]}
-                                    onPress={() => {
-                                        setSelectedExercise(ex);
-                                        setShowExerciseModal(false);
-                                    }}
-                                >
-                                    <Text style={[styles.modalOptionText, selectedExercise === ex && styles.modalOptionTextActive]}>{ex}</Text>
-                                    {selectedExercise === ex && <FontAwesome5 name="check" size={14} color={colors.primary} />}
-                                </TouchableOpacity>
-                            ))}
-                        </ScrollView>
-                        <TouchableOpacity style={styles.modalClose} onPress={() => setShowExerciseModal(false)}>
-                            <Text style={styles.modalCloseText}>Close</Text>
-                        </TouchableOpacity>
-                    </View>
-                </View>
-            </Modal>
         </SafeAreaView>
     );
 }
@@ -260,6 +365,23 @@ const styles = StyleSheet.create({
     },
     navIcon: {
         padding: 4,
+    },
+    searchBarContainer: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: DefaultColors.surface,
+        borderRadius: 12,
+        paddingHorizontal: 16,
+        paddingVertical: 10,
+        marginHorizontal: 12,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.1)',
+    },
+    searchBarInput: {
+        flex: 1,
+        fontSize: 16,
+        color: DefaultColors.text,
     },
     navTitle: {
         color: DefaultColors.text,
@@ -550,5 +672,120 @@ const styles = StyleSheet.create({
     modalCloseText: {
         color: DefaultColors.textSecondary,
         fontSize: 16,
+    },
+    // New Styles for Enhanced Modal
+    searchContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: DefaultColors.background,
+        borderRadius: 12,
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        marginBottom: 16,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.1)',
+    },
+    searchInput: {
+        flex: 1,
+        fontSize: 16,
+    },
+    filterChip: {
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        borderRadius: 20,
+        borderWidth: 1,
+        backgroundColor: DefaultColors.background,
+    },
+    filterChipText: {
+        fontSize: 14,
+        fontWeight: '600',
+    },
+    addCustomBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 16,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderStyle: 'dashed',
+        marginTop: 16,
+        gap: 8,
+    },
+    addCustomBtnText: {
+        fontWeight: 'bold',
+        fontSize: 14,
+    },
+    // Exercise List Item Styles
+    exerciseItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: DefaultColors.surface,
+        borderRadius: 16,
+        padding: 16,
+        marginBottom: 12,
+        borderWidth: 1,
+        borderColor: DefaultColors.border,
+    },
+    exerciseIcon: {
+        width: 40,
+        height: 40,
+        borderRadius: 12,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 12,
+    },
+    exerciseName: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: DefaultColors.text,
+        marginBottom: 2,
+    },
+    exerciseMuscle: {
+        fontSize: 12,
+        color: DefaultColors.textSecondary,
+    },
+    // Selected Exercise Card Styles
+    selectedExerciseCard: {
+        backgroundColor: DefaultColors.surface,
+        borderRadius: 20,
+        padding: 20,
+        marginBottom: 16,
+        borderWidth: 1,
+        borderColor: DefaultColors.border,
+    },
+    backToSearchBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 16,
+        gap: 6,
+    },
+    backToSearchText: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: DefaultColors.primary,
+    },
+    selectedExerciseHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 16,
+    },
+    selectedExerciseTitle: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        color: DefaultColors.text,
+    },
+    // Save Workout Button
+    saveWorkoutBtn: {
+        backgroundColor: DefaultColors.primary,
+        padding: 18,
+        borderRadius: 16,
+        alignItems: 'center',
+        marginTop: 16,
+    },
+    saveWorkoutBtnText: {
+        color: '#000',
+        fontWeight: 'bold',
+        fontSize: 16,
+        letterSpacing: 1,
     },
 });
