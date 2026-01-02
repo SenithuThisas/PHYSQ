@@ -1,17 +1,22 @@
 import { DarkTheme, DefaultTheme, ThemeProvider as ReactNavigationThemeProvider } from '@react-navigation/native';
-import { useFonts } from 'expo-font';
+import { useFonts, Inter_400Regular, Inter_700Bold } from '@expo-google-fonts/inter';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
-import { View, Platform } from 'react-native';
+import { View, Platform, Text } from 'react-native';
 import { Colors } from '../constants/Colors';
 import { AuthProvider, useAuth } from '../context/AuthContext';
 import { ThemeProvider, useTheme } from '../context/ThemeContext';
 import { ToastProvider } from '../context/ToastContext';
+import { Fonts } from '../constants/Fonts';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
+
+// Set default font globally
+(Text as any).defaultProps = (Text as any).defaultProps || {};
+(Text as any).defaultProps.style = { fontFamily: Fonts.regular };
 
 if (Platform.OS === 'web') {
     const originalConsoleError = console.error;
@@ -33,6 +38,8 @@ if (Platform.OS === 'web') {
 
 const InitialLayout = () => {
     const [loaded] = useFonts({
+        Inter_400Regular,
+        Inter_700Bold,
     });
     const segments = useSegments();
     const router = useRouter();
