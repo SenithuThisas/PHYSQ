@@ -29,6 +29,18 @@ export const deleteWorkout = async (token: string, workoutId: string) => {
     }
 };
 
+export const updateWorkout = async (token: string, workoutId: string, updateData: any) => {
+    try {
+        const response = await axios.put(`${API_URL}/workouts/${workoutId}`, updateData, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Error updating workout:', error);
+        throw error;
+    }
+};
+
 export const getWorkoutHistory = async (token: string) => {
     try {
         const response = await axios.get(`${API_URL}/workouts`, {
