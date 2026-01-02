@@ -37,6 +37,26 @@ const EXERCISE_DATA = [
 
 const MUSCLE_GROUPS = ['All', 'Chest', 'Back', 'Legs', 'Shoulders', 'Arms', 'Core'];
 
+// Helper function to get icon based on muscle group
+const getMuscleIcon = (muscle: string): string => {
+    switch (muscle) {
+        case 'Chest':
+            return 'arm-flex';
+        case 'Back':
+            return 'stretch';
+        case 'Legs':
+            return 'run';
+        case 'Shoulders':
+            return 'weight-lifter';
+        case 'Arms':
+            return 'arm-flex-outline';
+        case 'Core':
+            return 'yoga';
+        default:
+            return 'dumbbell';
+    }
+};
+
 export default function LogWorkout() {
     const { token } = useAuth();
     const { colors } = useTheme();
@@ -62,6 +82,11 @@ export default function LogWorkout() {
     const [customExercises, setCustomExercises] = useState<{ name: string, muscle: string }[]>([]);
     const [isExerciseSelected, setIsExerciseSelected] = useState(false); // Toggle between search and logging view
 
+    // Add Exercise Modal State
+    const [showAddModal, setShowAddModal] = useState(false);
+    const [newExerciseName, setNewExerciseName] = useState('');
+    const [newExerciseMuscle, setNewExerciseMuscle] = useState(MUSCLE_GROUPS[1]); // Default to something specific like Chest
+
     const filteredExercises = [...EXERCISE_DATA, ...customExercises].filter(ex => {
         const matchesSearch = ex.name.toLowerCase().includes(searchQuery.toLowerCase());
         const matchesFilter = activeFilter === 'All' || ex.muscle === activeFilter;
@@ -69,12 +94,29 @@ export default function LogWorkout() {
     });
 
     const handleAddCustomExercise = () => {
-        if (!searchQuery.trim()) return;
-        const newExercise = { name: searchQuery.trim(), muscle: 'Other' };
+        if (searchQuery.trim()) {
+            setNewExerciseName(searchQuery.trim());
+        }
+        setShowAddModal(true);
+    };
+
+    const saveNewExercise = () => {
+        if (!newExerciseName.trim()) {
+            Alert.alert('Error', 'Please enter an exercise name');
+            return;
+        }
+        const newExercise = { name: newExerciseName.trim(), muscle: newExerciseMuscle };
         setCustomExercises([...customExercises, newExercise]);
-        setSelectedExercise(newExercise.name);
+        // setSelectedExercise(newExercise.name); // Optional: select it but don't go there
         setSearchQuery('');
-        setIsExerciseSelected(true); // Go to logging view
+        setShowAddModal(false);
+        // Stuck on list view
+        setNewExerciseName(''); // Reset
+    };
+
+    const cancelAddExercise = () => {
+        setShowAddModal(false);
+        setNewExerciseName('');
     };
 
 
@@ -199,6 +241,21 @@ export default function LogWorkout() {
                             </ScrollView>
                         </View>
 
+                        {/* Persistent Create New Button */}
+                        <TouchableOpacity
+                            style={[styles.createFixedBtn, { backgroundColor: colors.surface, borderColor: colors.primary }]}
+                            onPress={() => {
+                                setNewExerciseName('');
+                                setShowAddModal(true);
+                            }}
+                        >
+                            <View style={[styles.createFixedIcon, { backgroundColor: `${colors.primary}20` }]}>
+                                <FontAwesome5 name="plus" size={16} color={colors.primary} />
+                            </View>
+                            <Text style={[styles.createFixedText, { color: colors.text }]}>Create New Exercise</Text>
+                            <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+                        </TouchableOpacity>
+
                         {/* Exercise List */}
                         <View style={{ flex: 1 }}>
                             {filteredExercises.map((ex, index) => (
@@ -211,7 +268,7 @@ export default function LogWorkout() {
                                     }}
                                 >
                                     <View style={[styles.exerciseIcon, { backgroundColor: `${colors.primary}20` }]}>
-                                        <MaterialCommunityIcons name="dumbbell" size={20} color={colors.primary} />
+                                        <MaterialCommunityIcons name={getMuscleIcon(ex.muscle)} size={20} color={colors.primary} />
                                     </View>
                                     <View style={{ flex: 1 }}>
                                         <Text style={[styles.exerciseName, { color: colors.text }]}>{ex.name}</Text>
@@ -221,8 +278,9 @@ export default function LogWorkout() {
                                 </TouchableOpacity>
                             ))}
 
-                            {/* Empty State / Add Custom */}
-                            {filteredExercises.length === 0 && searchQuery.length > 0 && (
+
+                            {/* Empty State / Add Custom - Always show if searching */}
+                            {searchQuery.length > 0 && (
                                 <TouchableOpacity
                                     style={[styles.addCustomBtn, { borderColor: colors.primary, backgroundColor: colors.surface }]}
                                     onPress={handleAddCustomExercise}
@@ -253,7 +311,7 @@ export default function LogWorkout() {
                                     <Text style={[styles.selectedExerciseTitle, { color: colors.text }]}>{selectedExercise}</Text>
                                 </View>
                                 <View style={[styles.exerciseIconBg, { backgroundColor: colors.primary }]}>
-                                    <MaterialCommunityIcons name="dumbbell" size={24} color="#000" />
+                                    <MaterialCommunityIcons name={getMuscleIcon([...EXERCISE_DATA, ...customExercises].find(e => e.name === selectedExercise)?.muscle || 'Other')} size={24} color="#000" />
                                 </View>
                             </View>
 
@@ -340,6 +398,59 @@ export default function LogWorkout() {
 
                 <View style={{ height: 40 }} />
             </ScrollView>
+
+            {/* Add Custom Exercise Modal */}
+            <Modal
+                visible={showAddModal}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={cancelAddExercise}
+            >
+                <View style={styles.modalBackdrop}>
+                    <View style={styles.modalContainer}>
+                        <Text style={styles.modalHeaderTitle}>Add New Exercise</Text>
+
+                        <Text style={styles.inputLabel}>Exercise Name</Text>
+                        <TextInput
+                            style={[styles.modalInput, { color: colors.text, backgroundColor: colors.background, borderColor: colors.border }]}
+                            placeholder="e.g. Reverse Fly"
+                            placeholderTextColor={colors.textSecondary}
+                            value={newExerciseName}
+                            onChangeText={setNewExerciseName}
+                        />
+
+                        <Text style={styles.inputLabel}>Target Muscle</Text>
+                        <View style={styles.muscleSelector}>
+                            {MUSCLE_GROUPS.filter(m => m !== 'All').map(muscle => (
+                                <TouchableOpacity
+                                    key={muscle}
+                                    style={[
+                                        styles.modalMuscleChip,
+                                        { borderColor: colors.border },
+                                        newExerciseMuscle === muscle && { backgroundColor: colors.primary, borderColor: colors.primary }
+                                    ]}
+                                    onPress={() => setNewExerciseMuscle(muscle)}
+                                >
+                                    <Text style={[
+                                        styles.modalMuscleText,
+                                        { color: colors.textSecondary },
+                                        newExerciseMuscle === muscle && { color: '#000', fontWeight: 'bold' }
+                                    ]}>{muscle}</Text>
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+
+                        <View style={styles.modalButtons}>
+                            <TouchableOpacity style={styles.modalCancelBtn} onPress={cancelAddExercise}>
+                                <Text style={[styles.modalCancelText, { color: colors.textSecondary }]}>Cancel</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={[styles.modalSaveBtn, { backgroundColor: colors.primary }]} onPress={saveNewExercise}>
+                                <Text style={styles.modalSaveText}>Save Exercise</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
         </SafeAreaView>
     );
 }
@@ -787,5 +898,86 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         fontSize: 16,
         letterSpacing: 1,
+    },
+    /* CREATE FIXED BTN */
+    createFixedBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 16,
+        borderRadius: 16,
+        borderWidth: 1,
+        borderStyle: 'dashed',
+        marginBottom: 16,
+    },
+    createFixedIcon: {
+        width: 40,
+        height: 40,
+        borderRadius: 12,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 12,
+    },
+    createFixedText: {
+        flex: 1,
+        fontSize: 16,
+        fontWeight: 'bold',
+    },
+    /* ADD EXERCISE MODAL STYLES */
+    inputLabel: {
+        fontSize: 14,
+        fontWeight: 'bold',
+        color: DefaultColors.textSecondary,
+        marginBottom: 8,
+        marginLeft: 4,
+    },
+    modalInput: {
+        padding: 16,
+        borderRadius: 16,
+        fontSize: 16,
+        borderWidth: 1,
+        marginBottom: 20,
+    },
+    muscleSelector: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 8,
+        marginBottom: 24,
+    },
+    modalMuscleChip: {
+        paddingVertical: 8,
+        paddingHorizontal: 16,
+        borderRadius: 20,
+        borderWidth: 1,
+    },
+    modalMuscleText: {
+        fontSize: 14,
+        fontWeight: '600',
+    },
+    modalButtons: {
+        flexDirection: 'row',
+        gap: 12,
+    },
+    modalCancelBtn: {
+        flex: 1,
+        padding: 16,
+        borderRadius: 16,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    modalCancelText: {
+        fontWeight: 'bold',
+        fontSize: 16,
+    },
+    modalSaveBtn: {
+        flex: 1,
+        padding: 16,
+        borderRadius: 16,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    modalSaveText: {
+        color: '#000',
+        fontWeight: 'bold',
+        fontSize: 16,
     },
 });
