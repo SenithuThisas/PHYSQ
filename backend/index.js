@@ -22,6 +22,7 @@ app.use('/progress', require('./routes/progress'));
 app.use('/templates', require('./routes/templates'));
 app.use('/schedule', require('./routes/schedule'));
 app.use('/user', require('./routes/user'));
+app.use('/exercises', require('./routes/exercises'));
 
 app.get('/', (req, res) => {
     res.send('PHYSQ API is running');
