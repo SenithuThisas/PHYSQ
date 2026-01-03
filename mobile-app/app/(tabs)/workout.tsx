@@ -115,8 +115,16 @@ export default function WorkoutHub() {
         }
     };
 
-    const toggleExpand = (id: string) => {
-        setExpandedScheduleId(expandedScheduleId === id ? null : id);
+    // View Schedule State
+    const [selectedSchedule, setSelectedSchedule] = useState<Schedule | null>(null);
+
+    // Selection Modal State
+    const [showSelectionModal, setShowSelectionModal] = useState(false);
+
+    const openCreation = (type: 'text' | 'image') => {
+        setNewType(type);
+        setShowSelectionModal(false);
+        setIsCreating(true);
     };
 
     return (
@@ -168,7 +176,7 @@ export default function WorkoutHub() {
                 <View style={{ height: 40 }} />
             </ScrollView>
 
-            {/* --- SCHEDULE MODAL --- */}
+            {/* --- LIST MODAL (My Schedules) --- */}
             <Modal
                 visible={showScheduleModal}
                 animationType="slide"
@@ -177,20 +185,22 @@ export default function WorkoutHub() {
             >
                 <SafeAreaView style={[styles.modalContainer, { backgroundColor: colors.background }]}>
                     <View style={styles.modalHeader}>
-                        <Text style={[styles.modalTitle, { color: colors.text }]}>{isCreating ? 'New Schedule' : 'My Schedules'}</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 15 }}>
+                            <TouchableOpacity onPress={() => isCreating ? resetForm() : setShowScheduleModal(false)}>
+                                <Ionicons name="arrow-back" size={24} color={colors.text} />
+                            </TouchableOpacity>
+                            <Text style={[styles.modalTitle, { color: colors.text }]}>{isCreating ? 'New Schedule' : 'My Schedules'}</Text>
+                        </View>
                         <View style={{ flexDirection: 'row', gap: 16 }}>
                             {isCreating ? (
                                 <TouchableOpacity onPress={resetForm}>
                                     <Text style={[styles.headerBtn, { color: colors.textSecondary }]}>Cancel</Text>
                                 </TouchableOpacity>
                             ) : (
-                                <TouchableOpacity onPress={() => setIsCreating(true)}>
+                                <TouchableOpacity onPress={() => setShowSelectionModal(true)}>
                                     <Ionicons name="add-circle" size={32} color={colors.primary} />
                                 </TouchableOpacity>
                             )}
-                            <TouchableOpacity onPress={() => setShowScheduleModal(false)}>
-                                <Text style={[styles.headerBtn, { color: colors.textSecondary, fontWeight: 'bold' }]}>Close</Text>
-                            </TouchableOpacity>
                         </View>
                     </View>
 
@@ -205,23 +215,8 @@ export default function WorkoutHub() {
                                 onChangeText={setNewTitle}
                             />
 
-                            <Text style={[styles.label, { color: colors.textSecondary }]}>Type</Text>
-                            <View style={styles.typeSelector}>
-                                <TouchableOpacity
-                                    style={[styles.typeBtn, newType === 'text' && { backgroundColor: colors.primary }]}
-                                    onPress={() => setNewType('text')}
-                                >
-                                    <Text style={[styles.typeBtnText, newType === 'text' && { color: '#000', fontWeight: 'bold' }]}>Text</Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity
-                                    style={[styles.typeBtn, newType === 'image' && { backgroundColor: colors.primary }]}
-                                    onPress={() => setNewType('image')}
-                                >
-                                    <Text style={[styles.typeBtnText, newType === 'image' && { color: '#000', fontWeight: 'bold' }]}>Image</Text>
-                                </TouchableOpacity>
-                            </View>
+                            <Text style={[styles.label, { color: colors.textSecondary }]}>Content ({newType})</Text>
 
-                            <Text style={[styles.label, { color: colors.textSecondary }]}>Content</Text>
                             {newType === 'text' ? (
                                 <TextInput
                                     style={[styles.textArea, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
@@ -263,7 +258,9 @@ export default function WorkoutHub() {
                                 <View style={[styles.scheduleItem, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                                     <TouchableOpacity
                                         style={styles.scheduleItemHeader}
-                                        onPress={() => toggleExpand(item._id)}
+                                        onPress={() => {
+                                            setSelectedSchedule(item);
+                                        }}
                                     >
                                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                                             <Ionicons
@@ -278,26 +275,89 @@ export default function WorkoutHub() {
                                                 <Ionicons name="trash-outline" size={20} color={DefaultColors.error} />
                                             </TouchableOpacity>
                                             <Ionicons
-                                                name={expandedScheduleId === item._id ? "chevron-up" : "chevron-down"}
+                                                name="chevron-forward"
                                                 size={20}
                                                 color={colors.textSecondary}
                                             />
                                         </View>
                                     </TouchableOpacity>
-
-                                    {expandedScheduleId === item._id && (
-                                        <View style={[styles.scheduleContent, { borderTopColor: colors.border }]}>
-                                            {item.type === 'text' ? (
-                                                <Text style={{ color: colors.text }}>{item.content}</Text>
-                                            ) : (
-                                                <Image source={{ uri: item.content }} style={styles.scheduleImage} resizeMode="contain" />
-                                            )}
-                                        </View>
-                                    )}
                                 </View>
                             )}
                         />
                     )}
+                </SafeAreaView>
+
+                {/* --- SELECTION POPUP MODAL --- */}
+                <Modal
+                    visible={showSelectionModal}
+                    transparent={true}
+                    animationType="fade"
+                    onRequestClose={() => setShowSelectionModal(false)}
+                >
+                    <TouchableOpacity
+                        style={styles.modalOverlay}
+                        activeOpacity={1}
+                        onPress={() => setShowSelectionModal(false)}
+                    >
+                        <View style={[styles.popupContainer, { backgroundColor: colors.surface, borderColor: colors.primary }]}>
+                            <Text style={[styles.popupTitle, { color: colors.text }]}>Add New Schedule</Text>
+                            <TouchableOpacity
+                                style={[styles.popupBtn, { borderBottomWidth: 1, borderBottomColor: colors.border }]}
+                                onPress={() => openCreation('text')}
+                            >
+                                <Ionicons name="document-text-outline" size={24} color={colors.primary} />
+                                <Text style={[styles.popupBtnText, { color: colors.text }]}>Type Text Schedule</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={styles.popupBtn}
+                                onPress={() => openCreation('image')}
+                            >
+                                <Ionicons name="image-outline" size={24} color={colors.primary} />
+                                <Text style={[styles.popupBtnText, { color: colors.text }]}>Upload Image Schedule</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </TouchableOpacity>
+                </Modal>
+            </Modal>
+
+            {/* --- DETAIL MODAL (Full Screen) --- */}
+            <Modal
+                visible={!!selectedSchedule}
+                animationType="slide"
+                onRequestClose={() => setSelectedSchedule(null)}
+                presentationStyle="fullScreen"
+            >
+                <SafeAreaView style={[styles.modalContainer, { backgroundColor: colors.background }]}>
+                    <View style={styles.modalHeader}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 15 }}>
+                            <TouchableOpacity onPress={() => setSelectedSchedule(null)}>
+                                <Ionicons name="arrow-back" size={24} color={colors.text} />
+                            </TouchableOpacity>
+                            <Text style={[styles.modalTitle, { color: colors.text }]}>{selectedSchedule?.title}</Text>
+                        </View>
+                        <TouchableOpacity onPress={() => {
+                            if (selectedSchedule) {
+                                handleDeleteSchedule(selectedSchedule._id);
+                                setSelectedSchedule(null);
+                            }
+                        }}>
+                            <Ionicons name="trash-outline" size={24} color={DefaultColors.error} />
+                        </TouchableOpacity>
+                    </View>
+
+                    <ScrollView contentContainerStyle={styles.detailContent}>
+                        {selectedSchedule?.type === 'text' ? (
+                            <Text style={[styles.detailText, { color: colors.text }]}>{selectedSchedule.content}</Text>
+                        ) : (
+                            selectedSchedule?.content && (
+                                <Image
+                                    source={{ uri: selectedSchedule.content }}
+                                    style={styles.detailImage}
+                                    resizeMode="contain"
+                                />
+                            )
+                        )}
+                    </ScrollView>
                 </SafeAreaView>
             </Modal>
         </SafeAreaView>
@@ -458,17 +518,61 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: 'bold',
     },
-    scheduleContent: {
-        padding: 16,
-        borderTopWidth: 1,
-    },
-    scheduleImage: {
-        width: '100%',
-        height: 200,
-    },
+    //    scheduleContent: {  <-- REMOVED
+    //        padding: 16,
+    //        borderTopWidth: 1,
+    //    },
+    //    scheduleImage: {   <-- REMOVED (Reused in Detail)
+    //        width: '100%',
+    //        height: 200,
+    //    },
     emptyText: {
         textAlign: 'center',
         marginTop: 40,
         fontSize: 16,
+    },
+    // Popup Styles
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    popupContainer: {
+        width: '80%',
+        borderRadius: 20,
+        padding: 24,
+        alignItems: 'center',
+        borderWidth: 1,
+    },
+    popupTitle: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        marginBottom: 24,
+    },
+    popupBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 16,
+        width: '100%',
+        gap: 16,
+    },
+    popupBtnText: {
+        fontSize: 18,
+        fontWeight: 'bold',
+    },
+    // Detail View Styles
+    detailContent: {
+        flexGrow: 1,
+        padding: 20,
+    },
+    detailText: {
+        fontSize: 16,
+        lineHeight: 24,
+    },
+    detailImage: {
+        width: '100%',
+        height: '100%',
+        minHeight: 400,
     },
 });
