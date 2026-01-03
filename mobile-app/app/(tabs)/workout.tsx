@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
     View, Text, StyleSheet, ScrollView, TouchableOpacity,
     TextInput, Image, ActivityIndicator, Alert, SafeAreaView, FlatList, Modal
@@ -117,6 +117,15 @@ export default function WorkoutHub() {
 
     // View Schedule State
     const [selectedSchedule, setSelectedSchedule] = useState<Schedule | null>(null);
+    const [zoomLevel, setZoomLevel] = useState(1);
+
+    const handleZoomIn = () => setZoomLevel(prev => Math.min(prev + 0.5, 3));
+    const handleZoomOut = () => setZoomLevel(prev => Math.max(prev - 0.5, 1));
+
+    // Reset zoom when closing or opening
+    useEffect(() => {
+        setZoomLevel(1);
+    }, [selectedSchedule]);
 
     // Selection Modal State
     const [showSelectionModal, setShowSelectionModal] = useState(false);
@@ -335,26 +344,46 @@ export default function WorkoutHub() {
                             </TouchableOpacity>
                             <Text style={[styles.modalTitle, { color: colors.text }]}>{selectedSchedule?.title}</Text>
                         </View>
-                        <TouchableOpacity onPress={() => {
-                            if (selectedSchedule) {
-                                handleDeleteSchedule(selectedSchedule._id);
-                                setSelectedSchedule(null);
-                            }
-                        }}>
-                            <Ionicons name="trash-outline" size={24} color={DefaultColors.error} />
-                        </TouchableOpacity>
+                        <View style={{ flexDirection: 'row', gap: 15 }}>
+                            {selectedSchedule?.type === 'image' && (
+                                <>
+                                    <TouchableOpacity onPress={handleZoomOut} disabled={zoomLevel <= 1}>
+                                        <Ionicons name="remove-circle-outline" size={24} color={zoomLevel <= 1 ? colors.textSecondary : colors.primary} />
+                                    </TouchableOpacity>
+                                    <TouchableOpacity onPress={handleZoomIn} disabled={zoomLevel >= 3}>
+                                        <Ionicons name="add-circle-outline" size={24} color={zoomLevel >= 3 ? colors.textSecondary : colors.primary} />
+                                    </TouchableOpacity>
+                                </>
+                            )}
+                            <TouchableOpacity onPress={() => {
+                                if (selectedSchedule) {
+                                    handleDeleteSchedule(selectedSchedule._id);
+                                    setSelectedSchedule(null);
+                                }
+                            }}>
+                                <Ionicons name="trash-outline" size={24} color={DefaultColors.error} />
+                            </TouchableOpacity>
+                        </View>
                     </View>
 
-                    <ScrollView contentContainerStyle={styles.detailContent}>
+                    <ScrollView
+                        contentContainerStyle={[styles.detailContent, { flexGrow: 1 }]}
+                        maximumZoomScale={3}
+                        minimumZoomScale={1}
+                    >
                         {selectedSchedule?.type === 'text' ? (
                             <Text style={[styles.detailText, { color: colors.text }]}>{selectedSchedule.content}</Text>
                         ) : (
                             selectedSchedule?.content && (
-                                <Image
-                                    source={{ uri: selectedSchedule.content }}
-                                    style={styles.detailImage}
-                                    resizeMode="contain"
-                                />
+                                <ScrollView horizontal contentContainerStyle={{ flexGrow: 1 }}>
+                                    <View style={{ width: `${100 * zoomLevel}%`, minHeight: 400 * zoomLevel, alignItems: 'center', justifyContent: 'center' }}>
+                                        <Image
+                                            source={{ uri: selectedSchedule.content }}
+                                            style={{ width: '100%', height: '100%' }}
+                                            resizeMode="contain"
+                                        />
+                                    </View>
+                                </ScrollView>
                             )
                         )}
                     </ScrollView>
