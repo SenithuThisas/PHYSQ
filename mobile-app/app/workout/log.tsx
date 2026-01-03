@@ -8,6 +8,7 @@ import { FontAwesome5, Ionicons, MaterialCommunityIcons } from '@expo/vector-ico
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { logWorkoutSession } from '../../services/workouts';
+import { getCustomExercises, createExercise, updateExercise, deleteExercise, Exercise } from '../../services/exercises';
 import { useRouter, useNavigation } from 'expo-router';
 
 // Removed static dimensions
@@ -35,7 +36,7 @@ const EXERCISE_DATA = [
     { name: 'Skullcrusher', muscle: 'Arms' },
 ];
 
-const MUSCLE_GROUPS = ['All', 'Chest', 'Back', 'Legs', 'Shoulders', 'Arms', 'Core'];
+const MUSCLE_GROUPS = ['All', 'Custom', 'Chest', 'Back', 'Legs', 'Shoulders', 'Arms', 'Core'];
 
 // Helper function to get icon based on muscle group
 const getMuscleIcon = (muscle: string): string => {
@@ -79,17 +80,49 @@ export default function LogWorkout() {
     // Search and Filter State
     const [searchQuery, setSearchQuery] = useState('');
     const [activeFilter, setActiveFilter] = useState('All');
-    const [customExercises, setCustomExercises] = useState<{ name: string, muscle: string }[]>([]);
+    const [customExercises, setCustomExercises] = useState<Exercise[]>([]);
     const [isExerciseSelected, setIsExerciseSelected] = useState(false); // Toggle between search and logging view
+    const [loadingExercises, setLoadingExercises] = useState(false);
 
     // Add Exercise Modal State
     const [showAddModal, setShowAddModal] = useState(false);
     const [newExerciseName, setNewExerciseName] = useState('');
     const [newExerciseMuscle, setNewExerciseMuscle] = useState(MUSCLE_GROUPS[1]); // Default to something specific like Chest
 
-    const filteredExercises = [...EXERCISE_DATA, ...customExercises].filter(ex => {
+    // Edit Exercise Modal State
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [editingExercise, setEditingExercise] = useState<Exercise | null>(null);
+    const [editExerciseName, setEditExerciseName] = useState('');
+    const [editExerciseMuscle, setEditExerciseMuscle] = useState(MUSCLE_GROUPS[1]);
+
+    // Load custom exercises on mount
+    useEffect(() => {
+        loadCustomExercises();
+    }, []);
+
+    const loadCustomExercises = async () => {
+        if (!token) return;
+        setLoadingExercises(true);
+        try {
+            const exercises = await getCustomExercises(token);
+            setCustomExercises(exercises);
+        } catch (error) {
+            console.error('Failed to load custom exercises:', error);
+        } finally {
+            setLoadingExercises(false);
+        }
+    };
+
+    const systemExercises: Exercise[] = EXERCISE_DATA.map(ex => ({ ...ex, isCustom: false }));
+    const allExercises: Exercise[] = [...systemExercises, ...customExercises];
+
+    const filteredExercises = allExercises.filter(ex => {
         const matchesSearch = ex.name.toLowerCase().includes(searchQuery.toLowerCase());
-        const matchesFilter = activeFilter === 'All' || ex.muscle === activeFilter;
+        const matchesFilter = activeFilter === 'All'
+            ? true
+            : activeFilter === 'Custom'
+                ? ex.isCustom
+                : ex.muscle === activeFilter;
         return matchesSearch && matchesFilter;
     });
 
@@ -100,18 +133,86 @@ export default function LogWorkout() {
         setShowAddModal(true);
     };
 
-    const saveNewExercise = () => {
+    const saveNewExercise = async () => {
         if (!newExerciseName.trim()) {
             Alert.alert('Error', 'Please enter an exercise name');
             return;
         }
-        const newExercise = { name: newExerciseName.trim(), muscle: newExerciseMuscle };
-        setCustomExercises([...customExercises, newExercise]);
-        // setSelectedExercise(newExercise.name); // Optional: select it but don't go there
-        setSearchQuery('');
-        setShowAddModal(false);
-        // Stuck on list view
-        setNewExerciseName(''); // Reset
+        if (!token) return;
+
+        try {
+            const newExercise = await createExercise(token, {
+                name: newExerciseName.trim(),
+                muscle: newExerciseMuscle
+            });
+            setCustomExercises([newExercise, ...customExercises]);
+            setSearchQuery('');
+            setShowAddModal(false);
+            setNewExerciseName('');
+            Alert.alert('Success', 'Exercise created successfully!');
+        } catch (error: any) {
+            Alert.alert('Error', error.message || 'Failed to create exercise');
+        }
+    };
+
+    const handleEditExercise = (exercise: Exercise) => {
+        setEditingExercise(exercise);
+        setEditExerciseName(exercise.name);
+        setEditExerciseMuscle(exercise.muscle);
+        setShowEditModal(true);
+    };
+
+    const saveEditExercise = async () => {
+        if (!editExerciseName.trim() || !editingExercise?._id) {
+            Alert.alert('Error', 'Please enter an exercise name');
+            return;
+        }
+        if (!token) return;
+
+        try {
+            const updated = await updateExercise(token, editingExercise._id, {
+                name: editExerciseName.trim(),
+                muscle: editExerciseMuscle
+            });
+            setCustomExercises(customExercises.map(ex =>
+                ex._id === updated._id ? updated : ex
+            ));
+            setShowEditModal(false);
+            setEditingExercise(null);
+            Alert.alert('Success', 'Exercise updated successfully!');
+        } catch (error: any) {
+            Alert.alert('Error', error.message || 'Failed to update exercise');
+        }
+    };
+
+    const cancelEditExercise = () => {
+        setShowEditModal(false);
+        setEditingExercise(null);
+        setEditExerciseName('');
+    };
+
+    const handleDeleteExercise = (exercise: Exercise) => {
+        Alert.alert(
+            'Delete Exercise',
+            `Are you sure you want to delete "${exercise.name}"?`,
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Delete',
+                    style: 'destructive',
+                    onPress: async () => {
+                        if (!token || !exercise._id) return;
+                        try {
+                            await deleteExercise(token, exercise._id);
+                            setCustomExercises(customExercises.filter(ex => ex._id !== exercise._id));
+                            Alert.alert('Success', 'Exercise deleted successfully!');
+                        } catch (error: any) {
+                            Alert.alert('Error', error.message || 'Failed to delete exercise');
+                        }
+                    }
+                }
+            ]
+        );
     };
 
     const cancelAddExercise = () => {
@@ -258,9 +359,12 @@ export default function LogWorkout() {
 
                         {/* Exercise List */}
                         <View style={{ flex: 1 }}>
+                            {loadingExercises && customExercises.length === 0 && (
+                                <ActivityIndicator color={colors.primary} style={{ marginVertical: 20 }} />
+                            )}
                             {filteredExercises.map((ex, index) => (
                                 <TouchableOpacity
-                                    key={index}
+                                    key={ex._id || index}
                                     style={[styles.exerciseItem, { backgroundColor: colors.surface, borderColor: colors.border }]}
                                     onPress={() => {
                                         setSelectedExercise(ex.name);
@@ -268,13 +372,31 @@ export default function LogWorkout() {
                                     }}
                                 >
                                     <View style={[styles.exerciseIcon, { backgroundColor: `${colors.primary}20` }]}>
-                                        <MaterialCommunityIcons name={getMuscleIcon(ex.muscle)} size={20} color={colors.primary} />
+                                        <MaterialCommunityIcons name={getMuscleIcon(ex.muscle) as any} size={20} color={colors.primary} />
                                     </View>
                                     <View style={{ flex: 1 }}>
-                                        <Text style={[styles.exerciseName, { color: colors.text }]}>{ex.name}</Text>
+                                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                                            <Text style={[styles.exerciseName, { color: colors.text }]}>{ex.name}</Text>
+                                            {ex.isCustom && (
+                                                <View style={[styles.customBadge, { backgroundColor: `${colors.primary}30` }]}>
+                                                    <Text style={[styles.customBadgeText, { color: colors.primary }]}>Custom</Text>
+                                                </View>
+                                            )}
+                                        </View>
                                         <Text style={[styles.exerciseMuscle, { color: colors.textSecondary }]}>{ex.muscle}</Text>
                                     </View>
-                                    <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+                                    {ex.isCustom ? (
+                                        <View style={{ flexDirection: 'row', gap: 12 }}>
+                                            <TouchableOpacity onPress={() => handleEditExercise(ex as Exercise)}>
+                                                <Ionicons name="pencil" size={20} color={colors.primary} />
+                                            </TouchableOpacity>
+                                            <TouchableOpacity onPress={() => handleDeleteExercise(ex as Exercise)}>
+                                                <Ionicons name="trash-outline" size={20} color="#ff4444" />
+                                            </TouchableOpacity>
+                                        </View>
+                                    ) : (
+                                        <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+                                    )}
                                 </TouchableOpacity>
                             ))}
 
@@ -311,7 +433,7 @@ export default function LogWorkout() {
                                     <Text style={[styles.selectedExerciseTitle, { color: colors.text }]}>{selectedExercise}</Text>
                                 </View>
                                 <View style={[styles.exerciseIconBg, { backgroundColor: colors.primary }]}>
-                                    <MaterialCommunityIcons name={getMuscleIcon([...EXERCISE_DATA, ...customExercises].find(e => e.name === selectedExercise)?.muscle || 'Other')} size={24} color="#000" />
+                                    <MaterialCommunityIcons name={getMuscleIcon(allExercises.find(e => e.name === selectedExercise)?.muscle || 'Other') as any} size={24} color="#000" />
                                 </View>
                             </View>
 
@@ -421,7 +543,7 @@ export default function LogWorkout() {
 
                         <Text style={styles.inputLabel}>Target Muscle</Text>
                         <View style={styles.muscleSelector}>
-                            {MUSCLE_GROUPS.filter(m => m !== 'All').map(muscle => (
+                            {MUSCLE_GROUPS.filter(m => m !== 'All' && m !== 'Custom').map(muscle => (
                                 <TouchableOpacity
                                     key={muscle}
                                     style={[
@@ -446,6 +568,59 @@ export default function LogWorkout() {
                             </TouchableOpacity>
                             <TouchableOpacity style={[styles.modalSaveBtn, { backgroundColor: colors.primary }]} onPress={saveNewExercise}>
                                 <Text style={styles.modalSaveText}>Save Exercise</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
+
+            {/* Edit Exercise Modal */}
+            <Modal
+                visible={showEditModal}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={cancelEditExercise}
+            >
+                <View style={styles.modalBackdrop}>
+                    <View style={styles.modalContainer}>
+                        <Text style={styles.modalHeaderTitle}>Edit Exercise</Text>
+
+                        <Text style={styles.inputLabel}>Exercise Name</Text>
+                        <TextInput
+                            style={[styles.modalInput, { color: colors.text, backgroundColor: colors.background, borderColor: colors.border }]}
+                            placeholder="e.g. Cable Crossover"
+                            placeholderTextColor={colors.textSecondary}
+                            value={editExerciseName}
+                            onChangeText={setEditExerciseName}
+                        />
+
+                        <Text style={styles.inputLabel}>Target Muscle</Text>
+                        <View style={styles.muscleSelector}>
+                            {MUSCLE_GROUPS.filter(m => m !== 'All' && m !== 'Custom').map(muscle => (
+                                <TouchableOpacity
+                                    key={muscle}
+                                    style={[
+                                        styles.modalMuscleChip,
+                                        { borderColor: colors.border },
+                                        editExerciseMuscle === muscle && { backgroundColor: colors.primary, borderColor: colors.primary }
+                                    ]}
+                                    onPress={() => setEditExerciseMuscle(muscle)}
+                                >
+                                    <Text style={[
+                                        styles.modalMuscleText,
+                                        { color: colors.textSecondary },
+                                        editExerciseMuscle === muscle && { color: '#000', fontWeight: 'bold' }
+                                    ]}>{muscle}</Text>
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+
+                        <View style={styles.modalButtons}>
+                            <TouchableOpacity style={styles.modalCancelBtn} onPress={cancelEditExercise}>
+                                <Text style={[styles.modalCancelText, { color: colors.textSecondary }]}>Cancel</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={[styles.modalSaveBtn, { backgroundColor: colors.primary }]} onPress={saveEditExercise}>
+                                <Text style={styles.modalSaveText}>Save Changes</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -979,5 +1154,15 @@ const styles = StyleSheet.create({
         color: '#000',
         fontWeight: 'bold',
         fontSize: 16,
+    },
+    customBadge: {
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        borderRadius: 6,
+    },
+    customBadgeText: {
+        fontSize: 10,
+        fontWeight: 'bold',
+        textTransform: 'uppercase',
     },
 });
