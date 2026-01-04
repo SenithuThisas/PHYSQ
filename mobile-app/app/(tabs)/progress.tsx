@@ -1,43 +1,52 @@
-import React, { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
+import React, { useState, useMemo, useCallback } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, ActivityIndicator } from 'react-native';
 import { Colors as DefaultColors } from '../../constants/Colors';
 import { LineChart } from 'react-native-chart-kit';
 import { useTheme } from '../../context/ThemeContext';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { useBreakpoints } from '../../hooks/useBreakpoints';
+import { ResponsiveContainer } from '../../components/ResponsiveContainer';
+import { Calendar } from 'react-native-calendars';
+import { useAuth } from '../../context/AuthContext';
+import { getWorkoutStats } from '../../services/workouts';
+import { useFocusEffect } from 'expo-router';
 
 type Tab = 'Overview' | 'Exercises' | 'Measures' | 'Photos';
 type TimePeriod = '3 Months' | '6 Months' | 'Year-to-Date';
 type Metric = 'Duration' | 'Volume' | 'Workouts';
 
-import { useBreakpoints } from '../../hooks/useBreakpoints';
-import { ResponsiveContainer } from '../../components/ResponsiveContainer';
-
 export default function Progress() {
     const { colors } = useTheme();
+    const { token } = useAuth();
     const [activeTab, setActiveTab] = useState<Tab>('Overview');
     const [timePeriod, setTimePeriod] = useState<TimePeriod>('3 Months');
     const [selectedMetric, setSelectedMetric] = useState<Metric>('Duration');
     const { width } = useBreakpoints();
 
+    const [loading, setLoading] = useState(true);
+    const [stats, setStats] = useState<any>(null);
+
     // Calculate chart width constrained by max width (1280) and padding (48)
     const chartWidth = Math.min(width, 1280) - 48;
 
-    // Mock data - replace with real API calls
-    const weeklyMinutes = 0; // Calculate from current week's workouts
-    const musclesThisWeek = ['Chest', 'Legs', 'Back']; // From current week's workouts
-
-    // Generate chart data based on selected metric and time period
-    const chartData = useMemo(() => {
-        const dataPoints = timePeriod === '3 Months' ? 11 : timePeriod === '6 Months' ? 11 : 11;
-
-        if (selectedMetric === 'Duration') {
-            return { data: [30, 45, 60, 55, 70, 65, 80, 75, 90, 85, 95], labels: ['W1', 'W2', 'W3', 'W4', 'W5', 'W6', 'W7', 'W8', 'W9', 'W10', 'W11'] };
-        } else if (selectedMetric === 'Volume') {
-            return { data: [5000, 5200, 5500, 5400, 5800, 6000, 6200, 6100, 6500, 6400, 6800], labels: ['W1', 'W2', 'W3', 'W4', 'W5', 'W6', 'W7', 'W8', 'W9', 'W10', 'W11'] };
-        } else {
-            return { data: [3, 4, 3, 5, 4, 5, 6, 5, 6, 5, 7], labels: ['W1', 'W2', 'W3', 'W4', 'W5', 'W6', 'W7', 'W8', 'W9', 'W10', 'W11'] };
+    const fetchStats = async () => {
+        if (!token) return;
+        try {
+            setLoading(true);
+            const data = await getWorkoutStats(token, timePeriod);
+            setStats(data);
+        } catch (error) {
+            console.error("Failed to load stats", error);
+        } finally {
+            setLoading(false);
         }
-    }, [selectedMetric, timePeriod]);
+    };
+
+    useFocusEffect(
+        useCallback(() => {
+            fetchStats();
+        }, [token, timePeriod])
+    );
 
     const tabs: Tab[] = ['Overview', 'Exercises', 'Measures', 'Photos'];
     const timePeriods: TimePeriod[] = ['3 Months', '6 Months', 'Year-to-Date'];
@@ -46,6 +55,24 @@ export default function Progress() {
         { key: 'Volume', icon: 'bar-chart-outline', label: 'Volume' },
         { key: 'Workouts', icon: 'trending-up', label: 'Workouts' }
     ];
+
+    const getChartData = () => {
+        if (!stats || !stats.chartData) return { labels: [], datasets: [{ data: [] }] };
+
+        const labels = stats.chartData.labels;
+        let data = [];
+
+        if (selectedMetric === 'Duration') data = stats.chartData.datasets.Duration;
+        else if (selectedMetric === 'Volume') data = stats.chartData.datasets.Volume;
+        else data = stats.chartData.datasets.Workouts;
+
+        return {
+            labels,
+            datasets: [{ data }]
+        };
+    };
+
+    const chartData = getChartData();
 
     return (
         <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -77,131 +104,169 @@ export default function Progress() {
                     </View>
                 </View>
 
-                <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-                    {/* Time Period Filter */}
-                    <View style={styles.filterContainer}>
-                        {timePeriods.map(period => (
-                            <TouchableOpacity
-                                key={period}
-                                style={[
-                                    styles.filterPill,
-                                    { backgroundColor: timePeriod === period ? colors.text : colors.surface },
-                                    { borderColor: colors.border }
-                                ]}
-                                onPress={() => setTimePeriod(period)}
-                            >
-                                <Text style={[
-                                    styles.filterText,
-                                    { color: timePeriod === period ? colors.background : colors.textSecondary }
-                                ]}>{period}</Text>
-                            </TouchableOpacity>
-                        ))}
+                {loading ? (
+                    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                        <ActivityIndicator size="large" color={colors.primary} />
                     </View>
-
-                    {/* Weekly Summary */}
-                    <View style={[styles.summaryCard, { backgroundColor: colors.surface }]}>
-                        <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>This week</Text>
-                        <Text style={[styles.summaryValue, { color: colors.text }]}>{weeklyMinutes}min</Text>
-                    </View>
-
-                    {/* Metric Selector */}
-                    <View style={styles.metricSelector}>
-                        {metrics.map(metric => (
-                            <TouchableOpacity
-                                key={metric.key}
-                                style={[
-                                    styles.metricPill,
-                                    { backgroundColor: colors.surface },
-                                    selectedMetric === metric.key && { borderColor: colors.primary, borderWidth: 2 }
-                                ]}
-                                onPress={() => setSelectedMetric(metric.key)}
-                            >
-                                <Ionicons name={metric.icon as any} size={20} color={selectedMetric === metric.key ? colors.primary : colors.textSecondary} />
-                                <Text style={[
-                                    styles.metricText,
-                                    { color: selectedMetric === metric.key ? colors.primary : colors.textSecondary }
-                                ]}>{metric.label}</Text>
-                            </TouchableOpacity>
-                        ))}
-                    </View>
-
-                    {/* Interactive Progress Chart */}
-                    <View style={styles.chartContainer}>
-                        <LineChart
-                            data={{
-                                labels: chartData.labels,
-                                datasets: [{ data: chartData.data }]
-                            }}
-                            width={chartWidth}
-                            height={240}
-                            yAxisLabel=""
-                            yAxisSuffix=""
-                            chartConfig={{
-                                backgroundColor: colors.surface,
-                                backgroundGradientFrom: colors.surface,
-                                backgroundGradientTo: colors.surface,
-                                decimalPlaces: 0,
-                                color: (opacity = 1) => `rgba(59, 130, 246, ${opacity})`,
-                                labelColor: (opacity = 1) => colors.textSecondary,
-                                style: { borderRadius: 16 },
-                                propsForDots: {
-                                    r: '6',
-                                    strokeWidth: '2',
-                                    stroke: '#3B82F6',
-                                    fill: '#3B82F6'
-                                }
-                            }}
-                            bezier
-                            style={styles.chart}
-                        />
-                    </View>
-
-                    {/* Goal Management Section */}
-                    <View style={styles.goalSection}>
-                        <View style={styles.goalHeader}>
-                            <Text style={[styles.goalTitle, { color: colors.text }]}>Suggested Goal</Text>
-                            <TouchableOpacity>
-                                <Text style={[styles.goalLink, { color: colors.primary }]}>Add a Goal</Text>
-                            </TouchableOpacity>
+                ) : (
+                    <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+                        {/* Time Period Filter */}
+                        <View style={styles.filterContainer}>
+                            {timePeriods.map(period => (
+                                <TouchableOpacity
+                                    key={period}
+                                    style={[
+                                        styles.filterPill,
+                                        { backgroundColor: timePeriod === period ? colors.text : colors.surface },
+                                        { borderColor: colors.border }
+                                    ]}
+                                    onPress={() => setTimePeriod(period)}
+                                >
+                                    <Text style={[
+                                        styles.filterText,
+                                        { color: timePeriod === period ? colors.background : colors.textSecondary }
+                                    ]}>{period}</Text>
+                                </TouchableOpacity>
+                            ))}
                         </View>
 
-                        <View style={[styles.goalCard, { backgroundColor: colors.surface }]}>
-                            <View style={[styles.goalIcon, { backgroundColor: `${colors.primary}20` }]}>
-                                <MaterialCommunityIcons name="dumbbell" size={24} color={colors.primary} />
-                            </View>
-                            <View style={styles.goalContent}>
-                                <Text style={[styles.goalDescription, { color: colors.text }]}>3 Workouts per week</Text>
-                                <Text style={[styles.goalProgress, { color: colors.textSecondary }]}>0/3 Completed</Text>
-                            </View>
-                            <TouchableOpacity style={[styles.setGoalBtn, { backgroundColor: colors.primary }]}>
-                                <Text style={styles.setGoalText}>Set Goal</Text>
-                            </TouchableOpacity>
+                        {/* Weekly Summary */}
+                        <View style={[styles.summaryCard, { backgroundColor: colors.surface }]}>
+                            <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>This week</Text>
+                            <Text style={[styles.summaryValue, { color: colors.text }]}>{stats?.weeklyMinutes || 0}min</Text>
+                            <Text style={{ color: colors.textSecondary, marginTop: 4 }}>
+                                Current Streak: <Text style={{ color: colors.primary, fontWeight: 'bold' }}>{stats?.currentStreak || 0} days</Text> 🔥
+                            </Text>
                         </View>
-                    </View>
 
-                    {/* This Week Overview */}
-                    <View style={styles.weekOverview}>
-                        <Text style={[styles.weekTitle, { color: colors.text }]}>This Week</Text>
-                        <Text style={[styles.weekSubtitle, { color: colors.textSecondary }]}>Explore your targeted muscles</Text>
+                        {/* Metric Selector */}
+                        <View style={styles.metricSelector}>
+                            {metrics.map(metric => (
+                                <TouchableOpacity
+                                    key={metric.key}
+                                    style={[
+                                        styles.metricPill,
+                                        { backgroundColor: colors.surface },
+                                        selectedMetric === metric.key && { borderColor: colors.primary, borderWidth: 2 }
+                                    ]}
+                                    onPress={() => setSelectedMetric(metric.key)}
+                                >
+                                    <Ionicons name={metric.icon as any} size={20} color={selectedMetric === metric.key ? colors.primary : colors.textSecondary} />
+                                    <Text style={[
+                                        styles.metricText,
+                                        { color: selectedMetric === metric.key ? colors.primary : colors.textSecondary }
+                                    ]}>{metric.label}</Text>
+                                </TouchableOpacity>
+                            ))}
+                        </View>
 
-                        {musclesThisWeek.length > 0 ? (
-                            <View style={styles.muscleList}>
-                                {musclesThisWeek.map((muscle, index) => (
-                                    <View key={index} style={[styles.muscleItem, { backgroundColor: colors.surface }]}>
-                                        <View style={[styles.muscleIcon, { backgroundColor: `${colors.primary}20` }]}>
-                                            <MaterialCommunityIcons name="arm-flex" size={20} color={colors.primary} />
+                        {/* Interactive Progress Chart */}
+                        <View style={styles.chartContainer}>
+                            {chartData.datasets[0].data.length > 0 ? (
+                                <LineChart
+                                    data={chartData}
+                                    width={chartWidth}
+                                    height={240}
+                                    yAxisLabel=""
+                                    yAxisSuffix={selectedMetric === 'Duration' ? 'm' : ''}
+                                    chartConfig={{
+                                        backgroundColor: colors.surface,
+                                        backgroundGradientFrom: colors.surface,
+                                        backgroundGradientTo: colors.surface,
+                                        decimalPlaces: 0,
+                                        color: (opacity = 1) => `rgba(204, 255, 0, ${opacity})`, // Primary color
+                                        labelColor: (opacity = 1) => colors.textSecondary,
+                                        style: { borderRadius: 16 },
+                                        propsForDots: {
+                                            r: '6',
+                                            strokeWidth: '2',
+                                            stroke: colors.primary,
+                                            fill: colors.background
+                                        }
+                                    }}
+                                    bezier
+                                    style={styles.chart}
+                                />
+                            ) : (
+                                <View style={[styles.chart, { height: 240, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.surface }]}>
+                                    <Text style={{ color: colors.textSecondary }}>No data for this period</Text>
+                                </View>
+                            )}
+                        </View>
+
+                        {/* Streak Calendar */}
+                        <View style={styles.calendarSection}>
+                            <Text style={[styles.sectionTitle, { color: colors.text }]}>Activity Calendar</Text>
+                            <View style={[styles.calendarContainer, { backgroundColor: colors.surface }]}>
+                                <Calendar
+                                    // Current month is default
+                                    markedDates={stats?.calendarData || {}}
+                                    theme={{
+                                        backgroundColor: colors.surface,
+                                        calendarBackground: colors.surface,
+                                        textSectionTitleColor: colors.textSecondary,
+                                        selectedDayBackgroundColor: colors.primary,
+                                        selectedDayTextColor: '#000000',
+                                        todayTextColor: colors.primary,
+                                        dayTextColor: colors.text,
+                                        textDisabledColor: '#444',
+                                        dotColor: colors.primary,
+                                        selectedDotColor: '#ffffff',
+                                        arrowColor: colors.primary,
+                                        monthTextColor: colors.text,
+                                        indicatorColor: colors.primary,
+                                        textDayFontWeight: '300',
+                                        textMonthFontWeight: 'bold',
+                                        textDayHeaderFontWeight: '300',
+                                        textDayFontSize: 14,
+                                        textMonthFontSize: 16,
+                                        textDayHeaderFontSize: 14
+                                    }}
+                                />
+                            </View>
+                        </View>
+
+                        {/* This Week Overview - Muscles */}
+                        <View style={styles.weekOverview}>
+                            <Text style={[styles.weekTitle, { color: colors.text }]}>Targeted Muscles</Text>
+                            <Text style={[styles.weekSubtitle, { color: colors.textSecondary }]}>This week's focus</Text>
+
+                            {stats?.weeklyMuscles && stats.weeklyMuscles.length > 0 ? (
+                                <View style={styles.muscleList}>
+                                    {stats.weeklyMuscles.map((muscle: string, index: number) => (
+                                        <View key={index} style={[styles.muscleItem, { backgroundColor: colors.surface }]}>
+                                            <View style={[styles.muscleIcon, { backgroundColor: `${colors.primary}20` }]}>
+                                                <MaterialCommunityIcons name="arm-flex" size={20} color={colors.primary} />
+                                            </View>
+                                            <Text style={[styles.muscleText, { color: colors.text }]}>{muscle}</Text>
                                         </View>
-                                        <Text style={[styles.muscleText, { color: colors.text }]}>{muscle}</Text>
-                                    </View>
-                                ))}
-                            </View>
-                        ) : (
-                            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No workouts this week yet</Text>
-                        )}
-                    </View>
+                                    ))}
+                                </View>
+                            ) : (
+                                <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No workouts this week yet</Text>
+                            )}
+                        </View>
 
-                    <View style={{ height: 40 }} />
-                </ScrollView>
+                        {/* Goal Management Section - Placeholder for future feature */}
+                        <View style={styles.goalSection}>
+                            <View style={styles.goalHeader}>
+                                <Text style={[styles.goalTitle, { color: colors.text }]}>Suggested Goal</Text>
+                            </View>
+
+                            <View style={[styles.goalCard, { backgroundColor: colors.surface }]}>
+                                <View style={[styles.goalIcon, { backgroundColor: `${colors.primary}20` }]}>
+                                    <MaterialCommunityIcons name="dumbbell" size={24} color={colors.primary} />
+                                </View>
+                                <View style={styles.goalContent}>
+                                    <Text style={[styles.goalDescription, { color: colors.text }]}>Consistency is key</Text>
+                                    <Text style={[styles.goalProgress, { color: colors.textSecondary }]}>Keep your streak alive!</Text>
+                                </View>
+                            </View>
+                        </View>
+
+                        <View style={{ height: 40 }} />
+                    </ScrollView>
+                )}
             </ResponsiveContainer>
         </View>
     );
@@ -304,6 +369,19 @@ const styles = StyleSheet.create({
     },
     chart: {
         borderRadius: 16,
+    },
+    calendarSection: {
+        marginBottom: 24,
+    },
+    sectionTitle: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        marginBottom: 12,
+    },
+    calendarContainer: {
+        borderRadius: 16,
+        padding: 10,
+        overflow: 'hidden'
     },
     goalSection: {
         marginBottom: 24,
