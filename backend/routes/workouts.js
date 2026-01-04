@@ -329,6 +329,104 @@ router.get('/stats', authenticate, async (req, res) => {
             chartWorkouts.push(0);
         }
 
+        // === WEEKLY SUMMARY ===
+        const now = new Date();
+        const startOfWeek = new Date(now);
+        startOfWeek.setDate(now.getDate() - now.getDay()); // Sunday
+        startOfWeek.setHours(0, 0, 0, 0);
+
+        const weeklySessions = allSessions.filter(s => new Date(s.date) >= startOfWeek);
+        const weeklyWorkouts = weeklySessions.length;
+        const weeklyMinutesTotal = weeklySessions.reduce((sum, s) => sum + (s.duration || 0), 0);
+        const weeklyXP = weeklySessions.reduce((sum, s) => {
+            const durationXP = (s.duration || 0) * 1.5;
+            const volumeXP = (s.totalVolume || 0) * 0.001;
+            return sum + Math.round(durationXP + volumeXP + 10);
+        }, 0);
+
+        // Most trained muscle this week
+        const weeklyMuscleCount = {};
+        weeklySessions.forEach(s => {
+            (s.exercisesPerformed || []).forEach(ex => {
+                const muscle = muscleMap[ex.exerciseName] || 'Other';
+                weeklyMuscleCount[muscle] = (weeklyMuscleCount[muscle] || 0) + 1;
+            });
+        });
+        const topWeeklyMuscle = Object.keys(weeklyMuscleCount).reduce((a, b) =>
+            weeklyMuscleCount[a] > weeklyMuscleCount[b] ? a : b, 'None');
+
+        // === PERSONAL RECORDS ===
+        const exerciseMaxWeight = {};
+        allSessions.forEach(s => {
+            (s.exercisesPerformed || []).forEach(ex => {
+                const name = ex.exerciseName;
+                ex.sets?.forEach(set => {
+                    const weight = set.weight || 0;
+                    if (!exerciseMaxWeight[name] || weight > exerciseMaxWeight[name].weight) {
+                        exerciseMaxWeight[name] = {
+                            exercise: name,
+                            weight,
+                            reps: set.reps || 0,
+                            date: s.date,
+                            isRecent: (now - new Date(s.date)) / (1000 * 60 * 60 * 24) <= 7
+                        };
+                    }
+                });
+            });
+        });
+        const personalRecords = Object.values(exerciseMaxWeight)
+            .sort((a, b) => b.weight - a.weight)
+            .slice(0, 5);
+
+        // === RECENT ACTIVITY ===
+        const recentActivity = allSessions
+            .sort((a, b) => new Date(b.date) - new Date(a.date))
+            .slice(0, 5)
+            .map(s => {
+                const durationXP = (s.duration || 0) * 1.5;
+                const volumeXP = (s.totalVolume || 0) * 0.001;
+                const xp = Math.round(durationXP + volumeXP + 10);
+                return {
+                    id: s._id,
+                    date: s.date,
+                    templateName: s.templateName || 'Workout',
+                    duration: s.duration || 0,
+                    xp,
+                    exerciseCount: s.exercisesPerformed?.length || 0
+                };
+            });
+
+        // === CONSISTENCY METRICS ===
+        const fourWeeksAgo = new Date(now);
+        fourWeeksAgo.setDate(now.getDate() - 28);
+        const last4WeeksSessions = allSessions.filter(s => new Date(s.date) >= fourWeeksAgo);
+        const avgWorkoutsPerWeek = (last4WeeksSessions.length / 4).toFixed(1);
+
+        // Most active day of week
+        const dayCount = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
+        last4WeeksSessions.forEach(s => {
+            const day = new Date(s.date).getDay();
+            dayCount[day]++;
+        });
+        const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        const mostActiveDay = dayNames[Object.keys(dayCount).reduce((a, b) => dayCount[a] > dayCount[b] ? a : b, 0)];
+
+        // Longest streak this month
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        const monthSessions = allSessions.filter(s => new Date(s.date) >= startOfMonth);
+        const monthDates = new Set(monthSessions.map(s => getClientDateStr(s.date)));
+        let longestMonthStreak = 0;
+        let currentMonthStreak = 0;
+        for (let d = new Date(startOfMonth); d <= now; d.setDate(d.getDate() + 1)) {
+            const dateStr = getClientDateStr(d);
+            if (monthDates.has(dateStr)) {
+                currentMonthStreak++;
+                longestMonthStreak = Math.max(longestMonthStreak, currentMonthStreak);
+            } else {
+                currentMonthStreak = 0;
+            }
+        }
+
         res.json({
             weeklyMinutes,
             weeklyMuscles: Array.from(weeklyMuscles),
@@ -337,6 +435,20 @@ router.get('/stats', authenticate, async (req, res) => {
             totalWorkouts: allSessions.length,
             dailyStats,
             badges,
+            weeklySummary: {
+                workouts: weeklyWorkouts,
+                minutes: weeklyMinutesTotal,
+                xp: weeklyXP,
+                topMuscle: topWeeklyMuscle,
+                streakActive: currentStreak > 0
+            },
+            personalRecords,
+            recentActivity,
+            consistency: {
+                avgWorkoutsPerWeek: parseFloat(avgWorkoutsPerWeek),
+                mostActiveDay,
+                longestStreakThisMonth: longestMonthStreak
+            },
             chartData: {
                 labels: chartLabels,
                 datasets: {
