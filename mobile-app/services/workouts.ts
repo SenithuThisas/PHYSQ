@@ -80,8 +80,12 @@ export const getWeeklyStats = async (token: string) => {
 
 export const getWorkoutStats = async (token: string, timePeriod: string) => {
     try {
+        const timezoneOffset = new Date().getTimezoneOffset();
         const response = await axios.get(`${API_URL}/workouts/stats`, {
-            params: { timePeriod },
+            params: {
+                timePeriod,
+                timezoneOffset
+            },
             headers: { Authorization: `Bearer ${token}` }
         });
         return response.data;
