@@ -201,6 +201,23 @@ export default function Progress() {
                                 <Calendar
                                     // Current month is default
                                     markedDates={stats?.calendarData || {}}
+                                    dayComponent={({ date, state, marking }) => {
+                                        return (
+                                            <View style={{ alignItems: 'center', justifyContent: 'center', height: 32 }}>
+                                                <Text style={{
+                                                    textAlign: 'center',
+                                                    color: state === 'disabled' ? colors.textSecondary : colors.text,
+                                                    fontSize: 14,
+                                                    opacity: state === 'disabled' ? 0.3 : 1
+                                                }}>
+                                                    {date.day}
+                                                </Text>
+                                                {marking && (
+                                                    <Text style={{ fontSize: 14, marginTop: -4 }}>🔥</Text>
+                                                )}
+                                            </View>
+                                        );
+                                    }}
                                     theme={{
                                         backgroundColor: colors.surface,
                                         calendarBackground: colors.surface,
