@@ -202,7 +202,7 @@ router.get('/stats', authenticate, async (req, res) => {
             const sessionXP = Math.round(durationXP + volumeXP + 10);
 
             if (!dailyStats[dateStr]) {
-                dailyStats[dateStr] = { xp: 0, count: 0, level: 0 };
+                dailyStats[dateStr] = { xp: 0, count: 0, level: 0, titles: [], exercises: [] };
             }
 
             dailyStats[dateStr].xp += sessionXP;
