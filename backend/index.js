@@ -3,7 +3,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const helmet = require('helmet');
-const mongoSanitize = require('express-mongo-sanitize');
+const { mongoSanitizeMiddleware } = require('./utils/mongoSanitize');
 
 const app = express();
 
@@ -22,13 +22,8 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-// NoSQL Injection Protection
-app.use(mongoSanitize({
-    replaceWith: '_', // Replace prohibited characters with underscore
-    onSanitize: ({ req, key }) => {
-        console.warn(`⚠️ Sanitized input on key: ${key}`);
-    }
-}));
+// NoSQL Injection Protection (Custom implementation for Express v5 compatibility)
+app.use(mongoSanitizeMiddleware);
 
 // Validate JWT_SECRET on startup
 if (!process.env.JWT_SECRET) {
