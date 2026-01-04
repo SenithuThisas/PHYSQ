@@ -2,12 +2,12 @@ import { Tabs } from 'expo-router';
 import { Colors as DefaultColors } from '../../constants/Colors';
 import { useTheme } from '../../context/ThemeContext';
 import { FontAwesome5 } from '@expo/vector-icons';
-import { View, useWindowDimensions, Platform } from 'react-native';
+import { View, Platform } from 'react-native';
 import SideNav from '../../components/SideNav';
+import { useBreakpoints } from '../../hooks/useBreakpoints';
 
 export default function TabLayout() {
-    const { width } = useWindowDimensions();
-    const isWeb = Platform.OS === 'web' && width > 768;
+    const { isWeb } = useBreakpoints();
     const { colors } = useTheme();
 
     return (

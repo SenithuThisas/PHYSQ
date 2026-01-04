@@ -11,10 +11,14 @@ import * as ImagePicker from 'expo-image-picker';
 import { getSchedules, createSchedule, deleteSchedule, Schedule } from '../../services/schedule';
 import { useRouter, useFocusEffect } from 'expo-router';
 
+import { useBreakpoints } from '../../hooks/useBreakpoints';
+import { ResponsiveContainer } from '../../components/ResponsiveContainer';
+
 export default function WorkoutHub() {
     const { token } = useAuth();
     const { colors } = useTheme();
     const router = useRouter();
+    const { isDesktop } = useBreakpoints();
 
     // Schedule State
     const [schedules, setSchedules] = useState<Schedule[]>([]);
@@ -138,51 +142,73 @@ export default function WorkoutHub() {
 
     return (
         <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
-            <ScrollView contentContainerStyle={styles.container}>
-                <Text style={[styles.header, { color: colors.text }]}>Workout Hub</Text>
+            <ScrollView contentContainerStyle={[styles.container, isDesktop && { alignItems: 'center' }]}>
+                <ResponsiveContainer>
+                    <Text style={[styles.header, { color: colors.text }]}>Workout Hub</Text>
 
-                {/* --- SCHEDULE ENTRY POINT --- */}
-                <TouchableOpacity
-                    style={[styles.entryCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
-                    onPress={() => setShowScheduleModal(true)}
-                >
-                    <View style={[styles.iconCircle, { backgroundColor: colors.primary }]}>
-                        <MaterialIcons name="schedule" size={24} color={colors.background} />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                        <Text style={[styles.cardTitle, { color: colors.text }]}>My Schedules</Text>
-                        <Text style={[styles.cardSubtitle, { color: colors.textSecondary }]}>
-                            {schedules.length} active schedule{schedules.length !== 1 ? 's' : ''}
-                        </Text>
-                    </View>
-                    <Ionicons name="chevron-forward" size={24} color={colors.textSecondary} />
-                </TouchableOpacity>
+                    <View style={{ flexDirection: isDesktop ? 'row' : 'column', gap: 16, flexWrap: 'wrap' }}>
+                        {/* --- SCHEDULE ENTRY POINT --- */}
+                        <TouchableOpacity
+                            style={[
+                                styles.entryCard,
+                                { backgroundColor: colors.surface, borderColor: colors.border },
+                                isDesktop && { flex: 1, minWidth: 300, marginBottom: 0 }
+                            ]}
+                            onPress={() => setShowScheduleModal(true)}
+                        >
+                            <View style={[styles.iconCircle, { backgroundColor: colors.primary }]}>
+                                <MaterialIcons name="schedule" size={24} color={colors.background} />
+                            </View>
+                            <View style={{ flex: 1 }}>
+                                <Text style={[styles.cardTitle, { color: colors.text }]}>My Schedules</Text>
+                                <Text style={[styles.cardSubtitle, { color: colors.textSecondary }]}>
+                                    {schedules.length} active schedule{schedules.length !== 1 ? 's' : ''}
+                                </Text>
+                            </View>
+                            <Ionicons name="chevron-forward" size={24} color={colors.textSecondary} />
+                        </TouchableOpacity>
 
-                {/* --- LOG WORKOUT CARD --- */}
-                <TouchableOpacity style={[styles.entryCard, { backgroundColor: colors.surface, borderColor: colors.primary }]} onPress={() => router.push('/workout/log')}>
-                    <View style={[styles.iconCircle, { backgroundColor: colors.primary }]}>
-                        <FontAwesome5 name="dumbbell" size={24} color={colors.background} />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                        <Text style={[styles.cardTitle, { color: colors.text }]}>Log a Workout</Text>
-                        <Text style={[styles.cardSubtitle, { color: colors.textSecondary }]}>Track your sets, reps & progress</Text>
-                    </View>
-                    <Ionicons name="chevron-forward" size={24} color={colors.textSecondary} />
-                </TouchableOpacity>
+                        {/* --- LOG WORKOUT CARD --- */}
+                        <TouchableOpacity
+                            style={[
+                                styles.entryCard,
+                                { backgroundColor: colors.surface, borderColor: colors.primary },
+                                isDesktop && { flex: 1, minWidth: 300, marginBottom: 0 }
+                            ]}
+                            onPress={() => router.push('/workout/log')}
+                        >
+                            <View style={[styles.iconCircle, { backgroundColor: colors.primary }]}>
+                                <FontAwesome5 name="dumbbell" size={24} color={colors.background} />
+                            </View>
+                            <View style={{ flex: 1 }}>
+                                <Text style={[styles.cardTitle, { color: colors.text }]}>Log a Workout</Text>
+                                <Text style={[styles.cardSubtitle, { color: colors.textSecondary }]}>Track your sets, reps & progress</Text>
+                            </View>
+                            <Ionicons name="chevron-forward" size={24} color={colors.textSecondary} />
+                        </TouchableOpacity>
 
-                {/* --- VIEW ALL RECORDS CARD --- */}
-                <TouchableOpacity style={[styles.entryCard, { backgroundColor: colors.surface, borderColor: colors.border }]} onPress={() => router.push('/workout/records')}>
-                    <View style={[styles.iconCircle, { backgroundColor: colors.primary }]}>
-                        <MaterialIcons name="history" size={26} color={colors.background} />
+                        {/* --- VIEW ALL RECORDS CARD --- */}
+                        <TouchableOpacity
+                            style={[
+                                styles.entryCard,
+                                { backgroundColor: colors.surface, borderColor: colors.border },
+                                isDesktop && { flex: 1, minWidth: 300, marginBottom: 0 }
+                            ]}
+                            onPress={() => router.push('/workout/records')}
+                        >
+                            <View style={[styles.iconCircle, { backgroundColor: colors.primary }]}>
+                                <MaterialIcons name="history" size={26} color={colors.background} />
+                            </View>
+                            <View style={{ flex: 1 }}>
+                                <Text style={[styles.cardTitle, { color: colors.text }]}>View All My Records</Text>
+                                <Text style={[styles.cardSubtitle, { color: colors.textSecondary }]}>See your complete workout history</Text>
+                            </View>
+                            <Ionicons name="chevron-forward" size={24} color={colors.textSecondary} />
+                        </TouchableOpacity>
                     </View>
-                    <View style={{ flex: 1 }}>
-                        <Text style={[styles.cardTitle, { color: colors.text }]}>View All My Records</Text>
-                        <Text style={[styles.cardSubtitle, { color: colors.textSecondary }]}>See your complete workout history</Text>
-                    </View>
-                    <Ionicons name="chevron-forward" size={24} color={colors.textSecondary} />
-                </TouchableOpacity>
 
-                <View style={{ height: 40 }} />
+                    <View style={{ height: 40 }} />
+                </ResponsiveContainer>
             </ScrollView>
 
             {/* --- LIST MODAL (My Schedules) --- */}

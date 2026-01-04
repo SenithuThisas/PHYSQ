@@ -1,16 +1,17 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, useWindowDimensions, Platform, Image } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
 import { Colors as DefaultColors } from '../../constants/Colors';
 import { useAuth } from '../../context/AuthContext';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useTheme } from '../../context/ThemeContext';
+import { useBreakpoints } from '../../hooks/useBreakpoints';
+import { ResponsiveContainer } from '../../components/ResponsiveContainer';
 
 export default function Dashboard() {
     const { user } = useAuth();
     const router = useRouter();
     const { colors } = useTheme();
-    const width = useWindowDimensions().width;
-    const isWeb = width > 768; // Simple breakpoint for tablet/web
+    const { isWeb } = useBreakpoints();
 
     const calculateBMI = (weight: any, height: any) => {
         if (!weight?.value || !height?.value) return '--';
@@ -72,7 +73,7 @@ export default function Dashboard() {
 
     return (
         <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={[styles.content, isWeb && styles.webContent]}>
-            <View style={[styles.mainWrapper, isWeb && styles.webMainWrapper]}>
+            <ResponsiveContainer>
                 <View style={styles.header}>
                     <View>
                         <Text style={styles.greeting}>Hello,</Text>
@@ -159,7 +160,7 @@ export default function Dashboard() {
                         </View>
                     </View>
                 </View>
-            </View>
+            </ResponsiveContainer>
         </ScrollView>
     );
 }
