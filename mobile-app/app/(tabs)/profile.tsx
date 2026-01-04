@@ -11,11 +11,15 @@ import * as ImagePicker from 'expo-image-picker';
 import axios from 'axios';
 import { Config } from '../../constants/Config';
 
+import { useBreakpoints } from '../../hooks/useBreakpoints';
+import { ResponsiveContainer } from '../../components/ResponsiveContainer';
+
 export default function Profile() {
     const { signOut, user, updateUser } = useAuth();
     const { colors } = useTheme();
     const router = useRouter();
     const [view, setView] = useState<'dashboard' | 'edit'>('dashboard');
+    const { isDesktop } = useBreakpoints();
 
     const handleLogout = async () => {
         await signOut();
@@ -52,101 +56,104 @@ export default function Profile() {
 
     return (
         <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
-            <View style={styles.header}>
-                <Text style={[styles.headerTitle, { color: colors.text }]}>My page</Text>
-                <TouchableOpacity onPress={handleLogout} style={styles.menuButton}>
-                    <Ionicons name="ellipsis-vertical" size={24} color={colors.text} />
+            <ResponsiveContainer>
+                <View style={[styles.header, isDesktop && { justifyContent: 'flex-start', gap: 20 }]}>
+                    <Text style={[styles.headerTitle, { color: colors.text }]}>My page</Text>
+                    <TouchableOpacity onPress={handleLogout} style={styles.menuButton}>
+                        <Ionicons name="ellipsis-vertical" size={24} color={colors.text} />
+                    </TouchableOpacity>
+                </View>
+
+                {/* Grid Container for Cards */}
+                <View style={{ flexDirection: isDesktop ? 'row' : 'column', flexWrap: 'wrap', gap: 20 }}>
+
+                    {/* Profile Summary Card */}
+                    <View style={[styles.profileCard, { backgroundColor: colors.surface }, isDesktop && { width: '100%' }]}>
+                        <View style={styles.avatarSection}>
+                            {user?.profilePicture ? (
+                                <Image source={{ uri: user.profilePicture }} style={styles.avatarImage} />
+                            ) : (
+                                <View style={[styles.avatarPlaceholder, { backgroundColor: colors.surfaceLight }]}>
+                                    <Text style={[styles.avatarText, { color: colors.text }]}>{(user?.fullName?.[0] || user?.email?.[0] || 'U').toUpperCase()}</Text>
+                                </View>
+                            )}
+                            <TouchableOpacity style={[styles.editButton, { backgroundColor: colors.surfaceLight }]} onPress={() => setView('edit')}>
+                                <Text style={[styles.editButtonText, { color: colors.text }]}>Edit</Text>
+                            </TouchableOpacity>
+                        </View>
+                        <Text style={[styles.userName, { color: colors.text }]}>{user?.fullName || 'User'}</Text>
+                    </View>
+
+                    {/* My Schedule Card */}
+                    <View style={[styles.scheduleCard, { backgroundColor: colors.surface }, isDesktop && { flex: 1, minWidth: 400 }]}>
+                        <View style={styles.cardHeader}>
+                            <Text style={[styles.cardTitle, { color: colors.text }]}>My Schedule</Text>
+                            <TouchableOpacity onPress={pickScheduleImage}>
+                                <Text style={[styles.editLink, { color: colors.primary }]}>Edit</Text>
+                            </TouchableOpacity>
+                        </View>
+                        {user?.scheduleImage ? (
+                            <Image source={{ uri: user.scheduleImage }} style={styles.scheduleImage} resizeMode="cover" />
+                        ) : (
+                            <Text style={[styles.noScheduleText, { color: colors.textSecondary }]}>No schedule set.</Text>
+                        )}
+                    </View>
+
+                    {/* Weekly Report Card */}
+                    <View style={[styles.reportCard, { backgroundColor: colors.surface }, isDesktop && { flex: 1, minWidth: 400 }]}>
+                        <View style={styles.cardHeader}>
+                            <Text style={[styles.cardTitle, { color: colors.text }]}>Weekly report</Text>
+                            <Text style={[styles.dateRange, { color: colors.textSecondary }]}>15-21 Dec</Text>
+                        </View>
+
+                        <View style={styles.reportRow}>
+                            <View style={styles.reportItem}>
+                                <Text style={[styles.reportLabel, { color: colors.text }]}>Average sleep time</Text>
+                                <Text style={[styles.reportSubLabel, { color: colors.textSecondary }]}>Previous week 8 h 10 m</Text>
+                                <Text style={[styles.reportValue, { color: colors.text }]}>9 h 10 m</Text>
+                                <Text style={[styles.trendUp, { color: colors.textSecondary }]}>▲ 1 h</Text>
+                            </View>
+                            <View style={[styles.divider, { backgroundColor: colors.border }]} />
+                            <View style={styles.reportItem}>
+                                <Text style={[styles.reportLabel, { color: colors.text }]}>Avg. wake-up time</Text>
+                                <Text style={[styles.reportSubLabel, { color: colors.textSecondary }]}>Previous week 10 h</Text>
+                                <Text style={[styles.reportValue, { color: colors.text }]}>10 h 40 m</Text>
+                                <Text style={[styles.trendUp, { color: colors.textSecondary }]}>▲ 40 m</Text>
+                            </View>
+                        </View>
+                    </View>
+
+                    {/* Badges Card */}
+                    <TouchableOpacity style={[styles.badgesCard, { backgroundColor: colors.surface }, isDesktop && { width: '100%' }]}>
+                        <View style={styles.cardHeader}>
+                            <Text style={[styles.cardTitle, { color: colors.text }]}>Badges</Text>
+                            <Ionicons name="chevron-forward" size={20} color={colors.text} />
+                        </View>
+
+                        <View style={styles.badgesRow}>
+                            <View style={styles.badgeItem}>
+                                <View style={styles.badgeIconPlaceholder}>
+                                    <Ionicons name="walk-outline" size={32} color={colors.textSecondary} />
+                                </View>
+                                <Text style={[styles.badgeName, { color: colors.text }]}>First walking workout</Text>
+                                <Text style={[styles.badgeDate, { color: colors.textSecondary }]}>3 Jun</Text>
+                            </View>
+                            <View style={styles.badgeItem}>
+                                <View style={styles.badgeIconPlaceholder}>
+                                    <Ionicons name="flame-outline" size={32} color={colors.error} />
+                                </View>
+                                <Text style={[styles.badgeName, { color: colors.text }]}>First run</Text>
+                                <Text style={[styles.badgeDate, { color: colors.textSecondary }]}>17 Sept 2024</Text>
+                            </View>
+                        </View>
+                    </TouchableOpacity>
+                </View>
+
+                <TouchableOpacity style={styles.logoutRow} onPress={handleLogout}>
+                    <Ionicons name="log-out-outline" size={24} color={colors.textSecondary} />
+                    <Text style={[styles.logoutRowText, { color: colors.textSecondary }]}>Log out</Text>
                 </TouchableOpacity>
-            </View>
-
-            {/* Profile Summary Card */}
-            <View style={[styles.profileCard, { backgroundColor: colors.surface }]}>
-                <View style={styles.avatarSection}>
-                    {user?.profilePicture ? (
-                        <Image source={{ uri: user.profilePicture }} style={styles.avatarImage} />
-                    ) : (
-                        <View style={[styles.avatarPlaceholder, { backgroundColor: colors.surfaceLight }]}>
-                            <Text style={[styles.avatarText, { color: colors.text }]}>{(user?.fullName?.[0] || user?.email?.[0] || 'U').toUpperCase()}</Text>
-                        </View>
-                    )}
-                    <TouchableOpacity style={[styles.editButton, { backgroundColor: colors.surfaceLight }]} onPress={() => setView('edit')}>
-                        <Text style={[styles.editButtonText, { color: colors.text }]}>Edit</Text>
-                    </TouchableOpacity>
-                </View>
-                <Text style={[styles.userName, { color: colors.text }]}>{user?.fullName || 'User'}</Text>
-            </View>
-
-            {/* My Schedule Card */}
-            <View style={[styles.scheduleCard, { backgroundColor: colors.surface }]}>
-                <View style={styles.cardHeader}>
-                    <Text style={[styles.cardTitle, { color: colors.text }]}>My Schedule</Text>
-                    <TouchableOpacity onPress={pickScheduleImage}>
-                        <Text style={[styles.editLink, { color: colors.primary }]}>Edit</Text>
-                    </TouchableOpacity>
-                </View>
-                {user?.scheduleImage ? (
-                    <Image source={{ uri: user.scheduleImage }} style={styles.scheduleImage} resizeMode="cover" />
-                ) : (
-                    <Text style={[styles.noScheduleText, { color: colors.textSecondary }]}>No schedule set.</Text>
-                )}
-            </View>
-
-            {/* Weekly Report Card - Placeholder */}
-            <View style={[styles.reportCard, { backgroundColor: colors.surface }]}>
-                <View style={styles.cardHeader}>
-                    <Text style={[styles.cardTitle, { color: colors.text }]}>Weekly report</Text>
-                    <Text style={[styles.dateRange, { color: colors.textSecondary }]}>15-21 Dec</Text>
-                </View>
-
-                <View style={styles.reportRow}>
-                    <View style={styles.reportItem}>
-                        <Text style={[styles.reportLabel, { color: colors.text }]}>Average sleep time</Text>
-                        <Text style={[styles.reportSubLabel, { color: colors.textSecondary }]}>Previous week 8 h 10 m</Text>
-                        <Text style={[styles.reportValue, { color: colors.text }]}>9 h 10 m</Text>
-                        <Text style={[styles.trendUp, { color: colors.textSecondary }]}>▲ 1 h</Text>
-                    </View>
-                    <View style={[styles.divider, { backgroundColor: colors.border }]} />
-                    <View style={styles.reportItem}>
-                        <Text style={[styles.reportLabel, { color: colors.text }]}>Avg. wake-up time</Text>
-                        <Text style={[styles.reportSubLabel, { color: colors.textSecondary }]}>Previous week 10 h</Text>
-                        <Text style={[styles.reportValue, { color: colors.text }]}>10 h 40 m</Text>
-                        <Text style={[styles.trendUp, { color: colors.textSecondary }]}>▲ 40 m</Text>
-                    </View>
-                </View>
-            </View>
-
-            {/* Badges Card - Placeholder */}
-            <TouchableOpacity style={[styles.badgesCard, { backgroundColor: colors.surface }]}>
-                <View style={styles.cardHeader}>
-                    <Text style={[styles.cardTitle, { color: colors.text }]}>Badges</Text>
-                    <Ionicons name="chevron-forward" size={20} color={colors.text} />
-                </View>
-
-                <View style={styles.badgesRow}>
-                    <View style={styles.badgeItem}>
-                        {/* Placeholder for badge icon */}
-                        <View style={styles.badgeIconPlaceholder}>
-                            <Ionicons name="walk-outline" size={32} color={colors.textSecondary} />
-                        </View>
-                        <Text style={[styles.badgeName, { color: colors.text }]}>First walking workout</Text>
-                        <Text style={[styles.badgeDate, { color: colors.textSecondary }]}>3 Jun</Text>
-                    </View>
-                    <View style={styles.badgeItem}>
-                        {/* Placeholder for badge icon */}
-                        <View style={styles.badgeIconPlaceholder}>
-                            <Ionicons name="flame-outline" size={32} color={colors.error} />
-                        </View>
-                        <Text style={[styles.badgeName, { color: colors.text }]}>First run</Text>
-                        <Text style={[styles.badgeDate, { color: colors.textSecondary }]}>17 Sept 2024</Text>
-                    </View>
-                </View>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.logoutRow} onPress={handleLogout}>
-                <Ionicons name="log-out-outline" size={24} color={colors.textSecondary} />
-                <Text style={[styles.logoutRowText, { color: colors.textSecondary }]}>Log out</Text>
-            </TouchableOpacity>
-
+            </ResponsiveContainer>
         </ScrollView>
     );
 }
