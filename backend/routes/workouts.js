@@ -178,9 +178,17 @@ router.get('/stats', authenticate, async (req, res) => {
         const calendarData = {};
         const uniqueDates = new Set();
 
+        // Helper to get local YYYY-MM-DD
+        const getLocalDateStr = (d) => {
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        };
+
         allSessions.forEach(s => {
             const d = new Date(s.date);
-            const dateStr = d.toISOString().split('T')[0];
+            const dateStr = getLocalDateStr(d);
 
             // For Calendar
             if (!calendarData[dateStr]) {
@@ -196,19 +204,21 @@ router.get('/stats', authenticate, async (req, res) => {
         if (sortedDates.length > 0) {
             const yesterdayDate = new Date(today);
             yesterdayDate.setDate(today.getDate() - 1);
-            const yesterdayStr = yesterdayDate.toISOString().split('T')[0];
-            const todayStr = today.toISOString().split('T')[0];
 
-            let checkDate = new Date(today);
+            const todayStr = getLocalDateStr(today);
+            const yesterdayStr = getLocalDateStr(yesterdayDate);
 
             // If valid streak exists (worked out today or yesterday)
             if (sortedDates.includes(todayStr) || sortedDates.includes(yesterdayStr)) {
-                // If mostly today, we count it. If implies strict streak:
                 // Start checking from today if present, else yesterday
-                let datePointer = sortedDates.includes(todayStr) ? today : yesterdayDate;
+                let datePointer = sortedDates.includes(todayStr) ? new Date(today) : new Date(yesterdayDate);
 
-                for (let i = 0; i < sortedDates.length; i++) {
-                    const checkStr = datePointer.toISOString().split('T')[0];
+                // Infinite loop protection/sanity check: match streak length to dates
+                // However, iterating sorted dates is safer if gaps exist.
+                // We need to check consecutive days.
+
+                while (true) {
+                    const checkStr = getLocalDateStr(datePointer);
                     if (sortedDates.includes(checkStr)) {
                         currentStreak++;
                         datePointer.setDate(datePointer.getDate() - 1); // Move back one day
