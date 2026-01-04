@@ -11,9 +11,45 @@ import { useAuth } from '../../context/AuthContext';
 import { getWorkoutStats } from '../../services/workouts';
 import { useFocusEffect } from 'expo-router';
 
+import { LinearGradient } from 'expo-linear-gradient';
+
 type Tab = 'Overview' | 'Exercises' | 'Measures' | 'Photos';
 type TimePeriod = '3 Months' | '6 Months' | 'Year-to-Date';
 type Metric = 'Duration' | 'Volume' | 'Workouts';
+
+const StatsCard = ({ title, value, subtitle, icon, color }: any) => (
+    <View style={{
+        backgroundColor: '#1E1E1E',
+        borderRadius: 16,
+        padding: 16,
+        flex: 1,
+        marginHorizontal: 4,
+        borderWidth: 1,
+        borderColor: '#333',
+        alignItems: 'center'
+    }}>
+        <Ionicons name={icon} size={24} color={color} style={{ marginBottom: 8 }} />
+        <Text style={{ color: '#fff', fontSize: 20, fontWeight: 'bold' }}>{value}</Text>
+        <Text style={{ color: '#888', fontSize: 12 }}>{title}</Text>
+        {subtitle && <Text style={{ color: color, fontSize: 10, marginTop: 4 }}>{subtitle}</Text>}
+    </View>
+);
+
+const BadgeItem = ({ badge }: any) => (
+    <View style={{ alignItems: 'center', marginRight: 16, opacity: badge.unlocked ? 1 : 0.4 }}>
+        <LinearGradient
+            colors={badge.unlocked ? ['#CCFF00', '#00bfa5'] : ['#333', '#444']}
+            style={{
+                width: 64, height: 64, borderRadius: 32,
+                justifyContent: 'center', alignItems: 'center',
+                marginBottom: 8
+            }}
+        >
+            <Ionicons name={badge.icon} size={32} color={badge.unlocked ? '#000' : '#888'} />
+        </LinearGradient>
+        <Text style={{ color: '#fff', fontSize: 12, fontWeight: 'bold' }}>{badge.label}</Text>
+    </View>
+);
 
 export default function Progress() {
     const { colors } = useTheme();
@@ -74,6 +110,57 @@ export default function Progress() {
 
     const chartData = getChartData();
 
+    // Gamified Calendar Renderer
+    const renderDay = useCallback(({ date, state }: any) => {
+        if (state === 'disabled') return <View style={{ height: 48, width: 48 }} />; // Empty spacer
+
+        const dateStr = date.dateString;
+        const dayStat = stats?.dailyStats?.[dateStr];
+        const level = dayStat?.level || 0;
+
+        // Level Colors
+        let bgColors = ['transparent', 'transparent'];
+        let borderColor = 'transparent';
+        let glow = false;
+
+        if (level === 1) { borderColor = '#333'; bgColors = ['#222', '#222']; }
+        if (level === 2) { borderColor = '#CCFF00'; bgColors = ['rgba(204, 255, 0, 0.1)', 'rgba(204, 255, 0, 0.05)']; }
+        if (level === 3) { borderColor = '#00F0FF'; bgColors = ['rgba(0, 240, 255, 0.2)', 'rgba(0, 240, 255, 0.1)']; glow = true; }
+        if (level === 4) { borderColor = '#FFD700'; bgColors = ['rgba(255, 215, 0, 0.3)', 'rgba(255, 215, 0, 0.1)']; glow = true; } // Gold
+
+        return (
+            <TouchableOpacity onPress={() => {/* Show tooltip/details */ }} style={{ alignItems: 'center', justifyContent: 'center', flex: 1 }}>
+                <LinearGradient
+                    colors={bgColors as any}
+                    style={{
+                        height: 36, width: 36,
+                        borderRadius: 12,
+                        justifyContent: 'center', alignItems: 'center',
+                        borderWidth: 1,
+                        borderColor: borderColor,
+                        elevation: glow ? 5 : 0
+                    }}
+                >
+                    <Text style={{
+                        color: level > 0 ? '#fff' : '#444',
+                        fontWeight: level > 2 ? 'bold' : 'normal',
+                        fontSize: 14
+                    }}>
+                        {date.day}
+                    </Text>
+                </LinearGradient>
+                {/* XP Indicator dots */}
+                {level > 0 && (
+                    <View style={{ flexDirection: 'row', marginTop: 4, gap: 2 }}>
+                        {[...Array(level > 4 ? 4 : level)].map((_, i) => (
+                            <View key={i} style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: borderColor }} />
+                        ))}
+                    </View>
+                )}
+            </TouchableOpacity>
+        );
+    }, [stats]);
+
     return (
         <View style={[styles.container, { backgroundColor: colors.background }]}>
             <ResponsiveContainer>
@@ -110,6 +197,79 @@ export default function Progress() {
                     </View>
                 ) : (
                     <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+                        {/* 1. Header & Stats Dashboard */}
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, marginTop: 0 }}>
+                            <Text style={{ fontSize: 32, fontWeight: 'bold', color: '#fff' }}>Progress</Text>
+                            <View style={{ backgroundColor: '#222', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 }}>
+                                <Text style={{ color: colors.primary, fontWeight: 'bold' }}>Level {stats?.totalWorkouts ? Math.floor(stats.totalWorkouts / 10) + 1 : 1}</Text>
+                            </View>
+                        </View>
+
+                        {/* Dashboard Grid */}
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 24 }}>
+                            <StatsCard
+                                title="Current Streak"
+                                value={`${stats?.currentStreak || 0} Days`}
+                                icon="flame"
+                                color="#FF4D4D"
+                                subtitle="Keep it up!"
+                            />
+                            <StatsCard
+                                title="Best Streak"
+                                value={`${stats?.bestStreak || 0} Days`}
+                                icon="trophy"
+                                color="#FFD700"
+                                subtitle="All time best"
+                            />
+                            <StatsCard
+                                title="Total Workouts"
+                                value={stats?.totalWorkouts || 0}
+                                icon="barbell"
+                                color="#CCFF00"
+                                subtitle="Lifetime"
+                            />
+                        </View>
+
+                        {/* 2. Badges Section */}
+                        <View style={{ marginBottom: 32 }}>
+                            <Text style={{ color: '#fff', fontSize: 18, fontWeight: 'bold', marginBottom: 16 }}>Achievements</Text>
+                            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                                {stats?.badges?.map((badge: any) => (
+                                    <BadgeItem key={badge.id} badge={badge} />
+                                )) || <Text style={{ color: '#666' }}>Complete a workout to unlock badges!</Text>}
+                            </ScrollView>
+                        </View>
+
+                        {/* 3. Gamified Activity Calendar */}
+                        <View style={{ marginBottom: 32 }}>
+                            <Text style={{ color: '#fff', fontSize: 18, fontWeight: 'bold', marginBottom: 16 }}>Activity Map</Text>
+                            <View style={{ backgroundColor: '#111', borderRadius: 24, padding: 8, borderWidth: 1, borderColor: '#333' }}>
+                                <Calendar
+                                    current={new Date().toISOString()}
+                                    key={stats?.currentStreak} // Force re-render on data change
+                                    dayComponent={renderDay}
+                                    theme={{
+                                        calendarBackground: 'transparent',
+                                        textSectionTitleColor: '#888',
+                                        arrowColor: colors.primary,
+                                        monthTextColor: '#fff',
+                                        textMonthFontWeight: 'bold',
+                                        textMonthFontSize: 20,
+                                    }}
+                                    disableMonthChange={false}
+                                />
+                            </View>
+                            {/* Calendar Legend */}
+                            <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 8, gap: 12, alignItems: 'center' }}>
+                                <Text style={{ color: '#666', fontSize: 12 }}>Less</Text>
+                                <View style={{ width: 12, height: 12, borderRadius: 4, backgroundColor: '#222', borderWidth: 1, borderColor: '#333' }} />
+                                <View style={{ width: 12, height: 12, borderRadius: 4, backgroundColor: 'rgba(204, 255, 0, 0.1)', borderWidth: 1, borderColor: '#CCFF00' }} />
+                                <View style={{ width: 12, height: 12, borderRadius: 4, backgroundColor: 'rgba(0, 240, 255, 0.2)', borderWidth: 1, borderColor: '#00F0FF' }} />
+                                <View style={{ width: 12, height: 12, borderRadius: 4, backgroundColor: 'rgba(255, 215, 0, 0.3)', borderWidth: 1, borderColor: '#FFD700' }} />
+                                <Text style={{ color: '#666', fontSize: 12 }}>More</Text>
+                            </View>
+                        </View>
+
                         {/* Time Period Filter */}
                         <View style={styles.filterContainer}>
                             {timePeriods.map(period => (
@@ -128,15 +288,6 @@ export default function Progress() {
                                     ]}>{period}</Text>
                                 </TouchableOpacity>
                             ))}
-                        </View>
-
-                        {/* Weekly Summary */}
-                        <View style={[styles.summaryCard, { backgroundColor: colors.surface }]}>
-                            <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>This week</Text>
-                            <Text style={[styles.summaryValue, { color: colors.text }]}>{stats?.weeklyMinutes || 0}min</Text>
-                            <Text style={{ color: colors.textSecondary, marginTop: 4 }}>
-                                Current Streak: <Text style={{ color: colors.primary, fontWeight: 'bold' }}>{stats?.currentStreak || 0} days</Text> 🔥
-                            </Text>
                         </View>
 
                         {/* Metric Selector */}
@@ -194,55 +345,6 @@ export default function Progress() {
                             )}
                         </View>
 
-                        {/* Streak Calendar */}
-                        <View style={styles.calendarSection}>
-                            <Text style={[styles.sectionTitle, { color: colors.text }]}>Activity Calendar</Text>
-                            <View style={[styles.calendarContainer, { backgroundColor: colors.surface }]}>
-                                <Calendar
-                                    // Current month is default
-                                    markedDates={stats?.calendarData || {}}
-                                    dayComponent={({ date, state, marking }) => {
-                                        return (
-                                            <View style={{ alignItems: 'center', justifyContent: 'center', height: 32 }}>
-                                                <Text style={{
-                                                    textAlign: 'center',
-                                                    color: state === 'disabled' ? colors.textSecondary : colors.text,
-                                                    fontSize: 14,
-                                                    opacity: state === 'disabled' ? 0.3 : 1
-                                                }}>
-                                                    {date.day}
-                                                </Text>
-                                                {marking && (
-                                                    <Text style={{ fontSize: 14, marginTop: -4 }}>🔥</Text>
-                                                )}
-                                            </View>
-                                        );
-                                    }}
-                                    theme={{
-                                        backgroundColor: colors.surface,
-                                        calendarBackground: colors.surface,
-                                        textSectionTitleColor: colors.textSecondary,
-                                        selectedDayBackgroundColor: colors.primary,
-                                        selectedDayTextColor: '#000000',
-                                        todayTextColor: colors.primary,
-                                        dayTextColor: colors.text,
-                                        textDisabledColor: '#444',
-                                        dotColor: colors.primary,
-                                        selectedDotColor: '#ffffff',
-                                        arrowColor: colors.primary,
-                                        monthTextColor: colors.text,
-                                        indicatorColor: colors.primary,
-                                        textDayFontWeight: '300',
-                                        textMonthFontWeight: 'bold',
-                                        textDayHeaderFontWeight: '300',
-                                        textDayFontSize: 14,
-                                        textMonthFontSize: 16,
-                                        textDayHeaderFontSize: 14
-                                    }}
-                                />
-                            </View>
-                        </View>
-
                         {/* This Week Overview - Muscles */}
                         <View style={styles.weekOverview}>
                             <Text style={[styles.weekTitle, { color: colors.text }]}>Targeted Muscles</Text>
@@ -262,23 +364,6 @@ export default function Progress() {
                             ) : (
                                 <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No workouts this week yet</Text>
                             )}
-                        </View>
-
-                        {/* Goal Management Section - Placeholder for future feature */}
-                        <View style={styles.goalSection}>
-                            <View style={styles.goalHeader}>
-                                <Text style={[styles.goalTitle, { color: colors.text }]}>Suggested Goal</Text>
-                            </View>
-
-                            <View style={[styles.goalCard, { backgroundColor: colors.surface }]}>
-                                <View style={[styles.goalIcon, { backgroundColor: `${colors.primary}20` }]}>
-                                    <MaterialCommunityIcons name="dumbbell" size={24} color={colors.primary} />
-                                </View>
-                                <View style={styles.goalContent}>
-                                    <Text style={[styles.goalDescription, { color: colors.text }]}>Consistency is key</Text>
-                                    <Text style={[styles.goalProgress, { color: colors.textSecondary }]}>Keep your streak alive!</Text>
-                                </View>
-                            </View>
                         </View>
 
                         <View style={{ height: 40 }} />
