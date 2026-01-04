@@ -132,6 +132,163 @@ router.get('/weekly', authenticate, async (req, res) => {
     }
 });
 
+// GET /workouts/stats - Aggregate statistics for Progress page
+router.get('/stats', authenticate, async (req, res) => {
+    try {
+        const { timePeriod } = req.query; // '3 Months', '6 Months', 'Year-to-Date'
+        const userId = req.user.userId;
+
+        // 1. Calculate Date Range
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        let startDate = new Date();
+
+        if (timePeriod === '6 Months') {
+            startDate.setMonth(now.getMonth() - 6);
+        } else if (timePeriod === 'Year-to-Date') {
+            startDate = new Date(now.getFullYear(), 0, 1);
+        } else {
+            // Default 3 Months
+            startDate.setMonth(now.getMonth() - 3);
+        }
+
+        // 2. Fetch Sessions
+        const sessions = await WorkoutSession.find({
+            userId,
+            date: { $gte: startDate }
+        }).sort({ date: 1 });
+
+        // 3. Process "This Week" Stats
+        const startOfWeek = new Date(today);
+        startOfWeek.setDate(today.getDate() - today.getDay()); // Sunday
+        startOfWeek.setHours(0, 0, 0, 0);
+
+        let weeklyMinutes = 0;
+        let weeklyMuscles = new Set();
+
+        // Also fetch all exercises to map names to muscles (optimization: could populate, but map is fine)
+        const allExerciseDocs = await require('../models/Exercise').find({ userId });
+        const exerciseMap = {};
+        allExerciseDocs.forEach(e => exerciseMap[e.name] = e.muscle);
+
+        // 4. Calendar Data & Streak Calculation
+        // Need ALL sessions for accurate streak, not just the filtered timePeriod
+        const allSessions = await WorkoutSession.find({ userId }).sort({ date: -1 });
+
+        const calendarData = {};
+        const uniqueDates = new Set();
+
+        allSessions.forEach(s => {
+            const d = new Date(s.date);
+            const dateStr = d.toISOString().split('T')[0];
+
+            // For Calendar
+            if (!calendarData[dateStr]) {
+                calendarData[dateStr] = { marked: true, dotColor: '#CCFF00' }; // Primary color
+            }
+            uniqueDates.add(dateStr);
+        });
+
+        // Calculate Streak
+        let currentStreak = 0;
+        const sortedDates = Array.from(uniqueDates).sort().reverse(); // Newest first
+
+        if (sortedDates.length > 0) {
+            const yesterdayDate = new Date(today);
+            yesterdayDate.setDate(today.getDate() - 1);
+            const yesterdayStr = yesterdayDate.toISOString().split('T')[0];
+            const todayStr = today.toISOString().split('T')[0];
+
+            let checkDate = new Date(today);
+
+            // If valid streak exists (worked out today or yesterday)
+            if (sortedDates.includes(todayStr) || sortedDates.includes(yesterdayStr)) {
+                // If mostly today, we count it. If implies strict streak:
+                // Start checking from today if present, else yesterday
+                let datePointer = sortedDates.includes(todayStr) ? today : yesterdayDate;
+
+                for (let i = 0; i < sortedDates.length; i++) {
+                    const checkStr = datePointer.toISOString().split('T')[0];
+                    if (sortedDates.includes(checkStr)) {
+                        currentStreak++;
+                        datePointer.setDate(datePointer.getDate() - 1); // Move back one day
+                    } else {
+                        break;
+                    }
+                }
+            }
+        }
+
+        // 5. Chart Data Aggregation (Weekly buckets)
+        const chartLabels = [];
+        const chartDuration = [];
+        const chartVolume = [];
+        const chartWorkouts = [];
+
+        // Helper to bucket by week
+        const weeks = {};
+
+        sessions.forEach(session => {
+            const d = new Date(session.date);
+            // Simple "Week Number" key: Year-Week
+            const onejan = new Date(d.getFullYear(), 0, 1);
+            const weekNum = Math.ceil((((d - onejan) / 86400000) + onejan.getDay() + 1) / 7);
+            const key = `${d.getFullYear()}-W${weekNum}`;
+
+            if (!weeks[key]) {
+                weeks[key] = { duration: 0, volume: 0, count: 0, label: `W${weekNum}` };
+            }
+            weeks[key].duration += session.duration || 0;
+            weeks[key].volume += session.totalVolume || 0;
+            weeks[key].count += 1;
+
+            // This Week Calculation
+            if (d >= startOfWeek) {
+                weeklyMinutes += session.duration || 0;
+                session.exercisesPerformed.forEach(ex => {
+                    const muscle = exerciseMap[ex.exerciseName];
+                    if (muscle) weeklyMuscles.add(muscle);
+                });
+            }
+        });
+
+        // Convert Map to Arrays (Sort keys just in case)
+        Object.keys(weeks).sort().forEach(key => {
+            chartLabels.push(weeks[key].label);
+            chartDuration.push(weeks[key].duration);
+            chartVolume.push(weeks[key].volume);
+            chartWorkouts.push(weeks[key].count);
+        });
+
+        // Ensure we have at least some data points to avoid empty chart crashes
+        if (chartLabels.length === 0) {
+            chartLabels.push('No Data');
+            chartDuration.push(0);
+            chartVolume.push(0);
+            chartWorkouts.push(0);
+        }
+
+        res.json({
+            weeklyMinutes,
+            weeklyMuscles: Array.from(weeklyMuscles),
+            currentStreak,
+            calendarData,
+            chartData: {
+                labels: chartLabels,
+                datasets: {
+                    Duration: chartDuration,
+                    Volume: chartVolume,
+                    Workouts: chartWorkouts
+                }
+            }
+        });
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // DELETE /workouts/:id - Delete a workout session
 router.delete('/:id', authenticate, async (req, res) => {
     try {
