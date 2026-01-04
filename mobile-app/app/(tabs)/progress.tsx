@@ -61,6 +61,8 @@ export default function Progress() {
 
     const [loading, setLoading] = useState(true);
     const [stats, setStats] = useState<any>(null);
+    const [selectedDate, setSelectedDate] = useState<any>(null);
+    const [hoveredDate, setHoveredDate] = useState<any>(null);
 
     // Calculate chart width constrained by max width (1280) and padding (48)
     const chartWidth = Math.min(width, 1280) - 48;
@@ -242,31 +244,187 @@ export default function Progress() {
 
                         {/* 3. Gamified Activity Calendar */}
                         <View style={{ marginBottom: 32 }}>
-                            <Text style={{ color: '#fff', fontSize: 18, fontWeight: 'bold', marginBottom: 16 }}>Activity Map</Text>
+                            <Text style={{ color: '#fff', fontSize: 18, fontWeight: 'bold', marginBottom: 16 }}>Activity Calendar</Text>
                             <View style={{ backgroundColor: '#111', borderRadius: 24, padding: 8, borderWidth: 1, borderColor: '#333' }}>
                                 <Calendar
                                     current={new Date().toISOString()}
-                                    key={stats?.currentStreak} // Force re-render on data change
-                                    dayComponent={renderDay}
+                                    key={stats?.currentStreak}
+                                    dayComponent={({ date, state }) => {
+                                        if (state === 'disabled' || !date) return <View style={{ height: 48, width: 48 }} />;
+
+                                        const dateStr = date.dateString;
+                                        const dayStat = stats?.dailyStats?.[dateStr];
+                                        const level = dayStat?.level || 0;
+
+                                        let bgColors = ['transparent', 'transparent'];
+                                        let borderColor = 'transparent';
+                                        let glow = false;
+
+                                        if (level === 1) { borderColor = '#333'; bgColors = ['#222', '#222']; }
+                                        if (level === 2) { borderColor = '#CCFF00'; bgColors = ['rgba(204, 255, 0, 0.1)', 'rgba(204, 255, 0, 0.05)']; }
+                                        if (level === 3) { borderColor = '#00F0FF'; bgColors = ['rgba(0, 240, 255, 0.2)', 'rgba(0, 240, 255, 0.1)']; glow = true; }
+                                        if (level === 4) { borderColor = '#FFD700'; bgColors = ['rgba(255, 215, 0, 0.3)', 'rgba(255, 215, 0, 0.1)']; glow = true; }
+
+                                        const isSelected = selectedDate?.date === dateStr;
+                                        if (isSelected) {
+                                            borderColor = '#fff'; // Highlight selection
+                                        }
+
+                                        return (
+                                            <TouchableOpacity
+                                                onPress={() => {
+                                                    if (isSelected) setSelectedDate(null);
+                                                    else setSelectedDate({
+                                                        date: dateStr,
+                                                        level,
+                                                        bg: bgColors[0],
+                                                        border: borderColor,
+                                                        stat: dayStat,
+                                                        dayObj: new Date(date.timestamp)
+                                                    });
+                                                }}
+                                                // @ts-ignore - Web-only hover events
+                                                onMouseEnter={() => level > 0 && setHoveredDate({
+                                                    date: dateStr,
+                                                    level,
+                                                    stat: dayStat,
+                                                    dayObj: new Date(date.timestamp)
+                                                })}
+                                                onMouseLeave={() => setHoveredDate(null)}
+                                                style={{ alignItems: 'center', justifyContent: 'center', flex: 1, position: 'relative' }}
+                                            >
+                                                <LinearGradient
+                                                    colors={bgColors as any}
+                                                    style={{
+                                                        height: 36, width: 36,
+                                                        borderRadius: 12,
+                                                        justifyContent: 'center', alignItems: 'center',
+                                                        borderWidth: 1,
+                                                        borderColor: borderColor,
+                                                        elevation: glow ? 5 : 0
+                                                    }}
+                                                >
+                                                    <Text style={{
+                                                        color: level > 0 ? '#fff' : '#444',
+                                                        fontWeight: level > 2 ? 'bold' : 'normal',
+                                                        fontSize: 14
+                                                    }}>
+                                                        {date.day}
+                                                    </Text>
+                                                </LinearGradient>
+                                                {level > 0 && (
+                                                    <View style={{ flexDirection: 'row', marginTop: 4, gap: 2 }}>
+                                                        {[...Array(level > 4 ? 4 : level)].map((_, i) => (
+                                                            <View key={i} style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: borderColor }} />
+                                                        ))}
+                                                    </View>
+                                                )}
+
+                                                {/* Hover Tooltip */}
+                                                {hoveredDate?.date === dateStr && level > 0 && (
+                                                    <View style={{
+                                                        position: 'absolute',
+                                                        bottom: 50,
+                                                        left: '50%',
+                                                        // @ts-ignore
+                                                        transform: [{ translateX: '-50%' }],
+                                                        backgroundColor: '#000',
+                                                        borderRadius: 8,
+                                                        padding: 8,
+                                                        minWidth: 120,
+                                                        maxWidth: 150,
+                                                        borderWidth: 1,
+                                                        borderColor: borderColor || '#333',
+                                                        zIndex: 1000,
+                                                        shadowColor: '#000',
+                                                        shadowOpacity: 0.8,
+                                                        shadowRadius: 8,
+                                                        elevation: 15,
+                                                        pointerEvents: 'none'
+                                                    }}>
+                                                        <Text style={{ color: '#fff', fontSize: 11, fontWeight: 'bold', marginBottom: 4 }}>
+                                                            {dayStat?.xp || 0} XP • {dayStat?.count || 1} workout{(dayStat?.count || 1) > 1 ? 's' : ''}
+                                                        </Text>
+                                                        {dayStat?.titles && dayStat.titles.length > 0 && (
+                                                            <Text style={{ color: '#CCFF00', fontSize: 10, marginBottom: 2, fontWeight: '600' }}>
+                                                                {dayStat.titles.join(', ')}
+                                                            </Text>
+                                                        )}
+                                                        {dayStat?.exercises && dayStat.exercises.length > 0 && (
+                                                            <Text style={{ color: '#999', fontSize: 9 }} numberOfLines={3}>
+                                                                {dayStat.exercises.slice(0, 5).join(' • ')}
+                                                                {dayStat.exercises.length > 5 ? ' ...' : ''}
+                                                            </Text>
+                                                        )}
+                                                        {/* Arrow pointing down */}
+                                                        <View style={{
+                                                            position: 'absolute',
+                                                            bottom: -6,
+                                                            left: '50%',
+                                                            marginLeft: -6,
+                                                            width: 0,
+                                                            height: 0,
+                                                            borderLeftWidth: 6,
+                                                            borderRightWidth: 6,
+                                                            borderTopWidth: 6,
+                                                            borderLeftColor: 'transparent',
+                                                            borderRightColor: 'transparent',
+                                                            borderTopColor: borderColor || '#333'
+                                                        }} />
+                                                    </View>
+                                                )}
+                                            </TouchableOpacity>
+                                        );
+                                    }}
                                     theme={{
                                         calendarBackground: 'transparent',
-                                        textSectionTitleColor: '#888',
+                                        textSectionTitleColor: '#666',
                                         arrowColor: colors.primary,
                                         monthTextColor: '#fff',
                                         textMonthFontWeight: 'bold',
-                                        textMonthFontSize: 20,
+                                        textMonthFontSize: 18,
+                                        todayTextColor: colors.primary,
+                                        dayTextColor: '#fff',
+                                        textDisabledColor: '#333'
                                     }}
                                     disableMonthChange={false}
                                 />
                             </View>
-                            {/* Calendar Legend */}
-                            <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 8, gap: 12, alignItems: 'center' }}>
-                                <Text style={{ color: '#666', fontSize: 12 }}>Less</Text>
-                                <View style={{ width: 12, height: 12, borderRadius: 4, backgroundColor: '#222', borderWidth: 1, borderColor: '#333' }} />
-                                <View style={{ width: 12, height: 12, borderRadius: 4, backgroundColor: 'rgba(204, 255, 0, 0.1)', borderWidth: 1, borderColor: '#CCFF00' }} />
-                                <View style={{ width: 12, height: 12, borderRadius: 4, backgroundColor: 'rgba(0, 240, 255, 0.2)', borderWidth: 1, borderColor: '#00F0FF' }} />
-                                <View style={{ width: 12, height: 12, borderRadius: 4, backgroundColor: 'rgba(255, 215, 0, 0.3)', borderWidth: 1, borderColor: '#FFD700' }} />
-                                <Text style={{ color: '#666', fontSize: 12 }}>More</Text>
+
+                            {/* Tooltip / Details Box (Moved from Heatmap) */}
+                            {selectedDate && (
+                                <View style={{
+                                    marginTop: 16, backgroundColor: '#1A1A1A', borderRadius: 12, padding: 12,
+                                    borderWidth: 1, borderColor: '#333', flexDirection: 'row', alignItems: 'center', gap: 12
+                                }}>
+                                    <View style={{
+                                        width: 36, height: 36, borderRadius: 8, backgroundColor: selectedDate.bg,
+                                        borderWidth: 1, borderColor: selectedDate.border === '#fff' ? selectedDate.bg : selectedDate.border, // revert white border for icon
+                                        justifyContent: 'center', alignItems: 'center'
+                                    }}>
+                                        <Text style={{ fontSize: 16 }}>{selectedDate.level === 4 ? '🏆' : selectedDate.level > 1 ? '🔥' : selectedDate.level === 1 ? '⚡' : '•'}</Text>
+                                    </View>
+                                    <View>
+                                        <Text style={{ color: '#fff', fontWeight: 'bold' }}>{selectedDate.dayObj.toDateString()}</Text>
+                                        <Text style={{ color: '#888', fontSize: 12 }}>{selectedDate.stat ? `${selectedDate.stat.xp} XP • ${selectedDate.stat.titles?.join(', ') || 'Workout'}` : 'No Details'}</Text>
+                                    </View>
+                                </View>
+                            )}
+
+                            {/* Simple Legend */}
+                            <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 12, gap: 16 }}>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                                    <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#333' }} />
+                                    <Text style={{ color: '#666', fontSize: 12 }}>Rest</Text>
+                                </View>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                                    <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#CCFF00' }} />
+                                    <Text style={{ color: '#888', fontSize: 12 }}>Active</Text>
+                                </View>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                                    <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#FFD700' }} />
+                                    <Text style={{ color: '#888', fontSize: 12 }}>Beast</Text>
+                                </View>
                             </View>
                         </View>
 
