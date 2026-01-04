@@ -135,27 +135,36 @@ router.get('/weekly', authenticate, async (req, res) => {
 // GET /workouts/stats - Aggregate statistics for Progress page
 router.get('/stats', authenticate, async (req, res) => {
     try {
-        const { timePeriod } = req.query; // '3 Months', '6 Months', 'Year-to-Date'
+        const { timePeriod, timezoneOffset } = req.query; // offset in minutes
         const userId = req.user.userId;
 
-        // 1. Calculate Date Range
+        // Helper: Convert UTC date to Client's Local Date object (Shifted)
+        const offsetMinutes = parseInt(timezoneOffset) || 0;
+        const toClientDate = (date) => {
+            return new Date(date.getTime() - (offsetMinutes * 60000));
+        };
+
         const now = new Date();
-        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        let startDate = new Date();
+        const clientNow = toClientDate(now);
+        const today = new Date(clientNow.getFullYear(), clientNow.getMonth(), clientNow.getDate());
+
+        let startDate = new Date(today);
 
         if (timePeriod === '6 Months') {
-            startDate.setMonth(now.getMonth() - 6);
+            startDate.setMonth(today.getMonth() - 6);
         } else if (timePeriod === 'Year-to-Date') {
-            startDate = new Date(now.getFullYear(), 0, 1);
+            startDate = new Date(today.getFullYear(), 0, 1);
         } else {
             // Default 3 Months
-            startDate.setMonth(now.getMonth() - 3);
+            startDate.setMonth(today.getMonth() - 3);
         }
+
+        const queryDate = new Date(startDate.getTime() + (offsetMinutes * 60000) - 86400000);
 
         // 2. Fetch Sessions
         const sessions = await WorkoutSession.find({
             userId,
-            date: { $gte: startDate }
+            date: { $gte: queryDate }
         }).sort({ date: 1 });
 
         // 3. Process "This Week" Stats
@@ -166,62 +175,78 @@ router.get('/stats', authenticate, async (req, res) => {
         let weeklyMinutes = 0;
         let weeklyMuscles = new Set();
 
-        // Also fetch all exercises to map names to muscles (optimization: could populate, but map is fine)
         const allExerciseDocs = await require('../models/Exercise').find({ userId });
         const exerciseMap = {};
         allExerciseDocs.forEach(e => exerciseMap[e.name] = e.muscle);
 
         // 4. Calendar Data & Streak Calculation
-        // Need ALL sessions for accurate streak, not just the filtered timePeriod
         const allSessions = await WorkoutSession.find({ userId }).sort({ date: -1 });
 
-        const calendarData = {};
+        const dailyStats = {}; // Map of dateStr -> { xp, level, count }
         const uniqueDates = new Set();
 
-        // Helper to get local YYYY-MM-DD
-        const getLocalDateStr = (d) => {
-            const year = d.getFullYear();
-            const month = String(d.getMonth() + 1).padStart(2, '0');
-            const day = String(d.getDate()).padStart(2, '0');
+        const getClientDateStr = (d) => {
+            const clientD = toClientDate(d);
+            const year = clientD.getUTCFullYear();
+            const month = String(clientD.getUTCMonth() + 1).padStart(2, '0');
+            const day = String(clientD.getUTCDate()).padStart(2, '0');
             return `${year}-${month}-${day}`;
         };
 
         allSessions.forEach(s => {
-            const d = new Date(s.date);
-            const dateStr = getLocalDateStr(d);
+            const dateStr = getClientDateStr(s.date);
 
-            // For Calendar
-            if (!calendarData[dateStr]) {
-                calendarData[dateStr] = { marked: true, dotColor: '#CCFF00' }; // Primary color
+            // Calculate XP
+            const durationXP = (s.duration || 0) * 1.5;
+            const volumeXP = (s.totalVolume || 0) * 0.001;
+            const sessionXP = Math.round(durationXP + volumeXP + 10);
+
+            if (!dailyStats[dateStr]) {
+                dailyStats[dateStr] = { xp: 0, count: 0, level: 0 };
             }
+
+            dailyStats[dateStr].xp += sessionXP;
+            dailyStats[dateStr].count += 1;
+
+            // Determine Level (0-4)
+            const totalXP = dailyStats[dateStr].xp;
+            let level = 0;
+            if (totalXP > 0) level = 1;
+            if (totalXP > 50) level = 2;
+            if (totalXP > 100) level = 3;
+            if (totalXP > 200) level = 4;
+
+            dailyStats[dateStr].level = level;
             uniqueDates.add(dateStr);
         });
 
-        // Calculate Streak
+        // Calculate Current & Best Streak
         let currentStreak = 0;
+        let bestStreak = 0;
         const sortedDates = Array.from(uniqueDates).sort().reverse(); // Newest first
 
         if (sortedDates.length > 0) {
-            const yesterdayDate = new Date(today);
-            yesterdayDate.setDate(today.getDate() - 1);
+            const todayStr = getClientDateStr(new Date());
+            const todayClient = toClientDate(new Date());
+            const yestClient = new Date(todayClient);
+            yestClient.setDate(yestClient.getDate() - 1);
 
-            const todayStr = getLocalDateStr(today);
-            const yesterdayStr = getLocalDateStr(yesterdayDate);
+            const tStr = `${todayClient.getUTCFullYear()}-${String(todayClient.getUTCMonth() + 1).padStart(2, '0')}-${String(todayClient.getUTCDate()).padStart(2, '0')}`;
+            const yStr = `${yestClient.getUTCFullYear()}-${String(yestClient.getUTCMonth() + 1).padStart(2, '0')}-${String(yestClient.getUTCDate()).padStart(2, '0')}`;
 
-            // If valid streak exists (worked out today or yesterday)
-            if (sortedDates.includes(todayStr) || sortedDates.includes(yesterdayStr)) {
-                // Start checking from today if present, else yesterday
-                let datePointer = sortedDates.includes(todayStr) ? new Date(today) : new Date(yesterdayDate);
-
-                // Infinite loop protection/sanity check: match streak length to dates
-                // However, iterating sorted dates is safer if gaps exist.
-                // We need to check consecutive days.
+            if (sortedDates.includes(tStr) || sortedDates.includes(yStr)) {
+                let checkDate = sortedDates.includes(tStr) ? todayClient : yestClient;
+                let ptr = new Date(checkDate);
 
                 while (true) {
-                    const checkStr = getLocalDateStr(datePointer);
-                    if (sortedDates.includes(checkStr)) {
+                    const year = ptr.getUTCFullYear();
+                    const month = String(ptr.getUTCMonth() + 1).padStart(2, '0');
+                    const day = String(ptr.getUTCDate()).padStart(2, '0');
+                    const sStr = `${year}-${month}-${day}`;
+
+                    if (sortedDates.includes(sStr)) {
                         currentStreak++;
-                        datePointer.setDate(datePointer.getDate() - 1); // Move back one day
+                        ptr.setDate(ptr.getDate() - 1);
                     } else {
                         break;
                     }
@@ -229,21 +254,50 @@ router.get('/stats', authenticate, async (req, res) => {
             }
         }
 
-        // 5. Chart Data Aggregation (Weekly buckets)
+        // Best Streak
+        const chronologicalDates = [...sortedDates].reverse();
+        if (chronologicalDates.length > 0) {
+            let maxS = 1;
+            let tempS = 1;
+
+            for (let i = 1; i < chronologicalDates.length; i++) {
+                const prev = new Date(chronologicalDates[i - 1]);
+                const curr = new Date(chronologicalDates[i]);
+                const diffTime = Math.abs(curr - prev);
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+                if (diffDays === 1) {
+                    tempS++;
+                } else {
+                    tempS = 1;
+                }
+                if (tempS > maxS) maxS = tempS;
+            }
+            bestStreak = maxS;
+        }
+
+        // Badges
+        const badges = [
+            { id: 'first_step', label: 'First Step', icon: 'footsteps', unlocked: allSessions.length >= 1, description: 'Completed your first workout' },
+            { id: 'on_fire', label: 'On Fire', icon: 'flame', unlocked: currentStreak >= 3, description: '3 Day Streak' },
+            { id: 'week_warrior', label: 'Week Warrior', icon: 'calendar', unlocked: currentStreak >= 7, description: '7 Day Streak' },
+            { id: 'consistent', label: 'Consistency', icon: 'trophy', unlocked: bestStreak >= 14, description: '14 Day Best Streak' },
+            { id: 'beast_mode', label: 'Beast Mode', icon: 'barbell', unlocked: Object.values(dailyStats).some(d => d.level === 4), description: 'Reached Level 4 Intensity' }
+        ];
+
+        // 5. Chart Data
         const chartLabels = [];
         const chartDuration = [];
         const chartVolume = [];
         const chartWorkouts = [];
-
-        // Helper to bucket by week
         const weeks = {};
 
         sessions.forEach(session => {
-            const d = new Date(session.date);
-            // Simple "Week Number" key: Year-Week
-            const onejan = new Date(d.getFullYear(), 0, 1);
-            const weekNum = Math.ceil((((d - onejan) / 86400000) + onejan.getDay() + 1) / 7);
-            const key = `${d.getFullYear()}-W${weekNum}`;
+            const clientSessionDate = toClientDate(session.date);
+            const d = clientSessionDate;
+            const onejan = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+            const weekNum = Math.ceil((((d - onejan) / 86400000) + onejan.getUTCDay() + 1) / 7);
+            const key = `${d.getUTCFullYear()}-W${weekNum}`;
 
             if (!weeks[key]) {
                 weeks[key] = { duration: 0, volume: 0, count: 0, label: `W${weekNum}` };
@@ -252,8 +306,7 @@ router.get('/stats', authenticate, async (req, res) => {
             weeks[key].volume += session.totalVolume || 0;
             weeks[key].count += 1;
 
-            // This Week Calculation
-            if (d >= startOfWeek) {
+            if (clientSessionDate >= startOfWeek) {
                 weeklyMinutes += session.duration || 0;
                 session.exercisesPerformed.forEach(ex => {
                     const muscle = exerciseMap[ex.exerciseName];
@@ -262,7 +315,6 @@ router.get('/stats', authenticate, async (req, res) => {
             }
         });
 
-        // Convert Map to Arrays (Sort keys just in case)
         Object.keys(weeks).sort().forEach(key => {
             chartLabels.push(weeks[key].label);
             chartDuration.push(weeks[key].duration);
@@ -270,7 +322,6 @@ router.get('/stats', authenticate, async (req, res) => {
             chartWorkouts.push(weeks[key].count);
         });
 
-        // Ensure we have at least some data points to avoid empty chart crashes
         if (chartLabels.length === 0) {
             chartLabels.push('No Data');
             chartDuration.push(0);
@@ -282,7 +333,10 @@ router.get('/stats', authenticate, async (req, res) => {
             weeklyMinutes,
             weeklyMuscles: Array.from(weeklyMuscles),
             currentStreak,
-            calendarData,
+            bestStreak,
+            totalWorkouts: allSessions.length,
+            dailyStats,
+            badges,
             chartData: {
                 labels: chartLabels,
                 datasets: {
