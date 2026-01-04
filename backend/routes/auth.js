@@ -3,13 +3,17 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const { loginLimiter, signupLimiter, checkLimiter } = require('../middleware/rateLimiters');
+const { validatePassword, validateEmail, sanitizeInput } = require('../utils/passwordValidator');
 
 // GET /auth/check-email?email=value
-router.get('/check-email', async (req, res) => {
+// ⚠️ WARNING: This endpoint enables user enumeration attacks
+// Protected with aggressive rate limiting (20 requests per 5 minutes)
+router.get('/check-email', checkLimiter, async (req, res) => {
     try {
         const { email } = req.query;
 
-        if (!email || !email.includes('@')) {
+        if (!email || !validateEmail(email)) {
             return res.status(400).json({
                 available: false,
                 message: 'Invalid email format'
@@ -38,7 +42,9 @@ router.get('/check-email', async (req, res) => {
 
 
 // GET /auth/check-username?username=value
-router.get('/check-username', async (req, res) => {
+// ⚠️ WARNING: This endpoint enables user enumeration attacks
+// Protected with aggressive rate limiting (20 requests per 5 minutes)
+router.get('/check-username', checkLimiter, async (req, res) => {
     try {
         const { username } = req.query;
 
@@ -70,17 +76,29 @@ router.get('/check-username', async (req, res) => {
 });
 
 // POST /auth/signup
-router.post('/signup', async (req, res) => {
+router.post('/signup', signupLimiter, async (req, res) => {
     try {
         const { fullName, email, password, username } = req.body;
-        console.log('Signup attempt for:', email);
-        if (!process.env.JWT_SECRET) {
-            throw new Error('JWT_SECRET is missing in .env');
-        }
 
+        // Validate required fields
         if (!fullName || !email || !password) {
             return res.status(400).json({ error: 'Full name, email, and password are required' });
         }
+
+        // Validate email format
+        if (!validateEmail(email)) {
+            return res.status(400).json({ error: 'Invalid email format' });
+        }
+
+        // Validate password strength
+        const passwordError = validatePassword(password);
+        if (passwordError) {
+            return res.status(400).json({ error: passwordError });
+        }
+
+        // Sanitize inputs to prevent XSS
+        const sanitizedFullName = sanitizeInput(fullName);
+        const sanitizedUsername = username ? sanitizeInput(username) : undefined;
 
         // Check email uniqueness
         const existingEmail = await User.findOne({ email: email.trim().toLowerCase() });
@@ -96,22 +114,22 @@ router.post('/signup', async (req, res) => {
             }
         }
 
-        console.log('Hashing password...');
+        // Hash password
         const salt = await bcrypt.genSalt(10);
         const passwordHash = await bcrypt.hash(password, salt);
 
-        console.log('Saving user to DB...');
+        // Create new user with sanitized inputs
         const newUser = new User({
-            fullName,
+            fullName: sanitizedFullName,
             email: email.trim().toLowerCase(),
             passwordHash,
-            username: username ? username.trim() : undefined
+            username: sanitizedUsername
         });
         await newUser.save();
-        console.log('User saved:', newUser._id);
+
+        console.log('✅ New user created:', newUser._id);
 
         const token = jwt.sign({ userId: newUser._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
-        console.log('Token generated');
         res.status(201).json({
             token,
             user: {
@@ -126,20 +144,37 @@ router.post('/signup', async (req, res) => {
             }
         });
     } catch (err) {
-        console.error('Signup Error:', err);
-        res.status(500).json({ error: err.message });
+        console.error('❌ Signup error:', err.message);
+        res.status(500).json({ error: 'An error occurred during signup' });
     }
 });
 
 // POST /auth/login
-router.post('/login', async (req, res) => {
+router.post('/login', loginLimiter, async (req, res) => {
     try {
         const { email, password } = req.body;
-        const user = await User.findOne({ email: email.trim().toLowerCase() });
-        if (!user) return res.status(401).json({ error: 'Invalid email or password' });
 
-        const isMatch = await bcrypt.compare(password, user.passwordHash);
-        if (!isMatch) return res.status(401).json({ error: 'Invalid email or password' });
+        // Validate inputs
+        if (!email || !password) {
+            return res.status(400).json({ error: 'Email and password are required' });
+        }
+
+        if (!validateEmail(email)) {
+            return res.status(400).json({ error: 'Invalid email format' });
+        }
+
+        // Timing-safe authentication: Always hash password even if user doesn't exist
+        // This prevents timing attacks that could reveal valid emails
+        const user = await User.findOne({ email: email.trim().toLowerCase() });
+
+        // Use fake hash if user doesn't exist to maintain constant time
+        const passwordHash = user?.passwordHash || '$2a$10$fakeHashToPreventTimingAttacksFakeHashValue';
+        const isMatch = await bcrypt.compare(password, passwordHash);
+
+        // Always check both conditions to prevent early exit
+        if (!user || !isMatch) {
+            return res.status(401).json({ error: 'Invalid email or password' });
+        }
 
         const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
         res.json({
@@ -156,8 +191,8 @@ router.post('/login', async (req, res) => {
             }
         });
     } catch (err) {
-        console.error('Signup Error:', err);
-        res.status(500).json({ error: err.message });
+        console.error('❌ Login error:', err.message);
+        res.status(500).json({ error: 'An error occurred during login' });
     }
 });
 
