@@ -261,16 +261,16 @@ export default function Progress() {
                                     borderColor: '#333'
                                 }}
                             >
-                                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 }}>
-                                    <View style={{ flex: 1, alignItems: 'center' }}>
+                                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12, paddingVertical: 8 }}>
+                                    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 4 }}>
                                         <Text style={{ color: '#888', fontSize: 12 }}>Workouts</Text>
                                         <Text style={{ color: '#fff', fontSize: 24, fontWeight: 'bold' }}>{stats?.weeklySummary?.workouts || 0}</Text>
                                     </View>
-                                    <View style={{ flex: 1, alignItems: 'center' }}>
+                                    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 4 }}>
                                         <Text style={{ color: '#888', fontSize: 12 }}>Minutes</Text>
                                         <Text style={{ color: '#fff', fontSize: 24, fontWeight: 'bold' }}>{stats?.weeklySummary?.minutes || 0}</Text>
                                     </View>
-                                    <View style={{ flex: 1, alignItems: 'center' }}>
+                                    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 4 }}>
                                         <Text style={{ color: '#888', fontSize: 12 }}>XP Earned</Text>
                                         <Text style={{ color: colors.primary, fontSize: 24, fontWeight: 'bold' }}>{stats?.weeklySummary?.xp || 0}</Text>
                                     </View>
