@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const WorkoutSession = require('../models/WorkoutSession');
+const Exercise = require('../models/Exercise');
 const authenticate = require('../middleware/authMiddleware'); // Need to create this middleware!
 
 // Helper for Epley E1RM
@@ -175,7 +176,7 @@ router.get('/stats', authenticate, async (req, res) => {
         let weeklyMinutes = 0;
         let weeklyMuscles = new Set();
 
-        const allExerciseDocs = await require('../models/Exercise').find({ userId });
+        const allExerciseDocs = await Exercise.find({ userId });
         const exerciseMap = {};
         allExerciseDocs.forEach(e => exerciseMap[e.name] = e.muscle);
 
