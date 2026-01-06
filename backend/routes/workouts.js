@@ -132,6 +132,339 @@ router.get('/weekly', authenticate, async (req, res) => {
     }
 });
 
+// GET /workouts/stats - Aggregate statistics for Progress page
+router.get('/stats', authenticate, async (req, res) => {
+    try {
+        const { timePeriod, timezoneOffset } = req.query; // offset in minutes
+        const userId = req.user.userId;
+
+        // Helper: Convert UTC date to Client's Local Date object (Shifted)
+        const offsetMinutes = parseInt(timezoneOffset) || 0;
+        const toClientDate = (date) => {
+            return new Date(date.getTime() - (offsetMinutes * 60000));
+        };
+
+        const now = new Date();
+        const clientNow = toClientDate(now);
+        const today = new Date(clientNow.getFullYear(), clientNow.getMonth(), clientNow.getDate());
+
+        let startDate = new Date(today);
+
+        if (timePeriod === '6 Months') {
+            startDate.setMonth(today.getMonth() - 6);
+        } else if (timePeriod === 'Year-to-Date') {
+            startDate = new Date(today.getFullYear(), 0, 1);
+        } else {
+            // Default 3 Months
+            startDate.setMonth(today.getMonth() - 3);
+        }
+
+        const queryDate = new Date(startDate.getTime() + (offsetMinutes * 60000) - 86400000);
+
+        // 2. Fetch Sessions
+        const sessions = await WorkoutSession.find({
+            userId,
+            date: { $gte: queryDate }
+        }).sort({ date: 1 });
+
+        // 3. Process "This Week" Stats
+        const startOfWeek = new Date(today);
+        startOfWeek.setDate(today.getDate() - today.getDay()); // Sunday
+        startOfWeek.setHours(0, 0, 0, 0);
+
+        let weeklyMinutes = 0;
+        let weeklyMuscles = new Set();
+
+        const allExerciseDocs = await require('../models/Exercise').find({ userId });
+        const exerciseMap = {};
+        allExerciseDocs.forEach(e => exerciseMap[e.name] = e.muscle);
+
+        // 4. Calendar Data & Streak Calculation
+        const allSessions = await WorkoutSession.find({ userId }).sort({ date: -1 });
+
+        const dailyStats = {}; // Map of dateStr -> { xp, level, count }
+        const uniqueDates = new Set();
+
+        const getClientDateStr = (d) => {
+            const clientD = toClientDate(d);
+            const year = clientD.getUTCFullYear();
+            const month = String(clientD.getUTCMonth() + 1).padStart(2, '0');
+            const day = String(clientD.getUTCDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        };
+
+        allSessions.forEach(s => {
+            const dateStr = getClientDateStr(s.date);
+
+            // Calculate XP
+            const durationXP = (s.duration || 0) * 1.5;
+            const volumeXP = (s.totalVolume || 0) * 0.001;
+            const sessionXP = Math.round(durationXP + volumeXP + 10);
+
+            if (!dailyStats[dateStr]) {
+                dailyStats[dateStr] = { xp: 0, count: 0, level: 0, titles: [], exercises: [] };
+            }
+
+            dailyStats[dateStr].xp += sessionXP;
+            dailyStats[dateStr].count += 1;
+
+            // Determine Level (0-4)
+            const totalXP = dailyStats[dateStr].xp;
+            let level = 0;
+            if (totalXP > 0) level = 1;
+            if (totalXP > 50) level = 2;
+            if (totalXP > 100) level = 3;
+            if (totalXP > 200) level = 4;
+
+            dailyStats[dateStr].level = level;
+            uniqueDates.add(dateStr);
+        });
+
+        // Calculate Current & Best Streak
+        let currentStreak = 0;
+        let bestStreak = 0;
+        const sortedDates = Array.from(uniqueDates).sort().reverse(); // Newest first
+
+        if (sortedDates.length > 0) {
+            const todayStr = getClientDateStr(new Date());
+            const todayClient = toClientDate(new Date());
+            const yestClient = new Date(todayClient);
+            yestClient.setDate(yestClient.getDate() - 1);
+
+            const tStr = `${todayClient.getUTCFullYear()}-${String(todayClient.getUTCMonth() + 1).padStart(2, '0')}-${String(todayClient.getUTCDate()).padStart(2, '0')}`;
+            const yStr = `${yestClient.getUTCFullYear()}-${String(yestClient.getUTCMonth() + 1).padStart(2, '0')}-${String(yestClient.getUTCDate()).padStart(2, '0')}`;
+
+            if (sortedDates.includes(tStr) || sortedDates.includes(yStr)) {
+                let checkDate = sortedDates.includes(tStr) ? todayClient : yestClient;
+                let ptr = new Date(checkDate);
+
+                while (true) {
+                    const year = ptr.getUTCFullYear();
+                    const month = String(ptr.getUTCMonth() + 1).padStart(2, '0');
+                    const day = String(ptr.getUTCDate()).padStart(2, '0');
+                    const sStr = `${year}-${month}-${day}`;
+
+                    if (sortedDates.includes(sStr)) {
+                        currentStreak++;
+                        ptr.setDate(ptr.getDate() - 1);
+                    } else {
+                        break;
+                    }
+                }
+            }
+        }
+
+        // Best Streak
+        const chronologicalDates = [...sortedDates].reverse();
+        if (chronologicalDates.length > 0) {
+            let maxS = 1;
+            let tempS = 1;
+
+            for (let i = 1; i < chronologicalDates.length; i++) {
+                const prev = new Date(chronologicalDates[i - 1]);
+                const curr = new Date(chronologicalDates[i]);
+                const diffTime = Math.abs(curr - prev);
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+                if (diffDays === 1) {
+                    tempS++;
+                } else {
+                    tempS = 1;
+                }
+                if (tempS > maxS) maxS = tempS;
+            }
+            bestStreak = maxS;
+        }
+
+        // Badges
+        const badges = [
+            { id: 'first_step', label: 'First Step', icon: 'footsteps', unlocked: allSessions.length >= 1, description: 'Completed your first workout' },
+            { id: 'on_fire', label: 'On Fire', icon: 'flame', unlocked: currentStreak >= 3, description: '3 Day Streak' },
+            { id: 'week_warrior', label: 'Week Warrior', icon: 'calendar', unlocked: currentStreak >= 7, description: '7 Day Streak' },
+            { id: 'consistent', label: 'Consistency', icon: 'trophy', unlocked: bestStreak >= 14, description: '14 Day Best Streak' },
+            { id: 'beast_mode', label: 'Beast Mode', icon: 'barbell', unlocked: Object.values(dailyStats).some(d => d.level === 4), description: 'Reached Level 4 Intensity' }
+        ];
+
+        // 5. Chart Data
+        const chartLabels = [];
+        const chartDuration = [];
+        const chartVolume = [];
+        const chartWorkouts = [];
+        const weeks = {};
+
+        sessions.forEach(session => {
+            const clientSessionDate = toClientDate(session.date);
+            const d = clientSessionDate;
+            const onejan = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+            const weekNum = Math.ceil((((d - onejan) / 86400000) + onejan.getUTCDay() + 1) / 7);
+            const key = `${d.getUTCFullYear()}-W${weekNum}`;
+
+            if (!weeks[key]) {
+                weeks[key] = { duration: 0, volume: 0, count: 0, label: `W${weekNum}` };
+            }
+            weeks[key].duration += session.duration || 0;
+            weeks[key].volume += session.totalVolume || 0;
+            weeks[key].count += 1;
+
+            if (clientSessionDate >= startOfWeek) {
+                weeklyMinutes += session.duration || 0;
+                session.exercisesPerformed.forEach(ex => {
+                    const muscle = exerciseMap[ex.exerciseName];
+                    if (muscle) weeklyMuscles.add(muscle);
+                });
+            }
+        });
+
+        Object.keys(weeks).sort().forEach(key => {
+            chartLabels.push(weeks[key].label);
+            chartDuration.push(weeks[key].duration);
+            chartVolume.push(weeks[key].volume);
+            chartWorkouts.push(weeks[key].count);
+        });
+
+        if (chartLabels.length === 0) {
+            chartLabels.push('No Data');
+            chartDuration.push(0);
+            chartVolume.push(0);
+            chartWorkouts.push(0);
+        }
+
+        // === WEEKLY SUMMARY ===
+        const now = new Date();
+        const startOfWeek = new Date(now);
+        startOfWeek.setDate(now.getDate() - now.getDay()); // Sunday
+        startOfWeek.setHours(0, 0, 0, 0);
+
+        const weeklySessions = allSessions.filter(s => new Date(s.date) >= startOfWeek);
+        const weeklyWorkouts = weeklySessions.length;
+        const weeklyMinutesTotal = weeklySessions.reduce((sum, s) => sum + (s.duration || 0), 0);
+        const weeklyXP = weeklySessions.reduce((sum, s) => {
+            const durationXP = (s.duration || 0) * 1.5;
+            const volumeXP = (s.totalVolume || 0) * 0.001;
+            return sum + Math.round(durationXP + volumeXP + 10);
+        }, 0);
+
+        // Most trained muscle this week
+        const weeklyMuscleCount = {};
+        weeklySessions.forEach(s => {
+            (s.exercisesPerformed || []).forEach(ex => {
+                const muscle = muscleMap[ex.exerciseName] || 'Other';
+                weeklyMuscleCount[muscle] = (weeklyMuscleCount[muscle] || 0) + 1;
+            });
+        });
+        const topWeeklyMuscle = Object.keys(weeklyMuscleCount).reduce((a, b) =>
+            weeklyMuscleCount[a] > weeklyMuscleCount[b] ? a : b, 'None');
+
+        // === PERSONAL RECORDS ===
+        const exerciseMaxWeight = {};
+        allSessions.forEach(s => {
+            (s.exercisesPerformed || []).forEach(ex => {
+                const name = ex.exerciseName;
+                ex.sets?.forEach(set => {
+                    const weight = set.weight || 0;
+                    if (!exerciseMaxWeight[name] || weight > exerciseMaxWeight[name].weight) {
+                        exerciseMaxWeight[name] = {
+                            exercise: name,
+                            weight,
+                            reps: set.reps || 0,
+                            date: s.date,
+                            isRecent: (now - new Date(s.date)) / (1000 * 60 * 60 * 24) <= 7
+                        };
+                    }
+                });
+            });
+        });
+        const personalRecords = Object.values(exerciseMaxWeight)
+            .sort((a, b) => b.weight - a.weight)
+            .slice(0, 5);
+
+        // === RECENT ACTIVITY ===
+        const recentActivity = allSessions
+            .sort((a, b) => new Date(b.date) - new Date(a.date))
+            .slice(0, 5)
+            .map(s => {
+                const durationXP = (s.duration || 0) * 1.5;
+                const volumeXP = (s.totalVolume || 0) * 0.001;
+                const xp = Math.round(durationXP + volumeXP + 10);
+                return {
+                    id: s._id,
+                    date: s.date,
+                    templateName: s.templateName || 'Workout',
+                    duration: s.duration || 0,
+                    xp,
+                    exerciseCount: s.exercisesPerformed?.length || 0
+                };
+            });
+
+        // === CONSISTENCY METRICS ===
+        const fourWeeksAgo = new Date(now);
+        fourWeeksAgo.setDate(now.getDate() - 28);
+        const last4WeeksSessions = allSessions.filter(s => new Date(s.date) >= fourWeeksAgo);
+        const avgWorkoutsPerWeek = (last4WeeksSessions.length / 4).toFixed(1);
+
+        // Most active day of week
+        const dayCount = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
+        last4WeeksSessions.forEach(s => {
+            const day = new Date(s.date).getDay();
+            dayCount[day]++;
+        });
+        const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        const mostActiveDay = dayNames[Object.keys(dayCount).reduce((a, b) => dayCount[a] > dayCount[b] ? a : b, 0)];
+
+        // Longest streak this month
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        const monthSessions = allSessions.filter(s => new Date(s.date) >= startOfMonth);
+        const monthDates = new Set(monthSessions.map(s => getClientDateStr(s.date)));
+        let longestMonthStreak = 0;
+        let currentMonthStreak = 0;
+        for (let d = new Date(startOfMonth); d <= now; d.setDate(d.getDate() + 1)) {
+            const dateStr = getClientDateStr(d);
+            if (monthDates.has(dateStr)) {
+                currentMonthStreak++;
+                longestMonthStreak = Math.max(longestMonthStreak, currentMonthStreak);
+            } else {
+                currentMonthStreak = 0;
+            }
+        }
+
+        res.json({
+            weeklyMinutes,
+            weeklyMuscles: Array.from(weeklyMuscles),
+            currentStreak,
+            bestStreak,
+            totalWorkouts: allSessions.length,
+            dailyStats,
+            badges,
+            weeklySummary: {
+                workouts: weeklyWorkouts,
+                minutes: weeklyMinutesTotal,
+                xp: weeklyXP,
+                topMuscle: topWeeklyMuscle,
+                streakActive: currentStreak > 0
+            },
+            personalRecords,
+            recentActivity,
+            consistency: {
+                avgWorkoutsPerWeek: parseFloat(avgWorkoutsPerWeek),
+                mostActiveDay,
+                longestStreakThisMonth: longestMonthStreak
+            },
+            chartData: {
+                labels: chartLabels,
+                datasets: {
+                    Duration: chartDuration,
+                    Volume: chartVolume,
+                    Workouts: chartWorkouts
+                }
+            }
+        });
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // DELETE /workouts/:id - Delete a workout session
 router.delete('/:id', authenticate, async (req, res) => {
     try {

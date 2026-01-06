@@ -77,3 +77,20 @@ export const getWeeklyStats = async (token: string) => {
         return { count: 0 };
     }
 };
+
+export const getWorkoutStats = async (token: string, timePeriod: string) => {
+    try {
+        const timezoneOffset = new Date().getTimezoneOffset();
+        const response = await axios.get(`${API_URL}/workouts/stats`, {
+            params: {
+                timePeriod,
+                timezoneOffset
+            },
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching workout stats:', error);
+        throw error;
+    }
+};
