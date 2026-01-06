@@ -676,19 +676,38 @@ export default function Progress() {
                                         </View>
                                     </View>
 
-                                    {/* Apply Button */}
-                                    <TouchableOpacity
-                                        onPress={() => setShowFilterModal(false)}
-                                        style={{
-                                            marginTop: 20,
-                                            backgroundColor: colors.primary,
-                                            paddingVertical: 14,
-                                            borderRadius: 12,
-                                            alignItems: 'center'
-                                        }}
-                                    >
-                                        <Text style={{ color: '#000', fontWeight: 'bold', fontSize: 15 }}>Apply Filters</Text>
-                                    </TouchableOpacity>
+                                    {/* Action Buttons */}
+                                    <View style={{ flexDirection: 'row', gap: 10, marginTop: 20 }}>
+                                        <TouchableOpacity
+                                            onPress={() => {
+                                                setPrSortOrder('newest');
+                                                setPrMuscleFilter('All');
+                                            }}
+                                            style={{
+                                                flex: 1,
+                                                backgroundColor: '#222',
+                                                paddingVertical: 14,
+                                                borderRadius: 12,
+                                                alignItems: 'center',
+                                                borderWidth: 1,
+                                                borderColor: '#333'
+                                            }}
+                                        >
+                                            <Text style={{ color: '#888', fontWeight: 'bold', fontSize: 15 }}>Reset</Text>
+                                        </TouchableOpacity>
+                                        <TouchableOpacity
+                                            onPress={() => setShowFilterModal(false)}
+                                            style={{
+                                                flex: 1,
+                                                backgroundColor: colors.primary,
+                                                paddingVertical: 14,
+                                                borderRadius: 12,
+                                                alignItems: 'center'
+                                            }}
+                                        >
+                                            <Text style={{ color: '#000', fontWeight: 'bold', fontSize: 15 }}>Apply Filters</Text>
+                                        </TouchableOpacity>
+                                    </View>
                                 </TouchableOpacity>
                             </TouchableOpacity>
                         </Modal>
