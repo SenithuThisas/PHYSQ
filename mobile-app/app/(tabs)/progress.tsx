@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, ActivityIndicator, Modal } from 'react-native';
 import { Colors as DefaultColors } from '../../constants/Colors';
 import { LineChart } from 'react-native-chart-kit';
 import { useTheme } from '../../context/ThemeContext';
@@ -63,6 +63,11 @@ export default function Progress() {
     const [stats, setStats] = useState<any>(null);
     const [selectedDate, setSelectedDate] = useState<any>(null);
     const [hoveredDate, setHoveredDate] = useState<any>(null);
+
+    // Personal Records filters
+    const [prSortOrder, setPrSortOrder] = useState<'newest' | 'oldest'>('newest');
+    const [prMuscleFilter, setPrMuscleFilter] = useState<string>('All');
+    const [showFilterModal, setShowFilterModal] = useState(false);
 
     // Calculate chart width constrained by max width (1280) and padding (48)
     const chartWidth = Math.min(width, 1280) - 48;
@@ -521,51 +526,220 @@ export default function Progress() {
     };
 
     const renderExercisesTab = () => {
+        // Get unique muscle groups from personal records
+        const muscleGroups = ['All', 'Chest', 'Back', 'Legs', 'Shoulders', 'Arms', 'Core'];
+
+        // Filter and sort personal records
+        let filteredRecords = stats?.personalRecords || [];
+
+        // Apply muscle filter
+        if (prMuscleFilter !== 'All') {
+            filteredRecords = filteredRecords.filter((pr: any) => {
+                // Get exercise details to find muscle group
+                // Assuming the PR object might have a muscle property, or we need to match by exercise name
+                return pr.muscle === prMuscleFilter;
+            });
+        }
+
+        // Sort by date
+        filteredRecords = [...filteredRecords].sort((a: any, b: any) => {
+            const dateA = new Date(a.date).getTime();
+            const dateB = new Date(b.date).getTime();
+            return prSortOrder === 'newest' ? dateB - dateA : dateA - dateB;
+        });
+
         return (
             <>
                 {stats?.personalRecords && stats.personalRecords.length > 0 ? (
                     <View style={{ marginBottom: 32 }}>
                         <Text style={{ color: '#fff', fontSize: 24, fontWeight: 'bold', marginBottom: 20 }}>Personal Records 🏆</Text>
-                        <View style={{ gap: 8 }}>
-                            {stats.personalRecords.map((pr: any, index: number) => (
-                                <View
-                                    key={index}
+
+                        {/* Filter Icon Button */}
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                            <Text style={{ color: '#888', fontSize: 14 }}>
+                                {prMuscleFilter !== 'All' ? `${prMuscleFilter} • ` : ''}{prSortOrder === 'newest' ? 'Newest First' : 'Oldest First'}
+                            </Text>
+                            <TouchableOpacity
+                                onPress={() => setShowFilterModal(true)}
+                                style={{
+                                    padding: 8,
+                                    borderRadius: 8,
+                                    backgroundColor: '#222',
+                                    borderWidth: 1,
+                                    borderColor: '#333'
+                                }}
+                            >
+                                <Ionicons name="filter" size={20} color={colors.primary} />
+                            </TouchableOpacity>
+                        </View>
+
+                        {/* Filter Modal */}
+                        <Modal
+                            visible={showFilterModal}
+                            transparent={true}
+                            animationType="fade"
+                            onRequestClose={() => setShowFilterModal(false)}
+                        >
+                            <TouchableOpacity
+                                style={{
+                                    flex: 1,
+                                    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                                    justifyContent: 'center',
+                                    alignItems: 'center',
+                                    padding: 20
+                                }}
+                                activeOpacity={1}
+                                onPress={() => setShowFilterModal(false)}
+                            >
+                                <TouchableOpacity
+                                    activeOpacity={1}
+                                    onPress={(e) => e.stopPropagation()}
                                     style={{
-                                        backgroundColor: pr.isRecent ? 'rgba(255, 215, 0, 0.1)' : '#111',
-                                        borderRadius: 12,
-                                        padding: 12,
+                                        backgroundColor: '#1A1A1A',
+                                        borderRadius: 16,
+                                        padding: 20,
+                                        width: '100%',
+                                        maxWidth: 400,
                                         borderWidth: 1,
-                                        borderColor: pr.isRecent ? '#FFD700' : '#333',
-                                        flexDirection: 'row',
-                                        alignItems: 'center',
-                                        gap: 12
+                                        borderColor: '#333'
                                     }}
                                 >
-                                    <View style={{
-                                        width: 40,
-                                        height: 40,
-                                        borderRadius: 20,
-                                        backgroundColor: pr.isRecent ? '#FFD700' : '#222',
-                                        justifyContent: 'center',
-                                        alignItems: 'center'
-                                    }}>
-                                        <Text style={{ fontSize: 18 }}>{pr.isRecent ? '🔥' : '💪'}</Text>
+                                    {/* Modal Header */}
+                                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                                        <Text style={{ color: '#fff', fontSize: 20, fontWeight: 'bold' }}>Filters</Text>
+                                        <TouchableOpacity onPress={() => setShowFilterModal(false)}>
+                                            <Ionicons name="close" size={24} color="#888" />
+                                        </TouchableOpacity>
                                     </View>
-                                    <View style={{ flex: 1 }}>
-                                        <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 14 }} numberOfLines={1}>{pr.exercise}</Text>
-                                        <Text style={{ color: '#888', fontSize: 12, marginTop: 2 }}>
-                                            {new Date(pr.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                                        </Text>
+
+                                    {/* Sort by Date */}
+                                    <View style={{ marginBottom: 20 }}>
+                                        <Text style={{ color: '#888', fontSize: 12, marginBottom: 12, fontWeight: '600' }}>SORT BY</Text>
+                                        <View style={{ flexDirection: 'row', gap: 8 }}>
+                                            <TouchableOpacity
+                                                onPress={() => setPrSortOrder('newest')}
+                                                style={{
+                                                    flex: 1,
+                                                    paddingVertical: 12,
+                                                    borderRadius: 12,
+                                                    backgroundColor: prSortOrder === 'newest' ? colors.primary : '#222',
+                                                    borderWidth: 1,
+                                                    borderColor: prSortOrder === 'newest' ? colors.primary : '#333',
+                                                    alignItems: 'center'
+                                                }}
+                                            >
+                                                <Text style={{ color: prSortOrder === 'newest' ? '#000' : '#888', fontWeight: '600', fontSize: 14 }}>
+                                                    Newest First
+                                                </Text>
+                                            </TouchableOpacity>
+                                            <TouchableOpacity
+                                                onPress={() => setPrSortOrder('oldest')}
+                                                style={{
+                                                    flex: 1,
+                                                    paddingVertical: 12,
+                                                    borderRadius: 12,
+                                                    backgroundColor: prSortOrder === 'oldest' ? colors.primary : '#222',
+                                                    borderWidth: 1,
+                                                    borderColor: prSortOrder === 'oldest' ? colors.primary : '#333',
+                                                    alignItems: 'center'
+                                                }}
+                                            >
+                                                <Text style={{ color: prSortOrder === 'oldest' ? '#000' : '#888', fontWeight: '600', fontSize: 14 }}>
+                                                    Oldest First
+                                                </Text>
+                                            </TouchableOpacity>
+                                        </View>
                                     </View>
-                                    <View style={{ alignItems: 'flex-end' }}>
-                                        <Text style={{ color: pr.isRecent ? '#FFD700' : colors.primary, fontSize: 18, fontWeight: 'bold' }}>
-                                            {pr.weight} kg
-                                        </Text>
-                                        <Text style={{ color: '#666', fontSize: 11 }}>{pr.reps} reps</Text>
+
+                                    {/* Filter by Muscle Group */}
+                                    <View>
+                                        <Text style={{ color: '#888', fontSize: 12, marginBottom: 12, fontWeight: '600' }}>MUSCLE GROUP</Text>
+                                        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                                            {muscleGroups.map((muscle) => (
+                                                <TouchableOpacity
+                                                    key={muscle}
+                                                    onPress={() => setPrMuscleFilter(muscle)}
+                                                    style={{
+                                                        paddingHorizontal: 16,
+                                                        paddingVertical: 10,
+                                                        borderRadius: 12,
+                                                        backgroundColor: prMuscleFilter === muscle ? colors.primary : '#222',
+                                                        borderWidth: 1,
+                                                        borderColor: prMuscleFilter === muscle ? colors.primary : '#333'
+                                                    }}
+                                                >
+                                                    <Text style={{ color: prMuscleFilter === muscle ? '#000' : '#888', fontWeight: '600', fontSize: 13 }}>
+                                                        {muscle}
+                                                    </Text>
+                                                </TouchableOpacity>
+                                            ))}
+                                        </View>
                                     </View>
-                                </View>
-                            ))}
-                        </View>
+
+                                    {/* Apply Button */}
+                                    <TouchableOpacity
+                                        onPress={() => setShowFilterModal(false)}
+                                        style={{
+                                            marginTop: 20,
+                                            backgroundColor: colors.primary,
+                                            paddingVertical: 14,
+                                            borderRadius: 12,
+                                            alignItems: 'center'
+                                        }}
+                                    >
+                                        <Text style={{ color: '#000', fontWeight: 'bold', fontSize: 15 }}>Apply Filters</Text>
+                                    </TouchableOpacity>
+                                </TouchableOpacity>
+                            </TouchableOpacity>
+                        </Modal>
+
+                        {/* Personal Records List */}
+                        {filteredRecords.length > 0 ? (
+                            <View style={{ gap: 8 }}>
+                                {filteredRecords.map((pr: any, index: number) => (
+                                    <View
+                                        key={index}
+                                        style={{
+                                            backgroundColor: '#111',
+                                            borderRadius: 12,
+                                            padding: 12,
+                                            borderWidth: 1,
+                                            borderColor: '#333',
+                                            flexDirection: 'row',
+                                            alignItems: 'center',
+                                            gap: 12
+                                        }}
+                                    >
+                                        <View style={{
+                                            width: 40,
+                                            height: 40,
+                                            borderRadius: 20,
+                                            backgroundColor: '#222',
+                                            justifyContent: 'center',
+                                            alignItems: 'center'
+                                        }}>
+                                            <Text style={{ fontSize: 18 }}>💪</Text>
+                                        </View>
+                                        <View style={{ flex: 1 }}>
+                                            <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 14 }} numberOfLines={1}>{pr.exercise}</Text>
+                                            <Text style={{ color: '#888', fontSize: 12, marginTop: 2 }}>
+                                                {new Date(pr.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                            </Text>
+                                        </View>
+                                        <View style={{ alignItems: 'flex-end' }}>
+                                            <Text style={{ color: colors.primary, fontSize: 18, fontWeight: 'bold' }}>
+                                                {pr.weight} kg
+                                            </Text>
+                                            <Text style={{ color: '#666', fontSize: 11 }}>{pr.reps} reps</Text>
+                                        </View>
+                                    </View>
+                                ))}
+                            </View>
+                        ) : (
+                            <View style={{ paddingVertical: 40, alignItems: 'center' }}>
+                                <Text style={{ color: '#666', fontSize: 14 }}>No records found for this filter</Text>
+                            </View>
+                        )}
                     </View>
                 ) : (
                     <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 60 }}>
