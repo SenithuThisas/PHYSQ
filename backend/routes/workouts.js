@@ -330,10 +330,7 @@ router.get('/stats', authenticate, async (req, res) => {
         }
 
         // === WEEKLY SUMMARY ===
-        const startOfWeek = new Date(now);
-        startOfWeek.setDate(now.getDate() - now.getDay()); // Sunday
-        startOfWeek.setHours(0, 0, 0, 0);
-
+        // Note: startOfWeek is already calculated at line 171-173
         const weeklySessions = allSessions.filter(s => new Date(s.date) >= startOfWeek);
         const weeklyWorkouts = weeklySessions.length;
         const weeklyMinutesTotal = weeklySessions.reduce((sum, s) => sum + (s.duration || 0), 0);
@@ -347,7 +344,7 @@ router.get('/stats', authenticate, async (req, res) => {
         const weeklyMuscleCount = {};
         weeklySessions.forEach(s => {
             (s.exercisesPerformed || []).forEach(ex => {
-                const muscle = muscleMap[ex.exerciseName] || 'Other';
+                const muscle = exerciseMap[ex.exerciseName] || 'Other';
                 weeklyMuscleCount[muscle] = (weeklyMuscleCount[muscle] || 0) + 1;
             });
         });
