@@ -330,7 +330,6 @@ router.get('/stats', authenticate, async (req, res) => {
         }
 
         // === WEEKLY SUMMARY ===
-        const now = new Date();
         const startOfWeek = new Date(now);
         startOfWeek.setDate(now.getDate() - now.getDay()); // Sunday
         startOfWeek.setHours(0, 0, 0, 0);
