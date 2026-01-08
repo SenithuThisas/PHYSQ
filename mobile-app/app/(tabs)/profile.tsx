@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, ActivityIn
 import { Colors as DefaultColors } from '../../constants/Colors';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
+import { useMeasurement } from '../../context/MeasurementContext';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,6 +18,7 @@ import { ResponsiveContainer } from '../../components/ResponsiveContainer';
 export default function Profile() {
     const { signOut, user, updateUser } = useAuth();
     const { colors } = useTheme();
+    const { measurementSystem, setMeasurementSystem } = useMeasurement();
     const router = useRouter();
     const [view, setView] = useState<'dashboard' | 'edit'>('dashboard');
     const { isDesktop } = useBreakpoints();
@@ -147,6 +149,51 @@ export default function Profile() {
                             </View>
                         </View>
                     </TouchableOpacity>
+
+                    {/* Settings Card */}
+                    <View style={[styles.settingsCard, { backgroundColor: colors.surface }, isDesktop && { width: '100%' }]}>
+                        <View style={styles.cardHeader}>
+                            <Text style={[styles.cardTitle, { color: colors.text }]}>Settings</Text>
+                        </View>
+
+                        {/* Measurement System Setting */}
+                        <View style={styles.settingRow}>
+                            <View style={{ flex: 1 }}>
+                                <Text style={[styles.settingLabel, { color: colors.text }]}>Measurement System</Text>
+                                <Text style={[styles.settingDescription, { color: colors.textSecondary }]}>Choose display units for weight and height</Text>
+                            </View>
+                            <View style={styles.toggleContainer}>
+                                <TouchableOpacity
+                                    style={[
+                                        styles.toggleOption,
+                                        { borderColor: colors.border },
+                                        measurementSystem === 'metric' && { backgroundColor: colors.primary, borderColor: colors.primary }
+                                    ]}
+                                    onPress={() => setMeasurementSystem('metric')}
+                                >
+                                    <Text style={[
+                                        styles.toggleText,
+                                        { color: colors.textSecondary },
+                                        measurementSystem === 'metric' && { color: '#000', fontWeight: 'bold' }
+                                    ]}>Metric</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    style={[
+                                        styles.toggleOption,
+                                        { borderColor: colors.border },
+                                        measurementSystem === 'imperial' && { backgroundColor: colors.primary, borderColor: colors.primary }
+                                    ]}
+                                    onPress={() => setMeasurementSystem('imperial')}
+                                >
+                                    <Text style={[
+                                        styles.toggleText,
+                                        { color: colors.textSecondary },
+                                        measurementSystem === 'imperial' && { color: '#000', fontWeight: 'bold' }
+                                    ]}>Imperial</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                    </View>
                 </View>
 
                 <TouchableOpacity style={styles.logoutRow} onPress={handleLogout}>
@@ -339,6 +386,43 @@ const styles = StyleSheet.create({
         color: DefaultColors.textSecondary,
         fontSize: 12,
         textAlign: 'center',
+    },
+    settingsCard: {
+        backgroundColor: DefaultColors.surface,
+        borderRadius: 24,
+        padding: 24,
+    },
+    settingRow: {
+        marginTop: 16,
+        gap: 12,
+    },
+    settingLabel: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: DefaultColors.text,
+        marginBottom: 4,
+    },
+    settingDescription: {
+        fontSize: 13,
+        color: DefaultColors.textSecondary,
+        marginBottom: 8,
+    },
+    toggleContainer: {
+        flexDirection: 'row',
+        gap: 8,
+    },
+    toggleOption: {
+        paddingVertical: 8,
+        paddingHorizontal: 20,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: DefaultColors.border,
+        backgroundColor: 'transparent',
+    },
+    toggleText: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: DefaultColors.textSecondary,
     },
     logoutRow: {
         flexDirection: 'row',
