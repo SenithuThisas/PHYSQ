@@ -7,6 +7,7 @@ import { Colors as DefaultColors } from '../../constants/Colors';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
+import { useToast } from '../../context/ToastContext';
 import { getWorkoutHistory, deleteWorkout, updateWorkout } from '../../services/workouts';
 import { useRouter, useFocusEffect } from 'expo-router';
 
@@ -14,6 +15,7 @@ export default function WorkoutRecords() {
     const { token } = useAuth();
     const router = useRouter();
     const { colors } = useTheme();
+    const { showToast } = useToast();
     const [history, setHistory] = useState<any[]>([]);
     const [loadingHistory, setLoadingHistory] = useState(false);
 
@@ -62,10 +64,9 @@ export default function WorkoutRecords() {
             setHistory(prev => prev.filter(item => item._id !== workoutToDelete));
             setIsDeleteModalVisible(false);
             setWorkoutToDelete(null);
-            // Short toast or simple alert to confirm
-            // Alert.alert("Success", "Workout deleted"); 
+            showToast('Workout deleted successfully', 'success');
         } catch (error) {
-            Alert.alert("Error", "Failed to delete workout");
+            showToast('Failed to delete workout', 'error');
         }
     };
 
@@ -94,9 +95,9 @@ export default function WorkoutRecords() {
             ));
 
             setIsEditModalVisible(false);
-            Alert.alert('Success', 'Workout updated successfully!');
+            showToast('Workout updated successfully!', 'success');
         } catch (error) {
-            Alert.alert('Error', 'Failed to update workout');
+            showToast('Failed to update workout', 'error');
         }
     };
 

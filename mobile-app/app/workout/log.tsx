@@ -268,7 +268,7 @@ export default function LogWorkout() {
         }));
 
         if (validSets.length === 0) {
-            Alert.alert('Error', 'Please add at least one valid set');
+            showToast('Please add at least one valid set', 'error');
             return;
         }
 
@@ -279,17 +279,20 @@ export default function LogWorkout() {
                     exerciseName: selectedExercise,
                     sets: validSets
                 }],
-                templateName: description || 'Quick Log',
+                templateName: description || selectedExercise,
                 duration: 30,
                 date: date // Use the selected date
             };
 
             await logWorkoutSession(token, sessionData);
-            Alert.alert('Success', 'Workout logged successfully!', [
-                { text: 'Done', onPress: handleBack }
-            ]);
+            showToast('Workout logged successfully!', 'success');
+
+            // Navigate back after a short delay to let user see the toast
+            setTimeout(() => {
+                handleBack();
+            }, 1500);
         } catch (error) {
-            Alert.alert('Error', 'Failed to log workout');
+            showToast('Failed to log workout', 'error');
         } finally {
             setLoggingState(false);
         }
