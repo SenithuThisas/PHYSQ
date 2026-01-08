@@ -97,6 +97,10 @@ export default function LogWorkout() {
     const [editExerciseName, setEditExerciseName] = useState('');
     const [editExerciseMuscle, setEditExerciseMuscle] = useState(MUSCLE_GROUPS[1]);
 
+    // Delete Confirmation Modal State
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [exerciseToDelete, setExerciseToDelete] = useState<Exercise | null>(null);
+
     // Load custom exercises on mount
     useEffect(() => {
         loadCustomExercises();
@@ -198,27 +202,26 @@ export default function LogWorkout() {
     };
 
     const handleDeleteExercise = (exercise: Exercise) => {
-        Alert.alert(
-            'Delete Exercise',
-            `Are you sure you want to delete "${exercise.name}"?`,
-            [
-                { text: 'Cancel', style: 'cancel' },
-                {
-                    text: 'Delete',
-                    style: 'destructive',
-                    onPress: async () => {
-                        if (!token || !exercise._id) return;
-                        try {
-                            await deleteExercise(token, exercise._id);
-                            setCustomExercises(customExercises.filter(ex => ex._id !== exercise._id));
-                            showToast('Exercise deleted successfully!', 'success');
-                        } catch (error: any) {
-                            showToast(error.message || 'Failed to delete exercise', 'error');
-                        }
-                    }
-                }
-            ]
-        );
+        setExerciseToDelete(exercise);
+        setShowDeleteModal(true);
+    };
+
+    const confirmDelete = async () => {
+        if (!token || !exerciseToDelete?._id) return;
+        try {
+            await deleteExercise(token, exerciseToDelete._id);
+            setCustomExercises(customExercises.filter(ex => ex._id !== exerciseToDelete._id));
+            setShowDeleteModal(false);
+            setExerciseToDelete(null);
+            showToast('Exercise deleted successfully!', 'success');
+        } catch (error: any) {
+            showToast(error.message || 'Failed to delete exercise', 'error');
+        }
+    };
+
+    const cancelDelete = () => {
+        setShowDeleteModal(false);
+        setExerciseToDelete(null);
     };
 
     const cancelAddExercise = () => {
@@ -627,6 +630,33 @@ export default function LogWorkout() {
                             </TouchableOpacity>
                             <TouchableOpacity style={[styles.modalSaveBtn, { backgroundColor: colors.primary }]} onPress={saveEditExercise}>
                                 <Text style={styles.modalSaveText}>Save Changes</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
+
+            {/* Delete Confirmation Modal */}
+            <Modal
+                visible={showDeleteModal}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={cancelDelete}
+            >
+                <View style={styles.modalBackdrop}>
+                    <View style={styles.modalContainer}>
+                        <Text style={styles.modalHeaderTitle}>Delete Exercise</Text>
+
+                        <Text style={[styles.inputLabel, { marginTop: 8, color: colors.textSecondary }]}>
+                            Are you sure you want to delete "{exerciseToDelete?.name}"? This action cannot be undone.
+                        </Text>
+
+                        <View style={styles.modalButtons}>
+                            <TouchableOpacity style={styles.modalCancelBtn} onPress={cancelDelete}>
+                                <Text style={[styles.modalCancelText, { color: colors.textSecondary }]}>Cancel</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={[styles.modalSaveBtn, { backgroundColor: '#ff4444' }]} onPress={confirmDelete}>
+                                <Text style={styles.modalSaveText}>Delete</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
