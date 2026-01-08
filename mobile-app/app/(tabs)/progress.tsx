@@ -156,11 +156,16 @@ export default function Progress() {
                         {date.day}
                     </Text>
                 </LinearGradient>
-                {/* XP Indicator dots */}
-                {level > 0 && (
-                    <View style={{ flexDirection: 'row', marginTop: 4, gap: 2 }}>
-                        {[...Array(level > 4 ? 4 : level)].map((_, i) => (
-                            <View key={i} style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: borderColor }} />
+                {/* Workout count indicators: dots (1-4) + fire emojis (every 5) */}
+                {level > 0 && dayStat?.count && (
+                    <View style={{ flexDirection: 'row', marginTop: 4, gap: 2, alignItems: 'center', height: 10, justifyContent: 'center' }}>
+                        {/* Fire emojis - one for every 5 workouts */}
+                        {[...Array(Math.floor(dayStat.count / 5))].map((_, i) => (
+                            <Text key={`fire-${i}`} style={{ fontSize: 8, lineHeight: 10 }}>🔥</Text>
+                        ))}
+                        {/* Dots - for remainder (1-4 workouts) */}
+                        {[...Array(dayStat.count % 5)].map((_, i) => (
+                            <View key={`dot-${i}`} style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: borderColor }} />
                         ))}
                     </View>
                 )}
@@ -340,10 +345,16 @@ export default function Progress() {
                                                 {date.day}
                                             </Text>
                                         </LinearGradient>
-                                        {level > 0 && (
-                                            <View style={{ flexDirection: 'row', marginTop: 4, gap: 2 }}>
-                                                {[...Array(level > 4 ? 4 : level)].map((_, i) => (
-                                                    <View key={i} style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: borderColor }} />
+                                        {/* Workout count indicators: dots (1-4) + fire emojis (every 5) */}
+                                        {level > 0 && dayStat?.count && (
+                                            <View style={{ flexDirection: 'row', marginTop: 4, gap: 2, alignItems: 'center', height: 10, justifyContent: 'center' }}>
+                                                {/* Fire emojis - one for every 5 workouts */}
+                                                {[...Array(Math.floor(dayStat.count / 5))].map((_, i) => (
+                                                    <Text key={`fire-${i}`} style={{ fontSize: 8, lineHeight: 10 }}>🔥</Text>
+                                                ))}
+                                                {/* Dots - for remainder (1-4 workouts) */}
+                                                {[...Array(dayStat.count % 5)].map((_, i) => (
+                                                    <View key={`dot-${i}`} style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: borderColor }} />
                                                 ))}
                                             </View>
                                         )}
