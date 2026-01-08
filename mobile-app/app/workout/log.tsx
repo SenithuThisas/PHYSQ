@@ -8,6 +8,7 @@ import { FontAwesome5, Ionicons, MaterialCommunityIcons } from '@expo/vector-ico
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { useToast } from '../../context/ToastContext';
+import { useMeasurement } from '../../context/MeasurementContext';
 import { logWorkoutSession } from '../../services/workouts';
 import { getCustomExercises, createExercise, updateExercise, deleteExercise, Exercise } from '../../services/exercises';
 import { useRouter, useNavigation } from 'expo-router';
@@ -63,6 +64,7 @@ export default function LogWorkout() {
     const { token } = useAuth();
     const { colors } = useTheme();
     const { showToast } = useToast();
+    const { getWeightUnit } = useMeasurement();
     const router = useRouter();
     const navigation = useNavigation();
 
@@ -464,7 +466,7 @@ export default function LogWorkout() {
                         <View style={[styles.setsContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                             <View style={styles.setsHeaderRow}>
                                 <Text style={[styles.colHeader, { color: colors.textSecondary }]}>SET</Text>
-                                <Text style={[styles.colHeader, { color: colors.textSecondary }]}>KG</Text>
+                                <Text style={[styles.colHeader, { color: colors.textSecondary }]}>{getWeightUnit().toUpperCase()}</Text>
                                 <Text style={[styles.colHeader, { color: colors.textSecondary }]}>REPS</Text>
                                 <View style={{ width: 40 }} />
                             </View>
