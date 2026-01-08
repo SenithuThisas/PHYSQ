@@ -7,6 +7,7 @@ import { Colors as DefaultColors } from '../../constants/Colors';
 import { FontAwesome5, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
+import { useToast } from '../../context/ToastContext';
 import { logWorkoutSession } from '../../services/workouts';
 import { getCustomExercises, createExercise, updateExercise, deleteExercise, Exercise } from '../../services/exercises';
 import { useRouter, useNavigation } from 'expo-router';
@@ -61,6 +62,7 @@ const getMuscleIcon = (muscle: string): string => {
 export default function LogWorkout() {
     const { token } = useAuth();
     const { colors } = useTheme();
+    const { showToast } = useToast();
     const router = useRouter();
     const navigation = useNavigation();
 
@@ -135,7 +137,7 @@ export default function LogWorkout() {
 
     const saveNewExercise = async () => {
         if (!newExerciseName.trim()) {
-            Alert.alert('Error', 'Please enter an exercise name');
+            showToast('Please enter an exercise name', 'error');
             return;
         }
         if (!token) return;
@@ -149,9 +151,13 @@ export default function LogWorkout() {
             setSearchQuery('');
             setShowAddModal(false);
             setNewExerciseName('');
-            Alert.alert('Success', 'Exercise created successfully!');
+
+            // Set filter to the muscle group of the newly created exercise
+            setActiveFilter(newExerciseMuscle);
+
+            showToast('Exercise created successfully!', 'success');
         } catch (error: any) {
-            Alert.alert('Error', error.message || 'Failed to create exercise');
+            showToast(error.message || 'Failed to create exercise', 'error');
         }
     };
 
@@ -164,7 +170,7 @@ export default function LogWorkout() {
 
     const saveEditExercise = async () => {
         if (!editExerciseName.trim() || !editingExercise?._id) {
-            Alert.alert('Error', 'Please enter an exercise name');
+            showToast('Please enter an exercise name', 'error');
             return;
         }
         if (!token) return;
@@ -179,9 +185,9 @@ export default function LogWorkout() {
             ));
             setShowEditModal(false);
             setEditingExercise(null);
-            Alert.alert('Success', 'Exercise updated successfully!');
+            showToast('Exercise updated successfully!', 'success');
         } catch (error: any) {
-            Alert.alert('Error', error.message || 'Failed to update exercise');
+            showToast(error.message || 'Failed to update exercise', 'error');
         }
     };
 
@@ -205,9 +211,9 @@ export default function LogWorkout() {
                         try {
                             await deleteExercise(token, exercise._id);
                             setCustomExercises(customExercises.filter(ex => ex._id !== exercise._id));
-                            Alert.alert('Success', 'Exercise deleted successfully!');
+                            showToast('Exercise deleted successfully!', 'success');
                         } catch (error: any) {
-                            Alert.alert('Error', error.message || 'Failed to delete exercise');
+                            showToast(error.message || 'Failed to delete exercise', 'error');
                         }
                     }
                 }
