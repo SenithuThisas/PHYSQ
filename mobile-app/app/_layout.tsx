@@ -9,6 +9,7 @@ import { Colors } from '../constants/Colors';
 import { AuthProvider, useAuth } from '../context/AuthContext';
 import { ThemeProvider, useTheme } from '../context/ThemeContext';
 import { ToastProvider } from '../context/ToastContext';
+import { MeasurementProvider } from '../context/MeasurementContext';
 import { Fonts } from '../constants/Fonts';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
@@ -89,9 +90,11 @@ export default function RootLayout() {
     return (
         <AuthProvider>
             <ThemeProvider>
-                <ToastProvider>
-                    <InitialLayout />
-                </ToastProvider>
+                <MeasurementProvider>
+                    <ToastProvider>
+                        <InitialLayout />
+                    </ToastProvider>
+                </MeasurementProvider>
             </ThemeProvider>
         </AuthProvider>
     );

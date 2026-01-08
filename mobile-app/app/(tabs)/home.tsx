@@ -6,12 +6,14 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { useTheme } from '../../context/ThemeContext';
 import { useBreakpoints } from '../../hooks/useBreakpoints';
 import { ResponsiveContainer } from '../../components/ResponsiveContainer';
+import { useMeasurement } from '../../context/MeasurementContext';
 
 export default function Dashboard() {
     const { user } = useAuth();
     const router = useRouter();
     const { colors } = useTheme();
     const { isWeb } = useBreakpoints();
+    const { formatWeight, formatHeight } = useMeasurement();
 
     const calculateBMI = (weight: any, height: any) => {
         if (!weight?.value || !height?.value) return '--';
@@ -34,16 +36,6 @@ export default function Dashboard() {
         if (bmi < 25) return 'Normal';
         if (bmi < 30) return 'Overweight';
         return 'Obese';
-    };
-
-    const formatHeight = (height: any) => {
-        if (!height?.value) return '--';
-        if (height.unit === 'ft') {
-            const ft = Math.floor(height.value);
-            const inch = Math.round((height.value - ft) * 12);
-            return `${ft}'${inch}"`;
-        }
-        return `${height.value} cm`;
     };
 
     const getBMIColor = (category: string) => {
@@ -134,7 +126,7 @@ export default function Dashboard() {
                                 >
                                     <Text style={styles.statLabel}>Weight</Text>
                                     <Text style={[styles.statValue, { color: colors.text }]}>
-                                        {user.weight?.value || '--'} <Text style={styles.unitText}>{user.weight?.unit || 'kg'}</Text>
+                                        {user.weight ? formatWeight(user.weight.value, user.weight.unit) : '--'}
                                     </Text>
                                 </TouchableOpacity>
 
@@ -145,7 +137,7 @@ export default function Dashboard() {
                                 >
                                     <Text style={styles.statLabel}>Height</Text>
                                     <Text style={[styles.statValue, { color: colors.text }]}>
-                                        {formatHeight(user.height)}
+                                        {user.height ? formatHeight(user.height.value, user.height.unit) : '--'}
                                     </Text>
                                 </TouchableOpacity>
                             </View>

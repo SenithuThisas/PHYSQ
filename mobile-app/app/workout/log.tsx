@@ -7,6 +7,8 @@ import { Colors as DefaultColors } from '../../constants/Colors';
 import { FontAwesome5, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
+import { useToast } from '../../context/ToastContext';
+import { useMeasurement } from '../../context/MeasurementContext';
 import { logWorkoutSession } from '../../services/workouts';
 import { getCustomExercises, createExercise, updateExercise, deleteExercise, Exercise } from '../../services/exercises';
 import { useRouter, useNavigation } from 'expo-router';
@@ -61,6 +63,8 @@ const getMuscleIcon = (muscle: string): string => {
 export default function LogWorkout() {
     const { token } = useAuth();
     const { colors } = useTheme();
+    const { showToast } = useToast();
+    const { getWeightUnit } = useMeasurement();
     const router = useRouter();
     const navigation = useNavigation();
 
@@ -94,6 +98,10 @@ export default function LogWorkout() {
     const [editingExercise, setEditingExercise] = useState<Exercise | null>(null);
     const [editExerciseName, setEditExerciseName] = useState('');
     const [editExerciseMuscle, setEditExerciseMuscle] = useState(MUSCLE_GROUPS[1]);
+
+    // Delete Confirmation Modal State
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [exerciseToDelete, setExerciseToDelete] = useState<Exercise | null>(null);
 
     // Load custom exercises on mount
     useEffect(() => {
@@ -135,7 +143,7 @@ export default function LogWorkout() {
 
     const saveNewExercise = async () => {
         if (!newExerciseName.trim()) {
-            Alert.alert('Error', 'Please enter an exercise name');
+            showToast('Please enter an exercise name', 'error');
             return;
         }
         if (!token) return;
@@ -149,9 +157,13 @@ export default function LogWorkout() {
             setSearchQuery('');
             setShowAddModal(false);
             setNewExerciseName('');
-            Alert.alert('Success', 'Exercise created successfully!');
+
+            // Set filter to the muscle group of the newly created exercise
+            setActiveFilter(newExerciseMuscle);
+
+            showToast('Exercise created successfully!', 'success');
         } catch (error: any) {
-            Alert.alert('Error', error.message || 'Failed to create exercise');
+            showToast(error.message || 'Failed to create exercise', 'error');
         }
     };
 
@@ -164,7 +176,7 @@ export default function LogWorkout() {
 
     const saveEditExercise = async () => {
         if (!editExerciseName.trim() || !editingExercise?._id) {
-            Alert.alert('Error', 'Please enter an exercise name');
+            showToast('Please enter an exercise name', 'error');
             return;
         }
         if (!token) return;
@@ -179,9 +191,9 @@ export default function LogWorkout() {
             ));
             setShowEditModal(false);
             setEditingExercise(null);
-            Alert.alert('Success', 'Exercise updated successfully!');
+            showToast('Exercise updated successfully!', 'success');
         } catch (error: any) {
-            Alert.alert('Error', error.message || 'Failed to update exercise');
+            showToast(error.message || 'Failed to update exercise', 'error');
         }
     };
 
@@ -192,27 +204,26 @@ export default function LogWorkout() {
     };
 
     const handleDeleteExercise = (exercise: Exercise) => {
-        Alert.alert(
-            'Delete Exercise',
-            `Are you sure you want to delete "${exercise.name}"?`,
-            [
-                { text: 'Cancel', style: 'cancel' },
-                {
-                    text: 'Delete',
-                    style: 'destructive',
-                    onPress: async () => {
-                        if (!token || !exercise._id) return;
-                        try {
-                            await deleteExercise(token, exercise._id);
-                            setCustomExercises(customExercises.filter(ex => ex._id !== exercise._id));
-                            Alert.alert('Success', 'Exercise deleted successfully!');
-                        } catch (error: any) {
-                            Alert.alert('Error', error.message || 'Failed to delete exercise');
-                        }
-                    }
-                }
-            ]
-        );
+        setExerciseToDelete(exercise);
+        setShowDeleteModal(true);
+    };
+
+    const confirmDelete = async () => {
+        if (!token || !exerciseToDelete?._id) return;
+        try {
+            await deleteExercise(token, exerciseToDelete._id);
+            setCustomExercises(customExercises.filter(ex => ex._id !== exerciseToDelete._id));
+            setShowDeleteModal(false);
+            setExerciseToDelete(null);
+            showToast('Exercise deleted successfully!', 'success');
+        } catch (error: any) {
+            showToast(error.message || 'Failed to delete exercise', 'error');
+        }
+    };
+
+    const cancelDelete = () => {
+        setShowDeleteModal(false);
+        setExerciseToDelete(null);
     };
 
     const cancelAddExercise = () => {
@@ -455,7 +466,7 @@ export default function LogWorkout() {
                         <View style={[styles.setsContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                             <View style={styles.setsHeaderRow}>
                                 <Text style={[styles.colHeader, { color: colors.textSecondary }]}>SET</Text>
-                                <Text style={[styles.colHeader, { color: colors.textSecondary }]}>KG</Text>
+                                <Text style={[styles.colHeader, { color: colors.textSecondary }]}>{getWeightUnit().toUpperCase()}</Text>
                                 <Text style={[styles.colHeader, { color: colors.textSecondary }]}>REPS</Text>
                                 <View style={{ width: 40 }} />
                             </View>
@@ -621,6 +632,33 @@ export default function LogWorkout() {
                             </TouchableOpacity>
                             <TouchableOpacity style={[styles.modalSaveBtn, { backgroundColor: colors.primary }]} onPress={saveEditExercise}>
                                 <Text style={styles.modalSaveText}>Save Changes</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
+
+            {/* Delete Confirmation Modal */}
+            <Modal
+                visible={showDeleteModal}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={cancelDelete}
+            >
+                <View style={styles.modalBackdrop}>
+                    <View style={styles.modalContainer}>
+                        <Text style={styles.modalHeaderTitle}>Delete Exercise</Text>
+
+                        <Text style={[styles.inputLabel, { marginTop: 8, color: colors.textSecondary }]}>
+                            Are you sure you want to delete "{exerciseToDelete?.name}"? This action cannot be undone.
+                        </Text>
+
+                        <View style={styles.modalButtons}>
+                            <TouchableOpacity style={styles.modalCancelBtn} onPress={cancelDelete}>
+                                <Text style={[styles.modalCancelText, { color: colors.textSecondary }]}>Cancel</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={[styles.modalSaveBtn, { backgroundColor: '#ff4444' }]} onPress={confirmDelete}>
+                                <Text style={styles.modalSaveText}>Delete</Text>
                             </TouchableOpacity>
                         </View>
                     </View>

@@ -69,6 +69,11 @@ const UserSchema = new mongoose.Schema({
     scheduleImage: {
         type: String // URL or Base64   
     },
+    measurementSystem: {
+        type: String,
+        enum: ['metric', 'imperial'],
+        default: 'metric'
+    },
     workoutSessions: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'WorkoutSession'
